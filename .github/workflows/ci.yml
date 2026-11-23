@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VG_APP__ENVIRONMENT: ci
+  VG_LLM__PROVIDER: mock
+  VG_EMBEDDINGS__PROVIDER: none
+  VG_DECISION__PROVIDER: rule
+  VG_MEMORY__PROVIDER: sqlite
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - name: Install dependencies (locked)
+        run: uv sync --frozen --all-groups
+      - name: No Hugging Face guard
+        run: bash scripts/check_no_hf.sh
+      - name: Ruff lint
+        run: uv run ruff check .
+      - name: Ruff format check
+        run: uv run ruff format --check .
+      - name: Type check (mypy strict)
+        run: uv run mypy
+      - name: Tests (offline, mock providers)
+        run: uv run pytest --cov --cov-report=term-missing:skip-covered
