@@ -105,4 +105,6 @@
   `Decision` with provider `citation_check`. (5) All contracts are frozen with `extra="forbid"`, datetimes
   must be timezone-aware, and `AssessmentResult` rejects findings that are unsorted or duplicated.
   (6) `models/llm.py` (`ChatMessage`, `Usage`, `LLMResult`) stays a stub until task 4.1.
+  (7) `ControlSet` also carries the optional `description` that `baseline_v1.yaml` has; controls must have
+  at least one keyword, IDs must start with their domain code, and IDs must be unique.
 - **Consequences:** Prompt-facing schemas stay small; the diff and manifest shapes are fixed early.
