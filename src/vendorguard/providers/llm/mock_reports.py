@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from vendorguard.models.finding import DraftStatus
+from vendorguard.reporting.fallback_summary import fallback_summary
 
 CONTROL_ID = re.compile(r"\b[A-Z]{3}-\d{2}\b")
 _CHANGE_WORDS = re.compile(
@@ -14,18 +15,8 @@ _OK = DraftStatus.MET.value
 
 
 def summary_text(facts: dict[str, Any]) -> str:
-    """The executive summary: only numbers and control IDs that come from ``facts``."""
-    counts: dict[str, int] = facts["counts"]
-    total = sum(counts.values())
-    text = (
-        f"{facts['vendor_name']}: the overall residual risk score is {facts['overall']:g} "
-        f"({facts['band']}). Of {total} controls, {counts.get('met', 0)} are met, "
-        f"{counts.get('partial', 0)} partially met, {counts.get('not_met', 0)} not met, "
-        f"{counts.get('no_evidence', 0)} without evidence and "
-        f"{counts.get('needs_human_review', 0)} awaiting human review."
-    )
-    gaps: list[str] = sorted(facts.get("gaps", []))
-    return text + (f" Open gaps: {', '.join(gaps)}." if gaps else " There are no open gaps.")
+    """The executive summary: the shared fallback template (only numbers from ``facts``)."""
+    return fallback_summary(facts)
 
 
 def _gaps(findings: dict[str, str]) -> list[str]:
