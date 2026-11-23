@@ -1,0 +1,227 @@
+# =============================================================================
+#  VendorGuard AI - settings.yaml
+#  The ONE file for every tunable parameter. Code must never hard-code these.
+#
+#  * Secrets (API keys) NEVER go here: put them in .env (see .env.example).
+#    Fields named api_key / auth_key must stay "" - startup fails otherwise.
+#  * Any value can be overridden with an environment variable:
+#        VG_<SECTION>__<KEY>[__<SUBKEY>]
+#    e.g. VG_LLM__PROVIDER=mock   VG_DECISION__PROVIDER=jev   VG_LLM__MODEL=qwen2.5:3b
+#  * These defaults cost $0: local Ollama + rule decider + SQLite memory.
+# =============================================================================
+
+app:
+  name: VendorGuard AI
+  environment: local                # local | ci | demo | prod
+  log_level: INFO                   # DEBUG | INFO | WARNING | ERROR
+  log_json: false                   # true = JSON lines (servers / CI)
+
+paths:
+  samples_dir: data/samples
+  golden_dir: data/golden
+  inbox_dir: data/inbox             # drop your own vendor documents here (git-ignored)
+  runs_dir: data/runs               # one folder per run: inputs, reports, audit log, manifest
+  state_dir: .vendorguard           # local databases (memory, cache) - git-ignored
+  prompts_dir: prompts
+  controls_file: config/controls/baseline_v1.yaml
+
+prompts:                            # active prompt version per agent (files in prompts/)
+  intake: v1
+  mapper: v1
+  reviewer: v1
+  judge: v1
+  reporter: v1
+  ask: v1
+
+# -----------------------------------------------------------------------------
+# LLM for the worker agents.
+# provider: ollama ($0, local) | openai_compat (Gemini/Groq/OpenAI/OpenRouter) | mock ($0, CI)
+# -----------------------------------------------------------------------------
+llm:
+  provider: ollama
+  model: qwen2.5:7b                 # 8 GB RAM Mac: qwen2.5:3b or llama3.2:3b
+  base_url: http://localhost:11434
+  temperature: 0.0
+  seed: 42
+  top_p: 1.0
+  max_output_tokens: 800
+  context_window: 8192              # Ollama num_ctx
+  timeout_s: 180
+  max_retries: 2                    # retries on connection errors / 5xx only
+  json_repair_attempts: 1           # re-ask once if the output fails schema validation
+  openai_compat:                    # used only when provider = openai_compat
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/   # Gemini; or Groq / OpenAI / OpenRouter
+    model: gemini-2.5-flash         # verify the provider's current model name
+    response_format: json_schema    # json_schema | json_object
+    api_key: ""                     # keep empty - set VG_LLM__OPENAI_COMPAT__API_KEY in .env
+
+embeddings:
+  provider: ollama                  # ollama ($0) | none (BM25 only, fully deterministic)
+  model: nomic-embed-text
+  base_url: http://localhost:11434
+  doc_prefix: "search_document: "   # nomic-embed-text task prefixes
+  query_prefix: "search_query: "
+  batch_size: 16
+  timeout_s: 60
+
+ingest:
+  allowed_extensions: [".pdf", ".txt", ".md"]
+  max_file_mb: 20
+  max_pages: 300
+  strip_repeated_lines: true        # remove headers/footers
+  repeated_line_min_ratio: 0.6      # a line on >= 60 % of pages counts as header/footer
+
+chunking:
+  chunk_chars: 1200
+  overlap_chars: 150
+  min_chunk_chars: 200
+
+retrieval:
+  top_k: 4
+  bm25_weight: 0.5
+  embedding_weight: 0.5             # ignored when embeddings.provider = none
+  min_score: 0.05
+
+intake:
+  max_chunks: 8                     # chunks shown to the Intake Agent
+
+pipeline:
+  controls_subset: []               # [] = all controls; e.g. ["IAM-02", "DAT-01"] for quick runs
+  max_concurrency: 1                # local Ollama works best at 1-2
+  triage_enabled: true              # skip the LLM when the decider is confident there is no evidence
+  max_review_rounds: 1              # re-review rounds for flagged findings
+  review_extra_chunks: 2            # extra evidence chunks given to the Reviewer Agent
+  deterministic_run_ids: true       # run_id = hash(inputs + config) instead of random
+
+# -----------------------------------------------------------------------------
+# Decision layer used by the triage and verify gates.
+# provider: rule ($0) | llm_judge ($0 with Ollama) | jev (paid, tiny cost) | mock
+# -----------------------------------------------------------------------------
+decision:
+  provider: rule
+  triage_threshold: 0.6             # confidence needed to mark NO_EVIDENCE without an LLM call
+  verify_threshold: 0.7             # confidence needed to accept a finding without review
+  rule:
+    triage_min_keyword_hits: 2
+    triage_min_retrieval_score: 0.15
+    verify_min_keyword_coverage: 0.3
+    partial_signal_phrases:
+      - where feasible
+      - where possible
+      - in progress
+      - being rolled out
+      - planned
+      - on the roadmap
+      - ad hoc
+      - ad-hoc
+      - for some systems
+      - for most systems
+      - informal
+      - not yet fully
+      - partially
+      - pilot
+    negative_signal_phrases:
+      - not currently
+      - does not
+      - do not
+      - is not enforced
+      - not enforced
+      - not performed
+      - no formal
+      - not in place
+      - has not
+      - have not
+      - not implemented
+      - no documented
+  jev:
+    base_url: https://api.typesafe.ai/v1   # VERIFY against the official docs or your gateway
+    model: jev
+    timeout_s: 15
+    max_calls_per_run: 200
+    fallback_provider: rule         # used automatically if Jev fails or no key is set
+    api_key: ""                     # keep empty - set VG_DECISION__JEV__API_KEY in .env
+
+verification:
+  citation_min_similarity: 0.90     # difflib ratio between quote and source text
+  max_quote_chars: 400
+  require_citation_for: [met, partial]
+
+# -----------------------------------------------------------------------------
+# Scoring (deterministic rules engine)
+# -----------------------------------------------------------------------------
+scoring:
+  criticality_weights: {low: 1, medium: 2, high: 3, critical: 5}
+  status_points:                    # 0 = no residual risk, 1 = full risk
+    met: 0.0
+    partial: 0.5
+    not_met: 1.0
+    no_evidence: 0.8
+    needs_human_review: 0.6
+  inherent_risk:
+    high_if_any: [health, financial, credentials]
+    medium_if_any: [pii, customer_content]
+    multiplier: {low: 0.8, medium: 1.0, high: 1.2}
+  bands:                            # upper bound (inclusive) of each band, score 0-100
+    low: 25
+    medium: 50
+    high: 75
+    critical: 100
+  critical_control_floor: high      # a critical control NOT_MET / NO_EVIDENCE => band at least this
+
+# -----------------------------------------------------------------------------
+# Memory. provider: sqlite ($0) | letta
+# -----------------------------------------------------------------------------
+memory:
+  provider: sqlite
+  sqlite_path: .vendorguard/memory.db
+  ask_max_history_runs: 5
+  letta:
+    mode: self_hosted               # self_hosted ($0, Docker) | cloud (uses Letta credits)
+    base_url: http://localhost:8283
+    model: ollama/qwen2.5:7b        # model handle as Letta expects it - verify for your Letta version
+    embedding: ollama/nomic-embed-text
+    agent_name_prefix: vg-vendor-
+    block_char_limit: 4000
+    cloud_max_messages_per_day: 20  # hard guard for credits
+    api_key: ""                     # keep empty - set VG_MEMORY__LETTA__API_KEY in .env (cloud only)
+
+cache:
+  enabled: true
+  mode: read_write                  # off | read_write | read_only (replay; used in CI and the demo)
+  backend: sqlite                   # sqlite | jsonl (jsonl = committed test cassettes)
+  sqlite_path: .vendorguard/cache.db
+  jsonl_dir: tests/cassettes
+
+cost:
+  max_usd_per_run: 0.50             # hard stop
+  max_llm_calls_per_run: 150
+  warn_at_fraction: 0.8
+  prices_per_million_tokens:        # used for cost reports; verify current prices
+    "ollama/*": {input: 0.0, output: 0.0}
+    "mock/*": {input: 0.0, output: 0.0}
+    "jev/*": {input: 0.042, output: 0.0}
+    "openai_compat/*": {input: 0.0, output: 0.0}   # free tier; set real prices if you pay
+
+reporting:
+  formats: [json, md, html]
+  summary_max_words: 150
+  include_audit_trail: true
+
+api:
+  host: 127.0.0.1
+  port: 8000
+  auth_enabled: true                # requires VG_API__AUTH_KEY in .env
+  auth_key: ""                      # keep empty - set VG_API__AUTH_KEY in .env
+  cors_origins: ["http://localhost:5173", "http://localhost:8501"]
+  max_upload_mb: 20
+  rate_limit_per_minute: 30
+
+eval:
+  results_dir: docs/evaluation
+  determinism_repeats: 2
+  configs:                          # evaluation matrix (Phase 9)
+    - {name: keyword-baseline, llm: mock,   decider: rule,      embeddings: none}
+    - {name: ollama-rule,      llm: ollama, decider: rule,      embeddings: ollama}
+    - {name: ollama-rule-bm25, llm: ollama, decider: rule,      embeddings: none}
+    - {name: ollama-judge,     llm: ollama, decider: llm_judge, embeddings: ollama}
+    - {name: ollama-jev,       llm: ollama, decider: jev,       embeddings: ollama}

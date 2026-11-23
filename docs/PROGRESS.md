@@ -1,0 +1,172 @@
+# Progress
+
+> Updated by `/checkpoint` after every task and imported into every Claude Code session through `CLAUDE.md`.
+> Task details and "Done when" criteria: `docs/PLAN.md` §11.
+
+## Status
+
+| Field | Value |
+|---|---|
+| Current phase | 0: Setup (👤 user) |
+| Next task | 0.1 |
+| Last completed task | none |
+| Last updated | not yet |
+| Blockers | none |
+
+## Environment facts (fill in during Phase 0)
+
+| Fact | Value |
+|---|---|
+| Mac RAM | ? GB |
+| Local LLM (`llm.model`) | qwen2.5:7b (use qwen2.5:3b with 8 GB RAM) |
+| Embedding model | nomic-embed-text |
+| Docker Desktop installed | ? |
+| Jev access route | none yet (TypeSafe console / OpenRouter / Vercel AI Gateway / Cloudflare) |
+| Letta mode | self_hosted (cloud only for the final demo) |
+| Hosted LLM fallback | none |
+
+## Checklist
+
+### Phase 0: Setup 👤 (77 min)
+- [ ] 0.1 Install git, gh, uv, ollama; VS Code + Claude Code
+- [ ] 0.2 Pull Ollama models (qwen2.5:7b or 3b, nomic-embed-text)
+- [ ] 0.3 Smoke-test the model
+- [ ] 0.4 Connect the folder to the GitHub repo
+- [ ] 0.5 Unzip the starter kit, create `.env`
+- [ ] 0.6 Fix the repo description and topics
+- [ ] 0.7 First commit and push
+- [ ] 0.8 Install Docker Desktop
+- [ ] 0.9 (Optional) Jev access, Letta Cloud key, both in `.env` only
+- [ ] 0.10 Open Claude Code and send the first message
+
+### Phase 1: Foundation (125 min)
+- [ ] 1.1 pyproject, uv, dependencies, no-HF guard
+- [ ] 1.2 Package skeleton
+- [ ] 1.3 config.py (YAML + env + .env, validation, fingerprint)
+- [ ] 1.4 errors.py + logging_setup.py (redaction)
+- [ ] 1.5 utils: hashing, jsonio, ids, timeutil
+- [ ] 1.6 Makefile, ruff, mypy, pytest, pre-commit
+- [ ] 1.7 conftest + tests (test-writer)
+- [ ] 1.8 CI workflow + Dependabot
+- [ ] 1.9 Checkpoint, push, CI green, tag phase-1-done
+
+### Phase 2: Models, controls, synthetic vendors (125 min)
+- [ ] 2.1 Pydantic data contracts
+- [ ] 2.2 Control-set loader
+- [ ] 2.3 Vendor specs (nimbara-hr, quillfield, brightdock, nimbara-hr-y2)
+- [ ] 2.4 Phrase bank + deterministic PDF/TXT generator + evidence maps
+- [ ] 2.5 Golden labels
+- [ ] 2.6 Tests (test-writer)
+- [ ] 2.7 Checkpoint, tag phase-2-done
+
+### Phase 3: Ingestion and retrieval (130 min)
+- [ ] 3.1 Loaders (dispatch, PDF, text)
+- [ ] 3.2 Text cleaner
+- [ ] 3.3 Chunker
+- [ ] 3.4 Tokenizer + BM25 index
+- [ ] 3.5 Embedders (Ollama, null, cached)
+- [ ] 3.6 Vector index, query builder, hybrid retriever
+- [ ] 3.7 Tests (3 parallel test-writers) + coverage gate 80 %
+- [ ] 3.8 Checkpoint, tag phase-3-done
+
+### Phase 4: LLM providers, cache, cost guard (150 min)
+- [ ] 4.1 LLM models + interfaces
+- [ ] 4.2 Ollama LLM provider
+- [ ] 4.3 OpenAI-compatible provider
+- [ ] 4.4 Mock provider (keyword baseline)
+- [ ] 4.5 Cache keys, SQLite/JSONL backends, CachedLLM
+- [ ] 4.6 Cost tracker + budget guard
+- [ ] 4.7 Prompt loader
+- [ ] 4.8 Factory registries
+- [ ] 4.9 Tests (parallel test-writers)
+- [ ] 4.10 Checkpoint, tag phase-4-done
+
+### Phase 5: Agents and decision layer (240 min)
+- [ ] 5.1 BaseAgent
+- [ ] 5.2 Intake Agent + inherent risk
+- [ ] 5.3 Mapper Agent
+- [ ] 5.4 Citation checker
+- [ ] 5.5 Rule decider
+- [ ] 5.6 LLM-judge decider
+- [ ] 5.7 Jev decider + fallback
+- [ ] 5.8 Reviewer Agent
+- [ ] 5.9 Rules engine + bands
+- [ ] 5.10 Reporter Agent + summary guard + fallback summary
+- [ ] 5.11 Tests (parallel test-writers)
+- [ ] 5.12 Code review + checkpoint, tag phase-5-done
+
+### Phase 6: Orchestrator, CLI, reports, first real run (180 min)
+- [ ] 6.1 Audit log, run manifest, metrics
+- [ ] 6.2 RunContext, control cascade, orchestrator
+- [ ] 6.3 JSON / Markdown / HTML reports
+- [ ] 6.4 CLI commands
+- [ ] 6.5 Analyst override flow
+- [ ] 6.6 Integration test (mock, golden)
+- [ ] 6.7 First real Ollama run + record cassettes + replay test
+- [ ] 6.8 Checkpoint, tag phase-6-done
+
+### Phase 7: Memory, re-assessment, Letta (160 min)
+- [ ] 7.1 SQLite memory store
+- [ ] 7.2 Re-assessment diff + vendor history
+- [ ] 7.3 Ask Agent + `vg ask`
+- [ ] 7.4 👤 Start self-hosted Letta
+- [ ] 7.5 Letta memory store + assistant
+- [ ] 7.6 Letta Cloud credit guard
+- [ ] 7.7 Tests
+- [ ] 7.8 Memory demo (y1 → y2 → diff → ask)
+- [ ] 7.9 Code review + checkpoint, tag phase-7-done
+
+### Phase 8: REST API and Docker (115 min)
+- [ ] 8.1 App factory + system routes
+- [ ] 8.2 API security (security-auditor)
+- [ ] 8.3 Assessment and vendor routes
+- [ ] 8.4 Background jobs
+- [ ] 8.5 API tests
+- [ ] 8.6 Dockerfile + compose api service
+- [ ] 8.7 Checkpoint, tag phase-8-done
+
+### Phase 9: Evaluation (150 min)
+- [ ] 9.1 Metrics
+- [ ] 9.2 Eval runner + `vg eval`
+- [ ] 9.3 Determinism check + test
+- [ ] 9.4 Full matrix run with Ollama
+- [ ] 9.5 Charts + EVALUATION.md (docs-writer)
+- [ ] 9.6 Checkpoint, tag phase-9-done
+
+### Phase 10: CI/CD, docs site, demo (128 min)
+- [ ] 10.1 Final CI
+- [ ] 10.2 MkDocs site + generated CONFIG.md (docs-writer)
+- [ ] 10.3 Pages workflow with replay demo reports
+- [ ] 10.4 👤 Enable GitHub Pages
+- [ ] 10.5 Release workflow (GHCR)
+- [ ] 10.6 (Optional) Render API demo
+- [ ] 10.7 Final README pass (docs-writer)
+- [ ] 10.8 Checkpoint, tag phase-10-done
+
+### Phase 11: Hardening and release (80 min)
+- [ ] 11.1 Security audit + fixes
+- [ ] 11.2 👤 Record the demo video
+- [ ] 11.3 Tag v1.0.0
+- [ ] 11.4 👤 Submission form
+- [ ] 11.5 Final checkpoint
+
+### Phase 12 (optional): UI (140 min)
+- [ ] 12.1 Choose the UI stack (ADR)
+- [ ] 12.2 UI skeleton + API client
+- [ ] 12.3 Upload and run page
+- [ ] 12.4 Findings and override page
+- [ ] 12.5 History, diff and ask page
+- [ ] 12.6 Deploy
+- [ ] 12.7 Checkpoint
+
+## In-progress notes
+
+Half-finished work, uncommitted changes, or things the next session must know:
+
+- none
+
+## Session log
+
+| Date | Tasks completed | Notes / deviations |
+|---|---|---|
+| | | |

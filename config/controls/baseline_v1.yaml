@@ -1,0 +1,274 @@
+# =============================================================================
+#  VendorGuard baseline control set v1
+#  25 high-signal vendor security controls, each mapped to
+#  ISO/IEC 27001:2022 (Annex A controls or main clauses) and NIST CSF 2.0 categories.
+#  Criticality weights live in config/settings.yaml (scoring.criticality_weights).
+#  Keywords feed BM25 retrieval, the rule decider and the mock (keyword-baseline) LLM.
+# =============================================================================
+
+version: baseline_v1
+name: VendorGuard Baseline Control Set
+description: >
+  A compact set of vendor security controls for first-pass third-party risk assessments.
+  Mappings are indicative and do not replace the official standards.
+
+domains:
+  GOV: Governance and risk
+  IAM: Identity and access
+  DAT: Data protection
+  OPS: Security operations
+  RES: Incident response and resilience
+  SDL: Secure development and change
+  TPR: Supply chain and assurance
+  PEO: People security
+
+controls:
+  - id: GOV-01
+    title: Information security policy
+    domain: GOV
+    criticality: medium
+    iso27001: ["5.1"]
+    nist_csf: ["GV.PO"]
+    requirement: A documented information security policy, approved by management, communicated to staff and reviewed at least annually.
+    met_criteria: The policy exists, is approved by management and is reviewed at least annually.
+    keywords: [information security policy, security policy, approved by management, management approval, reviewed annually, policy review]
+
+  - id: GOV-02
+    title: Security roles and responsibilities
+    domain: GOV
+    criticality: medium
+    iso27001: ["5.2"]
+    nist_csf: ["GV.RR"]
+    requirement: A named individual (for example a CISO) is accountable for information security and security roles are formally assigned.
+    met_criteria: A named, accountable security leader exists and security roles and responsibilities are documented.
+    keywords: [chief information security officer, CISO, security team, roles and responsibilities, security officer, accountable]
+
+  - id: GOV-03
+    title: Information security risk assessment
+    domain: GOV
+    criticality: medium
+    iso27001: ["Clause 6.1.2", "Clause 8.2"]
+    nist_csf: ["ID.RA"]
+    requirement: Information security risks are assessed at least annually and after significant changes, and are tracked in a risk register with treatment plans.
+    met_criteria: Risk assessments happen at least annually and risks are tracked with treatment plans.
+    keywords: [risk assessment, risk register, risk treatment, annual risk assessment, threat assessment, risk management]
+
+  - id: IAM-01
+    title: Access control and least privilege
+    domain: IAM
+    criticality: high
+    iso27001: ["5.15"]
+    nist_csf: ["PR.AA"]
+    requirement: Access to systems and customer data follows a documented access control policy based on least privilege and role-based access.
+    met_criteria: A documented access control policy exists and access is granted on a least-privilege, role-based basis.
+    keywords: [access control policy, least privilege, role-based access, RBAC, need to know, access request]
+
+  - id: IAM-02
+    title: Multi-factor authentication
+    domain: IAM
+    criticality: critical
+    iso27001: ["8.5", "5.17"]
+    nist_csf: ["PR.AA"]
+    requirement: Multi-factor authentication is enforced for all workforce access to production systems, administrative interfaces and remote access.
+    met_criteria: MFA is enforced (not optional) for all workforce, administrative and remote access.
+    keywords: [multi-factor authentication, MFA, two-factor, 2FA, strong authentication, single sign-on]
+
+  - id: IAM-03
+    title: Privileged access management
+    domain: IAM
+    criticality: high
+    iso27001: ["8.2"]
+    nist_csf: ["PR.AA"]
+    requirement: Privileged (administrator) access is limited to a small number of authorised staff, separately authenticated, logged and reviewed.
+    met_criteria: Privileged accounts are restricted, their activity is logged or monitored, and they are reviewed periodically.
+    keywords: [privileged access, administrator accounts, admin access, break-glass, privileged access management, elevated privileges]
+
+  - id: IAM-04
+    title: Access reviews and deprovisioning
+    domain: IAM
+    criticality: high
+    iso27001: ["5.18"]
+    nist_csf: ["PR.AA"]
+    requirement: User access rights are reviewed at least quarterly and access is revoked promptly (for example within 24 hours) when staff leave.
+    met_criteria: Access reviews happen at least quarterly and access is revoked promptly on termination.
+    keywords: [access review, user access review, quarterly review, deprovisioning, offboarding, revoked within]
+
+  - id: DAT-01
+    title: Encryption at rest
+    domain: DAT
+    criticality: critical
+    iso27001: ["8.24"]
+    nist_csf: ["PR.DS"]
+    requirement: Customer data is encrypted at rest using strong algorithms (for example AES-256) with managed encryption keys.
+    met_criteria: All customer data is encrypted at rest with strong encryption and keys are managed.
+    keywords: [encryption at rest, AES-256, encrypted at rest, key management, KMS, disk encryption]
+
+  - id: DAT-02
+    title: Encryption in transit
+    domain: DAT
+    criticality: critical
+    iso27001: ["8.24"]
+    nist_csf: ["PR.DS"]
+    requirement: Data in transit over public networks is encrypted with TLS 1.2 or higher, and insecure protocols are disabled.
+    met_criteria: TLS 1.2 or higher protects all external data transfers.
+    keywords: [encryption in transit, TLS 1.2, TLS 1.3, HTTPS, encrypted in transit, HSTS]
+
+  - id: DAT-03
+    title: Data retention and secure deletion
+    domain: DAT
+    criticality: medium
+    iso27001: ["8.10", "5.33"]
+    nist_csf: ["ID.AM"]
+    requirement: Data retention periods are defined, and customer data is securely deleted at contract end or on request within a defined period.
+    met_criteria: Retention periods are defined and secure deletion happens within a defined timeframe.
+    keywords: [data retention, retention period, secure deletion, data disposal, deleted within, crypto-shredding]
+
+  - id: DAT-04
+    title: Privacy and personal data protection
+    domain: DAT
+    criticality: high
+    iso27001: ["5.34"]
+    nist_csf: ["PR.DS"]
+    requirement: Personal data is processed in line with applicable privacy laws (for example GDPR), with a designated privacy owner and data processing agreements.
+    met_criteria: A privacy programme exists with a designated privacy owner or DPO, and data processing agreements are available.
+    keywords: [personal data, PII, GDPR, privacy, data protection officer, data processing agreement]
+
+  - id: DAT-05
+    title: Backup and restore
+    domain: DAT
+    criticality: high
+    iso27001: ["8.13"]
+    nist_csf: ["PR.DS"]
+    requirement: Backups are taken regularly, encrypted, stored in a separate location, and restores are tested at least annually.
+    met_criteria: Regular backups are encrypted or stored separately, and restores are tested.
+    keywords: [backup, backups, restore test, point-in-time recovery, backup encryption, offsite]
+
+  - id: OPS-01
+    title: Logging and monitoring
+    domain: OPS
+    criticality: high
+    iso27001: ["8.15", "8.16"]
+    nist_csf: ["DE.CM"]
+    requirement: Security-relevant events are logged centrally, retained for a defined period (for example 12 months) and monitored with alerting.
+    met_criteria: Logging is centralised, retention is defined and logs are actively monitored with alerting.
+    keywords: [logging, audit logs, SIEM, security monitoring, log retention, alerting]
+
+  - id: OPS-02
+    title: Vulnerability and patch management
+    domain: OPS
+    criticality: high
+    iso27001: ["8.8"]
+    nist_csf: ["ID.RA"]
+    requirement: Systems are scanned for vulnerabilities regularly and critical vulnerabilities are remediated within a defined SLA (for example 14 days).
+    met_criteria: Scanning is regular and remediation SLAs exist for critical and high vulnerabilities.
+    keywords: [vulnerability scanning, patch management, patching, CVE, remediation SLA, critical vulnerabilities]
+
+  - id: OPS-03
+    title: Independent penetration testing
+    domain: OPS
+    criticality: medium
+    iso27001: ["8.8", "8.29"]
+    nist_csf: ["ID.RA"]
+    requirement: Independent penetration tests are performed at least annually and findings are tracked to remediation.
+    met_criteria: An independent penetration test happens at least annually and findings are tracked to closure.
+    keywords: [penetration test, pen test, independent security testing, ethical hacking, annual penetration test, red team]
+
+  - id: OPS-04
+    title: Network security
+    domain: OPS
+    criticality: high
+    iso27001: ["8.20", "8.22"]
+    nist_csf: ["PR.IR"]
+    requirement: Networks are segmented and protected with firewalls or security groups, and production is isolated from corporate and development environments.
+    met_criteria: Networks are segmented, protected by firewalls or security groups, and production is isolated.
+    keywords: [network segmentation, firewall, VPC, security groups, web application firewall, intrusion detection]
+
+  - id: RES-01
+    title: Incident response plan
+    domain: RES
+    criticality: critical
+    iso27001: ["5.24", "5.26"]
+    nist_csf: ["RS.MA"]
+    requirement: A documented incident response plan defines roles, severity levels and procedures, and is tested at least annually (for example a tabletop exercise).
+    met_criteria: A documented incident response plan exists and is tested at least annually.
+    keywords: [incident response plan, incident response, security incident, playbook, tabletop exercise, on-call]
+
+  - id: RES-02
+    title: Breach notification
+    domain: RES
+    criticality: high
+    iso27001: ["5.26"]
+    nist_csf: ["RS.CO"]
+    requirement: Customers are notified of security incidents affecting their data within a defined timeframe (for example 72 hours).
+    met_criteria: The vendor commits to notify customers within a defined timeframe.
+    keywords: [breach notification, notify customers, within 72 hours, incident notification, data breach, affected customers]
+
+  - id: RES-03
+    title: Business continuity and disaster recovery
+    domain: RES
+    criticality: high
+    iso27001: ["5.29", "5.30"]
+    nist_csf: ["RC.RP"]
+    requirement: Business continuity and disaster recovery plans define RTO and RPO targets and are tested at least annually.
+    met_criteria: BC/DR plans exist with defined RTO/RPO targets and are tested at least annually.
+    keywords: [business continuity, disaster recovery, RTO, RPO, failover, disaster recovery test]
+
+  - id: SDL-01
+    title: Secure development lifecycle
+    domain: SDL
+    criticality: medium
+    iso27001: ["8.25", "8.28"]
+    nist_csf: ["PR.PS"]
+    requirement: Software is built under a secure development lifecycle with peer code review, automated security testing (for example SAST and dependency scanning) and secure coding training.
+    met_criteria: Code review is mandatory and automated security testing runs in the pipeline.
+    keywords: [secure development lifecycle, code review, SAST, static analysis, OWASP, secure coding]
+
+  - id: SDL-02
+    title: Change management
+    domain: SDL
+    criticality: medium
+    iso27001: ["8.32"]
+    nist_csf: ["PR.PS"]
+    requirement: Changes to production are documented, tested and approved before deployment, and can be rolled back.
+    met_criteria: Production changes are tested and approved before deployment.
+    keywords: [change management, change approval, change advisory board, deployment pipeline, rollback, peer-reviewed changes]
+
+  - id: TPR-01
+    title: Subprocessor management
+    domain: TPR
+    criticality: high
+    iso27001: ["5.19", "5.21"]
+    nist_csf: ["GV.SC"]
+    requirement: Subprocessors are listed, risk-assessed before onboarding and reviewed periodically, and customers are notified of changes.
+    met_criteria: A subprocessor list exists, subprocessors are assessed and reviewed, and customers are told about changes.
+    keywords: [subprocessor, sub-processor, third-party vendors, supplier security, vendor risk, fourth party]
+
+  - id: TPR-02
+    title: Independent certification or attestation
+    domain: TPR
+    criticality: medium
+    iso27001: ["5.35"]
+    nist_csf: ["GV.OV"]
+    requirement: The vendor holds a current independent certification or attestation (for example an ISO/IEC 27001 certificate or a SOC 2 Type II report) covering the in-scope services.
+    met_criteria: A current certification or attestation covers the in-scope services.
+    keywords: [ISO 27001, SOC 2, Type II, certification, independent audit, attestation]
+
+  - id: PEO-01
+    title: Security awareness training
+    domain: PEO
+    criticality: medium
+    iso27001: ["6.3"]
+    nist_csf: ["PR.AT"]
+    requirement: All staff complete security awareness training when hired and at least annually, including phishing awareness.
+    met_criteria: Training happens on hire and at least annually.
+    keywords: [security awareness training, awareness training, phishing simulation, annual training, onboarding training, security training]
+
+  - id: PEO-02
+    title: Personnel screening
+    domain: PEO
+    criticality: low
+    iso27001: ["6.1"]
+    nist_csf: ["GV.RR"]
+    requirement: Background checks are performed on staff before hiring, in line with local laws.
+    met_criteria: Pre-employment background screening is performed for staff with access to customer data.
+    keywords: [background check, background screening, pre-employment screening, criminal record check, reference checks, employment verification]
