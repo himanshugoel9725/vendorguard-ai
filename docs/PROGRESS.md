@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 3: Ingestion and retrieval |
-| Next task | 3.1 |
-| Last completed task | 2.7 (phase-2-done, not yet pushed) |
+| Next task | 3.2 |
+| Last completed task | 3.1 (phase-2-done pushed, CI green) |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -60,7 +60,7 @@
 - [x] 2.7 Checkpoint, tag phase-2-done
 
 ### Phase 3: Ingestion and retrieval (130 min)
-- [ ] 3.1 Loaders (dispatch, PDF, text)
+- [x] 3.1 Loaders (dispatch, PDF, text)
 - [ ] 3.2 Text cleaner
 - [ ] 3.3 Chunker
 - [ ] 3.4 Tokenizer + BM25 index
@@ -170,6 +170,7 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
 - Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 3.1: `load_document(path, settings.ingest)` returns a `Document` (doc_id = first 16 hex of the SHA-256 of the bytes; file name sanitised to its base name with safe characters; raw text, cleaning is 3.2). Refuses: type not in `ingest.allowed_extensions` (case-insensitive), not a file, larger than `max_file_mb`, wrong `%PDF-` header, encrypted or corrupt PDF, image-only PDF (no text), more than `max_pages`, non-UTF-8 or NUL-containing text, empty text. Text/Markdown pages split at form feeds (a trailing one is ignored). New setting `ingest.max_filename_chars`. Only the sample-loading test exists so far; the full ingest tests are 3.7.
 - 2.7 review (code-reviewer, verdict: ready, no blockers). Fixed: cover certification line only when TPR-02 is met (ADR-011 corrected); filler/DAT-01 wording that contradicted some vendors; `MIN_OWN_KEYWORDS` now comes from `decision.rule.triage_min_keyword_hits`; `.gitattributes` keeps samples byte-exact; comments on intentional spec gaps. Left as is: DAT-04 mentions GDPR for brightdock (business contact details are still personal data); hosting providers are not listed as subprocessors where TPR-01 is missing (the document is silent about suppliers); `render_pdf` loop could be split into a helper (cosmetic).
 - 2.6: 535 tests, 93 % coverage. Three test-writer agents added tests for `models/`, `controls/loader`, `utils/keywords`, spec edge cases and the `sample_gen` modules; they found two source bugs, both fixed: `NonEmptyStr` accepted whitespace-only strings (now needs a non-blank character, value not stripped) and `_paginate` could strand a heading at a tiny `lines_per_page` (a heading now always shares a page with its first paragraph). Committed samples did not change.
 - 2.5: golden labels in `data/golden/<stem>.json` (vendor_id, stem, report_period, expected_inherent_tier, controls{id: met|partial|not_met|no_evidence}), written by `make sample` through `vendorguard.eval.golden` (`build_golden`, `write_golden`, `load_golden`); a test fails when they drift from the specs. NOTE for 6.7: `make record` passes the spec file stem as `--vendor`, so nimbara-hr-y2 would become a separate vendor; it must use the spec's `vendor_id` (`nimbara-hr`) for the memory/diff demo.
@@ -184,4 +185,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

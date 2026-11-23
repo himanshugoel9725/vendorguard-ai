@@ -68,6 +68,7 @@ ingest:
   allowed_extensions: [".pdf", ".txt", ".md"]
   max_file_mb: 20
   max_pages: 300
+  max_filename_chars: 120   # sanitised file names are cut to this length (extension kept)
   strip_repeated_lines: true        # remove headers/footers
   repeated_line_min_ratio: 0.6      # a line on >= 60 % of pages counts as header/footer
 
