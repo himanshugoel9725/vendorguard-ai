@@ -159,8 +159,8 @@ decision:
       - not implemented
       - no documented
   jev:
-    base_url: https://api.typesafe.ai/v1   # VERIFY against the official docs or your gateway
-    model: jev
+    base_url: https://openrouter.ai/api/alpha   # OpenRouter Decisions API (alpha; POST {base_url}/decisions)
+    model: typesafe/jev-1.13        # read from OpenRouter's docs 2026-11-23; "~typesafe/jev-latest" is the alias
     timeout_s: 15
     max_calls_per_run: 200
     fallback_provider: rule         # used automatically if Jev fails or no key is set

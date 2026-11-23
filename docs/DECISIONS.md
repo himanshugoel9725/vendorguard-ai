@@ -227,3 +227,22 @@
   judge (which gained an optional `top_score` hint). Verify reads the WHOLE quote with `read_status` and has
   confidence 1.0 (binary rules); triage confidence is 0.5 + 0.5 * hits / keywords when addressed, 0.5 for a
   near miss, 1.0 for a clean miss.
+
+## ADR-016: Jev through OpenRouter's Decisions API (alpha) (task 5.7)
+
+- **Context.** The docs disagree on how Jev is reached: OpenRouter has its own `POST /api/alpha/decisions`
+  (`state` + `questions`, model `typesafe/jev-1.13`), Requesty puts questions in `response_format` of Chat
+  Completions, and TypeSafe's direct System One endpoint is not OpenAI compatible. The user had no access route;
+  they chose OpenRouter.
+- **Decision.** `jev_client.py` targets `{decision.jev.base_url}/decisions` (default
+  `https://openrouter.ai/api/alpha`) with a Bearer key. Each gate question is ONE `noul` (yes/no) question;
+  the answer `noul` is P(yes). `Decision.label` = yes when P >= 0.5, `confidence` = probability of the chosen
+  label. Vendor text goes into `state` as data and the question says it is untrusted. Refusals, odd shapes and
+  HTTP errors are `DeciderError` (no server text on 401/402/403, key redacted otherwise).
+- **Fallback.** `FallbackDecider` wraps Jev: no key (one warning, built in the factory), a provider error or
+  `max_calls_per_run` reached -> `decision.jev.fallback_provider` decides, `fallback_used=True`, audit event
+  `decider_fallback` per switched decision (error class only). Budget errors are NOT swallowed.
+- **Not verified live.** The tests use a hand-written fixture from the documented field names
+  (`tests/fixtures/jev/`), because the API is alpha and no key exists. `tests/live/test_jev.py` (`-m jev`)
+  checks the real shape once a key is set. Cost: `jev/*` price in settings is 0.042 per million input tokens
+  (OpenRouter's `usage.cost` unit is unclear in its docs, so the settings price is used).

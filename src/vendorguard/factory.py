@@ -20,7 +20,11 @@ from vendorguard.interfaces.memory import MemoryStore
 from vendorguard.observability.cost_tracker import CostTracker
 from vendorguard.providers.cache.jsonl_cache import JsonlCache
 from vendorguard.providers.cache.sqlite_cache import SqliteCache
+from vendorguard.providers.decide.fallback import FallbackDecider
+from vendorguard.providers.decide.jev import JevDecider
+from vendorguard.providers.decide.jev_client import JevClient
 from vendorguard.providers.decide.llm_judge import LlmJudgeDecider
+from vendorguard.providers.decide.mock import MockDecider
 from vendorguard.providers.decide.rule import RuleDecider
 from vendorguard.providers.embed.cached import CachedEmbedder
 from vendorguard.providers.embed.null import NullEmbedder
@@ -74,10 +78,25 @@ def _llm_judge(s: Settings, deps: DeciderDeps | None) -> Decider:
     return LlmJudgeDecider(deps.llm, deps.prompts, deps.audit, deps.cost, s.decision.rule)
 
 
+def _jev(s: Settings, deps: DeciderDeps | None) -> Decider:
+    if deps is None:
+        raise ConfigError("the jev decider needs an audit sink and a cost tracker")
+    fallback = _lookup(DECIDERS, s.decision.jev.fallback_provider, "decision")(s, deps)
+    if not s.decision.jev.api_key.get_secret_value():
+        return FallbackDecider(
+            None, fallback, deps.audit, primary_name="jev",
+            unavailable="no key: set VG_DECISION__JEV__API_KEY in .env",
+        )  # fmt: skip
+    jev = JevDecider(JevClient(s.decision.jev, s.llm), s.decision.jev, deps.audit, deps.cost)
+    return FallbackDecider(jev, fallback, deps.audit, primary_name="jev")
+
+
 DECIDERS: dict[str, Callable[[Settings, DeciderDeps | None], Decider]] = {
     "rule": lambda s, _deps: RuleDecider(s.decision.rule),
+    "mock": lambda s, _deps: MockDecider(s.decision.rule),
     "llm_judge": _llm_judge,
-}  # jev, mock: 5.7
+    "jev": _jev,
+}
 MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {}  # sqlite, letta: Phase 7
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached

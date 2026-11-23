@@ -44,8 +44,8 @@ def test_llm_embedding_and_cache_registries_match_the_config_literals_exactly() 
 
 
 def test_decider_and_memory_registries_only_contain_allowed_names() -> None:
-    """They fill up in Phase 5 and Phase 7; equality becomes mandatory then (update this test)."""
-    assert set(factory.DECIDERS) <= set(get_args(base.DeciderProvider))
+    """Deciders are complete (equality, ADR-009); memory fills up in Phase 7 (then equality too)."""
+    assert set(factory.DECIDERS) == set(get_args(base.DeciderProvider))
     assert set(factory.MEMORY_STORES) <= set(get_args(base.MemoryProvider))
 
 
@@ -105,8 +105,8 @@ def test_rule_decider_is_built_and_memory_is_not_implemented_yet(
     settings_override: Make,
 ) -> None:
     assert factory.build_decider(settings_override()).name == "rule"
-    with pytest.raises(ConfigError, match=r"decision provider 'jev' is not implemented yet"):
-        factory.build_decider(settings_override(decision={"provider": "jev"}))
+    with pytest.raises(ConfigError, match="llm_judge"):
+        factory.build_decider(settings_override(decision={"provider": "llm_judge"}))
     with pytest.raises(ConfigError, match=r"memory provider 'sqlite' is not implemented yet"):
         factory.build_memory_store(settings_override())
 

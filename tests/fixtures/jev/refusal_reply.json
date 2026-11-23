@@ -1,0 +1,7 @@
+{
+  "id": "gen-dec-fixture2",
+  "model": "typesafe/jev-1.13-20260917",
+  "provider": "TypeSafe",
+  "answers": {"addressed": {"type": "refusal"}},
+  "usage": {"input_tokens": 400, "output_tokens": 0}
+}
