@@ -1,3 +1,3 @@
-"""vendorguard.providers.llm.mock module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.providers.llm.mock module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

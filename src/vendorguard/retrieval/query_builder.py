@@ -1,3 +1,3 @@
-"""vendorguard.retrieval.query_builder module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.retrieval.query_builder module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

@@ -1,3 +1,3 @@
-"""vendorguard.providers.embed.cached module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.providers.embed.cached module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

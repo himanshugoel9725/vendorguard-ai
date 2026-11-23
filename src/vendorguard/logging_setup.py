@@ -78,7 +78,9 @@ def collect_secrets(value: Any) -> list[str]:
         secret = value.get_secret_value()
         return [secret] if secret else []
     if isinstance(value, BaseModel):
-        return [s for name in type(value).model_fields for s in collect_secrets(getattr(value, name))]
+        return [
+            s for name in type(value).model_fields for s in collect_secrets(getattr(value, name))
+        ]
     if isinstance(value, dict):
         return [s for item in value.values() for s in collect_secrets(item)]
     if isinstance(value, list | tuple):

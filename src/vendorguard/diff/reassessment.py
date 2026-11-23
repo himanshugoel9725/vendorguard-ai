@@ -1,3 +1,3 @@
-"""vendorguard.diff.reassessment module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.diff.reassessment module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

@@ -1,3 +1,3 @@
-"""vendorguard.observability.audit_log module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.observability.audit_log module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

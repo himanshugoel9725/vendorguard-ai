@@ -1,3 +1,3 @@
-"""vendorguard.pipeline.orchestrator module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.pipeline.orchestrator module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

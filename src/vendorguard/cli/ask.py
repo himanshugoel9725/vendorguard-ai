@@ -1,3 +1,3 @@
-"""vendorguard.cli.ask module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.cli.ask module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

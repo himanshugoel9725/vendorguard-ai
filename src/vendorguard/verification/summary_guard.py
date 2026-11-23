@@ -1,3 +1,3 @@
-"""vendorguard.verification.summary_guard module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.verification.summary_guard module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

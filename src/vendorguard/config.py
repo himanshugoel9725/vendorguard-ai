@@ -18,7 +18,6 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from pydantic_settings.sources import PydanticBaseEnvSettingsSource
 
 from vendorguard.config_models.core import (
     ApiSettings,
@@ -150,8 +149,12 @@ def _settings_class(yaml_data: dict[str, Any]) -> type[Settings]:
             file_secret_settings: PydanticBaseSettingsSource,
         ) -> tuple[PydanticBaseSettingsSource, ...]:
             """Order the sources."""
-            assert isinstance(env_settings, PydanticBaseEnvSettingsSource)
-            return (init_settings, env_settings, dotenv_settings, _DictSource(settings_cls, yaml_data))
+            return (
+                init_settings,
+                env_settings,
+                dotenv_settings,
+                _DictSource(settings_cls, yaml_data),
+            )
 
     return _Loaded
 
@@ -171,10 +174,12 @@ def load_settings(
         raise ConfigError(f"config file {config_path} must contain a YAML mapping")
     unknown = sorted(set(raw) - set(Settings.model_fields))
     if unknown:
-        raise ConfigError(f"unknown top-level key(s) in {config_path}: {', '.join(map(str, unknown))}")
+        raise ConfigError(
+            f"unknown top-level key(s) in {config_path}: {', '.join(map(str, unknown))}"
+        )
     _reject_yaml_secrets(raw)
     try:
-        return _settings_class(raw)(_env_file=env_file, **(overrides or {}))  # type: ignore[call-arg]
+        return _settings_class(raw)(_env_file=env_file, **(overrides or {}))
     except ValidationError as exc:
         raise ConfigError(_describe(exc)) from exc
 

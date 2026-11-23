@@ -1,3 +1,3 @@
-"""vendorguard.ingest.text_cleaner module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.ingest.text_cleaner module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

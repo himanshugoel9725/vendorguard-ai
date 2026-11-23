@@ -1,4 +1,4 @@
-"""Settings sections for application, paths, documents, retrieval, pipeline, reporting, API, eval."""
+"""Settings sections: app, paths, documents, retrieval, pipeline, reporting, API, eval."""
 
 from pathlib import Path
 from typing import Annotated, Literal

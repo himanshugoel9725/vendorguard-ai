@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 1: Foundation |
-| Next task | 1.6 |
-| Last completed task | 1.5 |
+| Next task | 1.7 |
+| Last completed task | 1.6 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -45,7 +45,7 @@
 - [x] 1.3 config.py (YAML + env + .env, validation, fingerprint)
 - [x] 1.4 errors.py + logging_setup.py (redaction)
 - [x] 1.5 utils: hashing, jsonio, ids, timeutil
-- [ ] 1.6 Makefile, ruff, mypy, pytest, pre-commit
+- [x] 1.6 Makefile, ruff, mypy, pytest, pre-commit
 - [ ] 1.7 conftest + tests (test-writer)
 - [ ] 1.8 CI workflow + Dependabot
 - [ ] 1.9 Checkpoint, push, CI green, tag phase-1-done
@@ -165,10 +165,11 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 - 1.4: `setup_logging(app, secrets)` is called by cli/ and api/ with `collect_secrets(settings)`. Redaction also pattern-matches `Bearer`, `sk-` and `gsk_` tokens; secrets stored under non-`VG_` names are only caught by those patterns.
 - 1.5: `canonical_json` refuses SecretStr, NaN/inf and unknown types on purpose. `make_run_id(vendor_id, input_hashes, config_fingerprint, deterministic=...)`; pass `pipeline.deterministic_run_ids`. In 1.6, consider a ruff banned-api rule so only `utils/timeutil.py` reads the clock (`datetime.now`, `time.time`).
+- 1.6: `make check` = ruff + ruff format --check + mypy strict + pytest. Ruff excludes `*.md` (0.17 reformats code blocks in docs). `make api` calls `python -m vendorguard.api.app` (implement `__main__` reading host/port from settings in 8.1); `make record` expects `vg assess` and `data/samples/specs/*.yaml` (Phases 2 and 6). Coverage gate (`fail_under = 80`) still to be enabled in 3.7. `tests/unit/test_smoke.py` is a placeholder so pytest passes until 1.7.
 - Task 4.8 must add a registry-vs-Literal test (ADR-009).
 
 ## Session log
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1, 1.2, 1.3, 1.4, 1.5 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.6 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

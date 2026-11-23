@@ -1,3 +1,3 @@
-"""vendorguard.providers package: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.providers package: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

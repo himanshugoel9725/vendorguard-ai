@@ -1,3 +1,3 @@
-"""vendorguard.api.routes.vendors module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.api.routes.vendors module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

@@ -1,3 +1,3 @@
-"""vendorguard.reporting.fallback_summary module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.reporting.fallback_summary module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []

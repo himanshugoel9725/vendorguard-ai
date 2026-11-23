@@ -16,7 +16,7 @@ def make_run_id(
     *,
     deterministic: bool,
 ) -> str:
-    """Return ``run_<12 hex>``: the same vendor, inputs and config give the same ID when deterministic.
+    """Return ``run_<12 hex>``; deterministic runs repeat the ID for the same inputs and config.
 
     Pass ``pipeline.deterministic_run_ids`` as ``deterministic``. Random IDs are the one place
     unseeded randomness is allowed, because the setting asks for unique runs.

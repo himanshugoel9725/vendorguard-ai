@@ -1,3 +1,3 @@
-"""vendorguard.scoring.inherent_risk module: stub, implemented in a later task of docs/PLAN.md."""
+"""vendorguard.scoring.inherent_risk module: stub (see docs/PLAN.md)."""
 
 __all__: list[str] = []
