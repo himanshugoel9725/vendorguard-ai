@@ -291,3 +291,29 @@ def test_get_settings_cached(cfg: Path, tmp_path: Path, monkeypatch: pytest.Monk
         assert isinstance(first, Settings)
     finally:
         get_settings.cache_clear()
+
+
+def test_yaml_secret_guard_checks_lists_and_whitespace_values() -> None:
+    """A key hidden in a list of dicts is caught; blank or null secrets are allowed."""
+    from vendorguard.config import _reject_yaml_secrets
+
+    with pytest.raises(ConfigError, match=r"eval\.configs\.0\.api_key"):
+        _reject_yaml_secrets({"eval": {"configs": [{"api_key": "sk-hidden"}]}})
+    with pytest.raises(ConfigError, match="api_key"):
+        _reject_yaml_secrets({"llm": {"api_key": "x"}})
+    _reject_yaml_secrets({"llm": {"api_key": ""}, "a": [{"auth_key": "   "}, {"auth_key": None}]})
+
+
+def test_fingerprint_drops_secretstr_fields_whatever_they_are_called(
+    settings_override: Callable[..., Any],
+) -> None:
+    """Secrets are removed by type, so a renamed SecretStr field could not leak into the hash."""
+    from pydantic import SecretStr
+
+    from vendorguard.config import _strip_secrets
+
+    cleaned = _strip_secrets(
+        {"a": SecretStr("topsecret"), "nested": [{"b": SecretStr("x"), "c": 1}]}
+    )
+    assert cleaned == {"nested": [{"c": 1}]}
+    assert len(settings_override().fingerprint()) == 64

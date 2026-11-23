@@ -289,3 +289,33 @@ def test_secrets_from_settings_never_leak(
     assert AUTH not in out
     assert API not in out
     assert "RuntimeError" in out
+
+
+# Built at runtime so no key-shaped literal appears in the source (secret scanners would flag it).
+GEMINI_STYLE = "AIza" + "Sy" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6q"
+
+
+@pytest.mark.parametrize(
+    ("raw", "leaked"),
+    [
+        (f"key {GEMINI_STYLE}", GEMINI_STYLE),
+        ("Authorization: Basic dXNlcjpwYXNzd29yZA==", "dXNlcjpwYXNzd29yZA"),
+        ("GET https://alice:hunter2pass@example.com/x", "hunter2pass"),
+        ("headers x-api-key: abc123SECRETvalue", "abc123SECRETvalue"),
+        ("params api_key=abc123SECRETvalue&q=1", "abc123SECRETvalue"),
+        ('{"password": "p4ssw0rd!"}', "p4ssw0rd"),
+    ],
+)
+def test_extra_credential_shapes_are_masked_without_knowing_the_value(
+    raw: str, leaked: str
+) -> None:
+    """Gemini keys, Basic auth, URL credentials and key=value pairs are masked by pattern alone."""
+    out = RedactingFilter().redact(raw)
+    assert leaked not in out
+    assert "***" in out
+
+
+def test_ordinary_text_with_key_like_words_is_left_alone() -> None:
+    """Words such as 'tokens' or 'keyboard' are not credentials."""
+    text = "used 120 tokens, keyboard ready, secretary called, passport ok"
+    assert RedactingFilter().redact(text) == text

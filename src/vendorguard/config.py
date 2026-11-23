@@ -4,15 +4,13 @@ Precedence, highest first: explicit overrides (CLI flags) > environment variable
 Only ``cli/`` and ``api/`` may call :func:`get_settings`; other modules receive their section.
 """
 
-import hashlib
-import json
 import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -42,6 +40,7 @@ from vendorguard.config_models.providers import (
 )
 from vendorguard.config_models.scoring import ScoringSettings, VerificationSettings
 from vendorguard.errors import ConfigError
+from vendorguard.utils.hashing import hash_obj
 
 SECRET_KEYS = frozenset({"api_key", "auth_key"})
 CONFIG_PATH_ENV = "VENDORGUARD_CONFIG"
@@ -82,9 +81,7 @@ class Settings(BaseSettings):
 
     def fingerprint(self) -> str:
         """SHA-256 of the canonical non-secret configuration (stored in every run manifest)."""
-        data = _strip_secrets(self.model_dump(mode="json"))
-        canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return hash_obj(_strip_secrets(self.model_dump()))
 
 
 class _DictSource(PydanticBaseSettingsSource):
@@ -104,20 +101,28 @@ class _DictSource(PydanticBaseSettingsSource):
 
 
 def _strip_secrets(value: Any) -> Any:
-    """Return a copy of ``value`` without any key named in SECRET_KEYS, at any depth."""
+    """Copy ``value`` without SecretStr values or keys named in SECRET_KEYS, at any depth."""
     if isinstance(value, dict):
-        return {k: _strip_secrets(v) for k, v in value.items() if k not in SECRET_KEYS}
-    if isinstance(value, list):
-        return [_strip_secrets(v) for v in value]
+        return {
+            k: _strip_secrets(v)
+            for k, v in value.items()
+            if k not in SECRET_KEYS and not isinstance(v, SecretStr)
+        }
+    if isinstance(value, list | tuple):
+        return [_strip_secrets(v) for v in value if not isinstance(v, SecretStr)]
     return value
 
 
 def _reject_yaml_secrets(value: Any, path: tuple[str, ...] = ()) -> None:
-    """Raise ConfigError if any api_key / auth_key in the YAML holds a value."""
-    if isinstance(value, dict):
+    """Raise ConfigError if any api_key / auth_key in the YAML holds a value (lists included)."""
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            _reject_yaml_secrets(item, (*path, str(index)))
+    elif isinstance(value, dict):
         for key, child in value.items():
             here = (*path, str(key))
-            if key in SECRET_KEYS and child not in ("", None):
+            empty = child is None or (isinstance(child, str) and not child.strip())
+            if key in SECRET_KEYS and not empty:
                 env_name = ENV_PREFIX + "__".join(p.upper() for p in here)
                 raise ConfigError(
                     f"secret '{'.'.join(here)}' must stay empty in the YAML file; "

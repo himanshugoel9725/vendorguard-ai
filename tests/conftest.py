@@ -1,5 +1,6 @@
 """Shared fixtures: hermetic settings (mock LLM, no embeddings, temp state and run folders)."""
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -25,8 +26,6 @@ def _deep_merge(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
 @pytest.fixture(autouse=True)
 def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     """Remove VG_* variables so tests never depend on the developer's shell or .env."""
-    import os
-
     for name in [n for n in os.environ if n.startswith("VG_") or n == "VENDORGUARD_CONFIG"]:
         monkeypatch.delenv(name)
 

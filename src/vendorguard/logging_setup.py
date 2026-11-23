@@ -17,6 +17,16 @@ REDACTED = "***"
 _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"), f"Bearer {REDACTED}"),
     (re.compile(r"\b(?:sk|gsk)[-_][A-Za-z0-9_-]{8,}"), REDACTED),
+    (re.compile(r"\bAIza[A-Za-z0-9_-]{20,}"), REDACTED),  # Google / Gemini API keys
+    (re.compile(r"(?i)\bBasic\s+[A-Za-z0-9+/]{8,}=*"), f"Basic {REDACTED}"),
+    (re.compile(r"(?i)://[^/\s:@]+:[^/\s@]+@"), f"://{REDACTED}@"),  # user:password@host
+    (
+        re.compile(
+            r"(?i)\b(x-api-key|api[_-]?key|access[_-]?token|auth[_-]?token|password|passwd|secret)"
+            r"([\"']?\s*[=:]\s*[\"']?)[^\s\"'&,;]+"
+        ),
+        rf"\1\2{REDACTED}",
+    ),
 )
 _HANDLER_TAG = "_vendorguard_handler"
 

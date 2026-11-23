@@ -186,3 +186,10 @@ def test_cross_process_matches_in_process() -> None:
     namespace["_capture"] = captured.append
     exec(compile(code, "<script>", "exec"), namespace)  # noqa: S102
     assert printed == captured
+
+
+def test_dict_keys_that_collide_after_str_are_rejected() -> None:
+    """1 and "1" would serialise to the same key, so two different objects could hash equal."""
+    with pytest.raises(ValueError, match="collide"):
+        canonical_json({1: "a", "1": "b"})
+    assert canonical_json({1: "a", 2: "b"}) == '{"1":"a","2":"b"}'

@@ -25,7 +25,10 @@ def normalize(value: Any) -> Any:
             raise ValueError("NaN and infinity cannot be serialised canonically")
         return round(value, FLOAT_DECIMALS) + 0.0  # + 0.0 turns -0.0 into 0.0
     if isinstance(value, dict):
-        return {str(key): normalize(item) for key, item in value.items()}
+        out = {str(key): normalize(item) for key, item in value.items()}
+        if len(out) != len(value):
+            raise ValueError("dict keys collide after str() conversion (for example 1 and '1')")
+        return out
     if isinstance(value, list | tuple):
         return [normalize(item) for item in value]
     if isinstance(value, set | frozenset):
