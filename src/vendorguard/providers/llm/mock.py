@@ -6,6 +6,7 @@ this provider) and ignores the chat messages. Hints per purpose:
 * ``intake``:   ``{"text": str}`` (the text of the intake chunks)
 * ``mapper``:   ``{"keywords": [str], "chunks": [{"chunk_id": str, "text": str}],``
   ``"max_quote_chars": int (optional)}``
+* ``reviewer``: the same hints as ``mapper`` (it ignores the draft and the flags)
 * ``judge``:    triage ``{"task": "triage", "keywords": [str], "evidence": [str]}``; verify
   ``{"task": "verify", "keywords": [str], "status": str, "quotes": [str]}``; triage also takes an
   optional ``"top_score"`` (best raw BM25 score, default 0). Both use ``verification/rule_logic``
@@ -51,6 +52,7 @@ class MockLLM:
         self._handlers: dict[str, Callable[[Hints], dict[str, Any]]] = {
             "intake": lambda h: extract_profile(str(_need(h, "text"))),
             "mapper": self._mapper,
+            "reviewer": self._mapper,  # re-reads the (wider) evidence with the same keyword rules
             "judge": self._judge,
             "reporter": lambda h: {"summary": mock_reports.summary_text(dict(h))},
             "ask": lambda h: mock_reports.answer(str(_need(h, "question")), list(_need(h, "runs"))),
