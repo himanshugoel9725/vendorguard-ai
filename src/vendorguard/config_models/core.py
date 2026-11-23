@@ -83,6 +83,9 @@ class RetrievalSettings(StrictModel):
     """Hybrid retrieval weights and limits."""
 
     top_k: PositiveInt
+    bm25_k1: PositiveFloat
+    bm25_b: Probability
+    stop_words: list[str]
     bm25_weight: NonNegFloat
     embedding_weight: NonNegFloat
     min_score: Probability

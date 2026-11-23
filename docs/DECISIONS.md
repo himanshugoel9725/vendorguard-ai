@@ -132,3 +132,18 @@
   modules, not settings. (8) The outputs (about 110 KB) are committed, marked as binary in `.gitattributes`, and a test fails when they drift from a fresh generation.
 - **Consequences:** Upgrading fpdf2 can change PDF bytes; run `make sample`, review and commit. Documents are
   short (9 pages): they test mapping and verification, not long-document performance.
+
+## ADR-012: BM25 with the Lucene IDF, tokenizer settings in config
+
+- **Status:** accepted
+- **Context:** `rank-bm25`'s default Okapi IDF is negative for terms found in more than half of the chunks,
+  and makes every match negative in a very small corpus (a one-page upload would never produce a hit).
+  Its `BM25Plus` variant adds its `delta` bonus to chunks that do not contain the term at all.
+- **Decision:** `Bm25Index` uses `BM25Okapi` with the library's own IDF hook overridden by the
+  Lucene/Elasticsearch IDF `log(1 + (N - df + 0.5) / (df + 0.5))`. Scores are rounded to the 6 decimals of
+  canonical JSON and ordered by `(-score, chunk_id)`. `k1`, `b` and the stop-word list live in
+  `retrieval:` in `config/settings.yaml` (stop words are quoted, because unquoted `on`/`no` are YAML
+  booleans); `not` and `no` are deliberately not stop words.
+- **Consequences:** Scores are never negative and a chunk without a query term scores exactly 0. The
+  `rank-bm25` classes are subclassed through a documented extension point and must be re-checked when the
+  library is upgraded (the tests pin the behaviour).

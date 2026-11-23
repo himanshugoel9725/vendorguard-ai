@@ -79,6 +79,9 @@ chunking:
 
 retrieval:
   top_k: 4
+  bm25_k1: 1.5              # BM25 term-frequency saturation
+  bm25_b: 0.75              # BM25 length normalisation (0 = none, 1 = full)
+  stop_words: ["a", "an", "and", "are", "as", "at", "be", "been", "by", "for", "from", "has", "have", "in", "is", "it", "its", "of", "on", "or", "that", "the", "their", "there", "these", "this", "to", "was", "were", "we", "will", "with", "you", "your", "our"]   # quoted: unquoted on/no/off/yes would be read as booleans; 'not' and 'no' are kept out of the list on purpose
   bm25_weight: 0.5
   embedding_weight: 0.5             # ignored when embeddings.provider = none
   min_score: 0.05

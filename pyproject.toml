@@ -69,6 +69,10 @@ strict = true
 files = ["src"]
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["rank_bm25"]
+ignore_missing_imports = true  # the library ships no type stubs
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --import-mode=importlib -m 'not ollama and not letta and not jev'"
