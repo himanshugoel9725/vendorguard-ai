@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 1: Foundation |
-| Next task | 1.2 |
-| Last completed task | 1.1 |
+| Next task | 1.3 |
+| Last completed task | 1.2 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -41,7 +41,7 @@
 
 ### Phase 1: Foundation (125 min)
 - [x] 1.1 pyproject, uv, dependencies, no-HF guard
-- [ ] 1.2 Package skeleton
+- [x] 1.2 Package skeleton
 - [ ] 1.3 config.py (YAML + env + .env, validation, fingerprint)
 - [ ] 1.4 errors.py + logging_setup.py (redaction)
 - [ ] 1.5 utils: hashing, jsonio, ids, timeutil
@@ -169,4 +169,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1, 1.2 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

@@ -1,0 +1,1 @@
+-- SQLite schema for the memory store: stub, implemented in task 7.1.
