@@ -87,6 +87,6 @@ source = ["vendorguard"]
 branch = true
 
 [tool.coverage.report]
-# The 80 % gate (fail_under) is switched on in task 3.7.
+fail_under = 80  # the gate from task 3.7: `make check` and CI fail below this
 show_missing = true
 skip_empty = true

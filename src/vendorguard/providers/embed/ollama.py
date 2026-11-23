@@ -1,5 +1,6 @@
 """Embeddings from a local Ollama server (``POST /api/embed``), in batches, with task prefixes."""
 
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -71,7 +72,10 @@ def _parse(data: Any, expected: int) -> list[list[float]]:
             raise ValueError("an embedding is not a non-empty list")
         if not all(isinstance(x, int | float) and not isinstance(x, bool) for x in vector):
             raise ValueError("an embedding holds non-numeric values")
-        out.append([float(x) for x in vector])
+        floats = [float(x) for x in vector]
+        if not all(math.isfinite(x) for x in floats):
+            raise ValueError("an embedding holds NaN or infinite values")
+        out.append(floats)
     if len({len(v) for v in out}) > 1:
         raise ValueError("embeddings have different dimensions")
     return out
