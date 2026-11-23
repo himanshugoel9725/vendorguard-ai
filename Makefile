@@ -32,7 +32,7 @@ hf: ## Fail if any Hugging Face package, import or endpoint appears
 test-live: ## Tests that need local Ollama / Letta / a Jev key (skipped by default)
 	uv run pytest -o addopts="" -m "ollama or letta or jev"
 
-sample: ## Generate the synthetic sample vendors (deterministic)
+sample: ## Generate the synthetic sample vendors and golden labels (deterministic)
 	uv run python scripts/make_samples.py
 
 record: ## Re-record replay cassettes with local Ollama (writes tests/cassettes/)

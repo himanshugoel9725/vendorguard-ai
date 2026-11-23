@@ -1,0 +1,33 @@
+{
+  "controls": {
+    "DAT-01": "met",
+    "DAT-02": "met",
+    "DAT-03": "no_evidence",
+    "DAT-04": "partial",
+    "DAT-05": "partial",
+    "GOV-01": "met",
+    "GOV-02": "met",
+    "GOV-03": "partial",
+    "IAM-01": "met",
+    "IAM-02": "met",
+    "IAM-03": "met",
+    "IAM-04": "partial",
+    "OPS-01": "met",
+    "OPS-02": "met",
+    "OPS-03": "not_met",
+    "OPS-04": "partial",
+    "PEO-01": "not_met",
+    "PEO-02": "no_evidence",
+    "RES-01": "met",
+    "RES-02": "not_met",
+    "RES-03": "no_evidence",
+    "SDL-01": "met",
+    "SDL-02": "partial",
+    "TPR-01": "no_evidence",
+    "TPR-02": "met"
+  },
+  "expected_inherent_tier": "medium",
+  "report_period": "2025",
+  "stem": "quillfield",
+  "vendor_id": "quillfield"
+}

@@ -1,0 +1,33 @@
+{
+  "controls": {
+    "DAT-01": "partial",
+    "DAT-02": "met",
+    "DAT-03": "no_evidence",
+    "DAT-04": "partial",
+    "DAT-05": "met",
+    "GOV-01": "met",
+    "GOV-02": "met",
+    "GOV-03": "no_evidence",
+    "IAM-01": "met",
+    "IAM-02": "not_met",
+    "IAM-03": "partial",
+    "IAM-04": "no_evidence",
+    "OPS-01": "partial",
+    "OPS-02": "not_met",
+    "OPS-03": "no_evidence",
+    "OPS-04": "met",
+    "PEO-01": "not_met",
+    "PEO-02": "no_evidence",
+    "RES-01": "no_evidence",
+    "RES-02": "not_met",
+    "RES-03": "partial",
+    "SDL-01": "not_met",
+    "SDL-02": "no_evidence",
+    "TPR-01": "no_evidence",
+    "TPR-02": "met"
+  },
+  "expected_inherent_tier": "low",
+  "report_period": "2025",
+  "stem": "brightdock",
+  "vendor_id": "brightdock"
+}
