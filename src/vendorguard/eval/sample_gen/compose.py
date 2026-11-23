@@ -68,18 +68,22 @@ def _section(
 
 
 def _paginate(blocks: list[Block], settings: SamplesSettings) -> list[list[Block]]:
-    """Fill pages by line budget; blocks are never split and a heading stays with its paragraph."""
+    """Fill pages by line budget; blocks are never split and a heading always shares a page
+    with its first paragraph, even when the budget is too small for both."""
     pages: list[list[Block]] = [[]]
     used = 0
+    keep_with_previous = False
     for index, block in enumerate(blocks):
         cost = block_cost(block, settings.wrap_chars)
+        needed = cost
         if block.kind == "heading" and index + 1 < len(blocks):
-            cost += block_cost(blocks[index + 1], settings.wrap_chars)
-        if pages[-1] and used + cost > settings.lines_per_page:
+            needed += block_cost(blocks[index + 1], settings.wrap_chars)
+        if pages[-1] and not keep_with_previous and used + needed > settings.lines_per_page:
             pages.append([])
             used = 0
         pages[-1].append(block)
-        used += block_cost(block, settings.wrap_chars)
+        used += cost
+        keep_with_previous = block.kind == "heading"
     return pages
 
 
