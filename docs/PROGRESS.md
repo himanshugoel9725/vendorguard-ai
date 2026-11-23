@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 5: Agents and the decision layer |
-| Next task | 5.6 |
-| Last completed task | 5.5 |
+| Next task | 5.7 |
+| Last completed task | 5.6 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -87,7 +87,7 @@
 - [x] 5.3 Mapper Agent
 - [x] 5.4 Citation checker
 - [x] 5.5 Rule decider
-- [ ] 5.6 LLM-judge decider
+- [x] 5.6 LLM-judge decider
 - [ ] 5.7 Jev decider + fallback
 - [ ] 5.8 Reviewer Agent
 - [ ] 5.9 Rules engine + bands
@@ -170,6 +170,7 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
 - Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 5.6: `prompts/judge.v1.md` (one prompt, `task` = triage|verify; documents in `<document>` tags; the signal phrases come from `decision.rule.*`) + `providers/decide/llm_judge.py` `LlmJudgeDecider(llm, prompts, audit, cost, settings.decision.rule)`, name `llm_judge`; an internal `BaseAgent` (`name='judge'`) so every call writes ONE audit event (stage `judge`, control_id). The label comes from `JudgeOutput`; a label of the wrong kind degrades safely (triage -> addressed at confidence 0 so nothing is skipped; verify -> unsupported so the Reviewer looks). On the mock it agrees 100 % with the rule decider (same `rule_logic`). FACTORY CHANGE: `DECIDERS` builders are now `(settings, deps: DeciderDeps | None)`; `build_decider(settings, deps=None)`; `DeciderDeps(llm, prompts, audit, cost)`; `llm_judge` without deps is a ConfigError, so the orchestrator (6.2) must pass deps. Not tried on a real model yet (use `make test-live`/hosted later; a prompt change = judge.v2 + `make record`). 5.7: jev and mock deciders are still missing from the registry (tighten the equality test then).
 - 5.5: `verification/rule_logic.py` (`triage_verdict`, `verify_verdict`, `Verdict`) is the ONE rule formula; `providers/decide/rule.py` `RuleDecider(settings.decision.rule)` and the mock LLM judge both call it (mock hint `top_score` optional). Registered in `DECIDERS['rule']`; 4.8's equality test for the decider registry still to be tightened when 5.7 registers the last entry (llm_judge 5.6, jev 5.7, mock 5.7). ADR-015: the retrieval floor uses raw cosine (`vector_raw`), NOT BM25 (unbounded). MEASURED on the 4 samples (BM25-only, mock mapper): triage skips 15 of 100 control checks, 0 wrongly; verify supports every mock draft (0 unsupported). The Decision thresholds `triage_threshold`/`verify_threshold` are applied by the cascade (6.2), not by the decider. 5.6 LLM judge must follow the same labels; 5.11 adds edge tests.
 - 5.4: `verification/text_normalize.py` `normalize_text` (NFKC, curly quotes/dashes to ASCII, casefold, whitespace collapsed) and `verification/citation_check.py` `CitationChecker(settings.verification).check(status, draft_citations, chunks) -> CitationReport(citations, ok, problems)`. Exact normalised substring = 1.0; else best-window difflib ratio (window aligned from the matching blocks) >= `citation_min_similarity`; unknown chunk_id or quote longer than `max_quote_chars` = invalid; doc_id/page attached; `ok` is false if any quote is invalid OR the status is in `require_citation_for` and no quote is valid. `problems` hold no quote text (safe for audit/reviewer flags). The cascade (6.2) must pass the SAME chunks the Mapper saw (plus the Reviewer's extra chunks). Tests: `tests/unit/verification/test_citation_check.py` (8); 5.11 adds edge/property tests. Not yet wired into a factory or audit event (cascade, 6.2).
 - 5.3: `prompts/mapper.v1.md` + `agents/mapper.py` `MapperAgent(llm, prompts, audit, cost, settings.verification, settings.decision.rule).map(control, evidence: Sequence[ScoredChunk]) -> DraftFinding`. No evidence -> `no_evidence` finding WITHOUT a model call or audit event. Chunks are sent sorted by chunk_id in `<document>` tags; the negative/partial signal phrases in the prompt come from `decision.rule.*_signal_phrases` (one list for prompt and rule decider). Mock hints `{keywords, chunks, max_quote_chars}`. Mock mapper matches the golden labels 100 % on all 4 samples (target 85 %). Not yet tried on a real model; citations are verified in 5.4.
@@ -207,4 +208,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.5 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.6 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

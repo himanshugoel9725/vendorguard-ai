@@ -11,6 +11,7 @@ from typing import Any
 from vendorguard.config import Settings
 from vendorguard.config_models.providers import CacheSettings
 from vendorguard.errors import ConfigError
+from vendorguard.interfaces.audit import AuditSink
 from vendorguard.interfaces.cache import CacheBackend
 from vendorguard.interfaces.decider import Decider
 from vendorguard.interfaces.embedder import Embedder
@@ -19,6 +20,7 @@ from vendorguard.interfaces.memory import MemoryStore
 from vendorguard.observability.cost_tracker import CostTracker
 from vendorguard.providers.cache.jsonl_cache import JsonlCache
 from vendorguard.providers.cache.sqlite_cache import SqliteCache
+from vendorguard.providers.decide.llm_judge import LlmJudgeDecider
 from vendorguard.providers.decide.rule import RuleDecider
 from vendorguard.providers.embed.cached import CachedEmbedder
 from vendorguard.providers.embed.null import NullEmbedder
@@ -28,6 +30,7 @@ from vendorguard.providers.llm.cached import CachedLLM
 from vendorguard.providers.llm.mock import MockLLM
 from vendorguard.providers.llm.ollama import OllamaLLM
 from vendorguard.providers.llm.openai_compat import OpenAICompatLLM
+from vendorguard.utils.prompt_loader import PromptLoader
 
 Builder = Callable[[Settings], Any]
 
@@ -51,9 +54,30 @@ CACHE_BACKENDS: dict[str, Callable[[CacheSettings], CacheBackend]] = {
     "sqlite": lambda c: SqliteCache(c.sqlite_path),
     "jsonl": lambda c: JsonlCache(c.jsonl_dir),
 }
-DECIDERS: dict[str, Callable[[Settings], Decider]] = {
-    "rule": lambda s: RuleDecider(s.decision.rule),
-}  # llm_judge, jev, mock: 5.6, 5.7
+
+
+@dataclass(frozen=True)
+class DeciderDeps:
+    """What a model-backed decider needs besides the settings (the rule decider needs none)."""
+
+    llm: LLMClient
+    prompts: PromptLoader
+    audit: AuditSink
+    cost: CostTracker
+
+
+def _llm_judge(s: Settings, deps: DeciderDeps | None) -> Decider:
+    if deps is None:
+        raise ConfigError(
+            "the llm_judge decider needs an LLM, prompts, an audit sink and a cost tracker"
+        )
+    return LlmJudgeDecider(deps.llm, deps.prompts, deps.audit, deps.cost, s.decision.rule)
+
+
+DECIDERS: dict[str, Callable[[Settings, DeciderDeps | None], Decider]] = {
+    "rule": lambda s, _deps: RuleDecider(s.decision.rule),
+    "llm_judge": _llm_judge,
+}  # jev, mock: 5.7
 MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {}  # sqlite, letta: Phase 7
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached
@@ -113,9 +137,9 @@ def build_cache(settings: Settings) -> CacheBackend | None:
     return _lookup(CACHE_BACKENDS, settings.cache.backend, "cache backend")(settings.cache)
 
 
-def build_decider(settings: Settings) -> Decider:
-    """The configured decider (rule, llm_judge, jev, mock): added with Phase 5."""
-    return _lookup(DECIDERS, settings.decision.provider, "decision")(settings)
+def build_decider(settings: Settings, deps: DeciderDeps | None = None) -> Decider:
+    """The configured decider (rule, llm_judge, jev, mock); model-backed ones need ``deps``."""
+    return _lookup(DECIDERS, settings.decision.provider, "decision")(settings, deps)
 
 
 def build_memory_store(settings: Settings) -> MemoryStore:
@@ -162,6 +186,7 @@ def build_providers(settings: Settings) -> Providers:
 __all__ = [
     "CACHE_BACKENDS",
     "DECIDERS",
+    "DeciderDeps",
     "EMBEDDERS",
     "LLM_PROVIDERS",
     "MEMORY_STORES",
