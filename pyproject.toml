@@ -75,11 +75,12 @@ ignore_missing_imports = true  # the library ships no type stubs
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --import-mode=importlib -m 'not ollama and not letta and not jev'"
+addopts = "-ra --strict-markers --import-mode=importlib -m 'not ollama and not letta and not jev and not hosted'"
 markers = [
     "ollama: needs a local Ollama server (skipped by default)",
     "letta: needs a Letta server (skipped by default)",
     "jev: needs a Jev API key (skipped by default)",
+    "hosted: calls a hosted LLM with your API key (OpenAI spends credits, Groq uses its free plan; skipped by default)",
 ]
 
 [tool.coverage.run]

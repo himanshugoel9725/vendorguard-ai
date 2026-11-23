@@ -6,7 +6,8 @@ from collections.abc import Callable, Sequence
 from pydantic import BaseModel, ValidationError
 
 from vendorguard.errors import SchemaValidationError
-from vendorguard.models.llm import ChatMessage, Usage
+from vendorguard.models.llm import ChatMessage, LLMResult, Usage
+from vendorguard.utils.timeutil import monotonic_s
 
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL | re.IGNORECASE)
 
@@ -75,4 +76,31 @@ def complete_with_repair[T: BaseModel](
     raise AssertionError("unreachable")  # the loop always returns or raises  # noqa: S101
 
 
-__all__ = ["complete_with_repair", "describe_problem", "extract_json", "repair_messages"]
+def run_chat[T: BaseModel](
+    send: Callable[[Sequence[ChatMessage]], tuple[str, Usage]],
+    messages: Sequence[ChatMessage],
+    output_model: type[T],
+    *,
+    provider: str,
+    model: str,
+    repair_attempts: int,
+) -> LLMResult[T]:
+    """``complete_with_repair`` wrapped into an ``LLMResult`` with the call's latency."""
+    started = monotonic_s()
+    parsed, usage = complete_with_repair(send, messages, output_model, repair_attempts)
+    return LLMResult[T](
+        parsed=parsed,
+        usage=usage,
+        provider=provider,
+        model=model,
+        latency_ms=round((monotonic_s() - started) * 1000, 3),
+    )
+
+
+__all__ = [
+    "complete_with_repair",
+    "describe_problem",
+    "extract_json",
+    "repair_messages",
+    "run_chat",
+]

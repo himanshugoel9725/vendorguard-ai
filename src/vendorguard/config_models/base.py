@@ -17,7 +17,7 @@ NonNegInt = Annotated[int, Field(ge=0)]
 PositiveFloat = Annotated[float, Field(gt=0.0)]
 NonNegFloat = Annotated[float, Field(ge=0.0)]
 
-LlmProvider = Literal["ollama", "openai_compat", "mock"]
+LlmProvider = Literal["ollama", "openai", "groq", "openai_compat", "mock"]
 EmbeddingsProvider = Literal["ollama", "none"]
 DeciderProvider = Literal["rule", "llm_judge", "jev", "mock"]
 MemoryProvider = Literal["sqlite", "letta"]

@@ -28,6 +28,7 @@ env/
 .ruff_cache/
 .hypothesis/
 .coverage
+.coverage *
 .coverage.*
 coverage.xml
 htmlcov/
@@ -84,3 +85,4 @@ CLAUDE.local.md
 *.swp
 .DS_Store
 Thumbs.db
+*.nosync

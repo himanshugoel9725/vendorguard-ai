@@ -24,11 +24,13 @@ Temperature = Annotated[float, Field(ge=0.0, le=2.0)]
 
 
 class OpenAICompatSettings(StrictModel):
-    """Hosted OpenAI-compatible endpoint (OpenAI, Groq, Gemini, OpenRouter). api_key is a secret."""
+    """One hosted OpenAI-compatible endpoint profile (OpenAI, Groq, ...). api_key is a secret."""
 
     base_url: str
     model: str
     response_format: Literal["json_schema", "json_object"]
+    max_tokens_field: Literal["max_tokens", "max_completion_tokens"]
+    omit_params: list[Literal["temperature", "top_p", "seed"]]
     api_key: SecretStr
 
 
@@ -47,6 +49,9 @@ class LlmSettings(StrictModel):
     retry_backoff_s: NonNegFloat
     max_retries: NonNegInt
     json_repair_attempts: NonNegInt
+    max_retry_wait_s: NonNegFloat
+    openai: OpenAICompatSettings
+    groq: OpenAICompatSettings
     openai_compat: OpenAICompatSettings
 
 

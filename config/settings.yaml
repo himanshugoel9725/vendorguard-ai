@@ -35,7 +35,8 @@ prompts:                            # active prompt version per agent (files in 
 
 # -----------------------------------------------------------------------------
 # LLM for the worker agents.
-# provider: ollama ($0, local) | openai_compat (Gemini/Groq/OpenAI/OpenRouter) | mock ($0, CI)
+# provider: ollama ($0, local) | openai | groq (free plan) | openai_compat (any other
+# OpenAI-compatible endpoint, e.g. Gemini or OpenRouter) | mock ($0, CI)
 # -----------------------------------------------------------------------------
 llm:
   provider: ollama
@@ -50,10 +51,27 @@ llm:
   retry_backoff_s: 1.0  # pause between retries (connection errors and 5xx only)
   max_retries: 2                    # retries on connection errors / 5xx only
   json_repair_attempts: 1           # re-ask once if the output fails schema validation
-  openai_compat:                    # used only when provider = openai_compat
-    base_url: https://generativelanguage.googleapis.com/v1beta/openai/   # Gemini; or Groq / OpenAI / OpenRouter
+  max_retry_wait_s: 60              # longest Retry-After (HTTP 429) the client will wait for; a longer one fails at once
+  openai:                           # provider = openai (paid: check cost.* before a real run)
+    base_url: https://api.openai.com/v1
+    model: gpt-6-luna               # cheapest current OpenAI model on 2026-11-23; verify on the pricing page
+    response_format: json_schema    # json_schema | json_object (use json_object if the model rejects schemas)
+    max_tokens_field: max_completion_tokens
+    omit_params: []                 # request fields the model rejects, e.g. [temperature, top_p, seed]
+    api_key: ""                     # keep empty - set VG_LLM__OPENAI__API_KEY in .env
+  groq:                             # provider = groq (free plan: strict rate limits, see ADR-014)
+    base_url: https://api.groq.com/openai/v1
+    model: openai/gpt-oss-20b       # cheapest production model with structured outputs on 2026-11-23
+    response_format: json_schema
+    max_tokens_field: max_completion_tokens
+    omit_params: []
+    api_key: ""                     # keep empty - set VG_LLM__GROQ__API_KEY in .env
+  openai_compat:                    # provider = openai_compat (any other OpenAI-compatible endpoint)
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/   # Gemini; or OpenRouter etc.
     model: gemini-2.5-flash         # verify the provider's current model name
-    response_format: json_schema    # json_schema | json_object
+    response_format: json_schema
+    max_tokens_field: max_tokens
+    omit_params: []
     api_key: ""                     # keep empty - set VG_LLM__OPENAI_COMPAT__API_KEY in .env
 
 embeddings:
@@ -207,6 +225,8 @@ cost:
     "ollama/*": {input: 0.0, output: 0.0}
     "mock/*": {input: 0.0, output: 0.0}
     "jev/*": {input: 0.042, output: 0.0}
+    "openai/gpt-6-luna": {input: 0.10, output: 0.50}   # official OpenAI list price, 2026-11-23
+    "groq/openai/gpt-oss-20b": {input: 0.0, output: 0.0}   # free plan (list price would be 0.075 / 0.30)
     "openai_compat/*": {input: 0.0, output: 0.0}   # free tier; set real prices if you pay
 
 reporting:

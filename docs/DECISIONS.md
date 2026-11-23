@@ -168,3 +168,28 @@
   computed vectors; a cached vector that is not a non-empty list of finite numbers is treated as a miss.
 - **Consequences:** The scaled score is a ranking aid only. Cleaning and loading can no longer produce text
   that cannot be hashed or encoded.
+
+## ADR-014: Named hosted-LLM profiles, a shared HTTP retry helper, and 429 handling
+
+- **Status:** accepted
+- **Context:** The plan has one `llm.openai_compat` block and one key slot, but the project uses two hosted
+  providers (OpenAI, paid; Groq, free plan) and wants to switch with one line. Groq's free plan has tight rate
+  limits (tokens per minute and per day), so HTTP 429 is routine, not exceptional.
+- **Decision:** (1) `llm.openai`, `llm.groq` and the generic `llm.openai_compat` are separate profiles (base URL,
+  model, response format, token-limit field name, parameters to omit, key), selected by `llm.provider`; one class,
+  `OpenAICompatLLM(name, llm, profile)`, serves all three and the profile name is the provider name. Keys:
+  `VG_LLM__OPENAI__API_KEY`, `VG_LLM__GROQ__API_KEY`, `VG_LLM__OPENAI_COMPAT__API_KEY`. (2) Defaults were chosen from
+  the providers' official pages on 2026-11-23: OpenAI `gpt-6-luna` ($0.10 / $0.50 per 1M tokens; the cheaper
+  `gpt-5-nano` is deprecated) and Groq `openai/gpt-oss-20b` ($0.075 / $0.30 list, $0 on the free plan, documented
+  strict structured outputs). OpenAI does not document JSON-schema support for `gpt-6-luna` on those pages, so
+  `response_format` and `omit_params` are settings and the repair loop covers a miss. (3) `json_schema` is sent
+  best-effort (not `strict`), because strict mode rejects schemas with defaults or bounds; validation and the
+  repair loop enforce the contract. (4) `providers/llm/_http.py` is the one place for retries: connection
+  errors and 5xx always, HTTP 429 for hosted providers; the pause is the longer of `llm.retry_backoff_s` and the
+  server's `Retry-After`, and a `Retry-After` above `llm.max_retry_wait_s` fails at once (a daily quota should not
+  put a run to sleep). Read timeouts and other 4xx are never retried. (5) A 401/403 reports only the status and the
+  variable to check, never the server text (providers echo masked keys); other server messages are redacted.
+  Keys travel only in the `Authorization` header. (6) Live tests are marked `hosted`, are skipped by default and
+  by `make test-live`, and run only with `make test-hosted`.
+- **Consequences:** Switching provider is `llm.provider: groq`. A free-plan run will be slow rather than failing.
+  Prices must be kept in `cost.prices_per_million_tokens` (keys `openai/<model>`, `groq/<model>`).

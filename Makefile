@@ -1,6 +1,12 @@
 # VendorGuard AI developer commands. Everything is offline and free unless a target says otherwise.
 .DEFAULT_GOAL := help
-.PHONY: help setup fmt lint type test check hf test-live sample record eval api \
+
+# The repository lives in an iCloud-synced folder, which corrupts a virtual environment named .venv
+# (hidden-file flags, conflict copies, a renamed symlink). Keep it where iCloud ignores it, and do
+# not create a `.venv` at all: run uv through this variable (point your editor at .venv.nosync).
+export UV_PROJECT_ENVIRONMENT ?= .venv.nosync
+
+.PHONY: help setup fmt lint type test check hf test-live test-hosted sample record eval api \
         letta-up letta-down docs docs-config doctor clean
 
 help: ## Show this help
@@ -31,6 +37,9 @@ hf: ## Fail if any Hugging Face package, import or endpoint appears
 
 test-live: ## Tests that need local Ollama / Letta / a Jev key (skipped by default)
 	uv run pytest -o addopts="" -m "ollama or letta or jev"
+
+test-hosted: ## One tiny real call per hosted LLM with a key set (OpenAI spends a few cents; asks nothing else)
+	uv run pytest -o addopts="" -m hosted tests/live -s -q --no-cov
 
 sample: ## Generate the synthetic sample vendors and golden labels (deterministic)
 	uv run python scripts/make_samples.py

@@ -5,27 +5,14 @@ from typing import Any, TypeVar
 
 import httpx
 from pydantic import BaseModel
-from tenacity import (
-    RetryError,
-    Retrying,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_fixed,
-)
 
 from vendorguard.config_models.providers import LlmSettings
 from vendorguard.errors import LLMError
 from vendorguard.models.llm import ChatMessage, LLMResult, Usage
-from vendorguard.providers.llm._json import complete_with_repair
-from vendorguard.utils.timeutil import monotonic_s
+from vendorguard.providers.llm._http import MAX_ERROR_CHARS, post_json
+from vendorguard.providers.llm._json import run_chat
 
 T = TypeVar("T", bound=BaseModel)
-MAX_ERROR_CHARS = 200
-_RETRY_CONNECT = (httpx.ConnectError, httpx.ConnectTimeout)
-
-
-class _ServerError(Exception):
-    """An HTTP 5xx answer; the only status that is retried."""
 
 
 class OllamaLLM:
@@ -53,19 +40,13 @@ class OllamaLLM:
         ``llm.json_repair_attempts`` times, with the tokens of every call added up.
         """
         schema = output_model.model_json_schema()
-        started = monotonic_s()
-        parsed, usage = complete_with_repair(
+        return run_chat(
             lambda conversation: self._chat(conversation, schema),
             messages,
             output_model,
-            self._settings.json_repair_attempts,
-        )
-        return LLMResult[T](
-            parsed=parsed,
-            usage=usage,
             provider=self.provider,
             model=self.model,
-            latency_ms=round((monotonic_s() - started) * 1000, 3),
+            repair_attempts=self._settings.json_repair_attempts,
         )
 
     def close(self) -> None:
@@ -87,28 +68,16 @@ class OllamaLLM:
                 "num_predict": s.max_output_tokens,
             },
         }
-        retrying = Retrying(
-            stop=stop_after_attempt(s.max_retries + 1),
-            wait=wait_fixed(s.retry_backoff_s),
-            retry=retry_if_exception_type((*_RETRY_CONNECT, _ServerError)),
-            reraise=False,
+        response = post_json(
+            self._client,
+            self._url,
+            body,
+            label="Ollama",
+            max_retries=s.max_retries,
+            backoff_s=s.retry_backoff_s,
+            max_wait_s=s.max_retry_wait_s,
         )
-        try:
-            response = retrying(self._post, body)
-        except RetryError as exc:
-            cause = exc.last_attempt.exception()
-            raise LLMError(
-                f"Ollama failed after {s.max_retries + 1} attempts ({type(cause).__name__})"
-            ) from cause
-        except httpx.HTTPError as exc:
-            raise LLMError(f"Ollama chat request failed ({type(exc).__name__})") from exc
         return _read_reply(response)
-
-    def _post(self, body: dict[str, Any]) -> httpx.Response:
-        response = self._client.post(self._url, json=body)
-        if response.status_code >= 500:
-            raise _ServerError(f"HTTP {response.status_code}")
-        return response
 
 
 def _read_reply(response: httpx.Response) -> tuple[str, Usage]:
