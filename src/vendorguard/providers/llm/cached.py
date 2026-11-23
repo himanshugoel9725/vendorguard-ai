@@ -1,6 +1,6 @@
 """Record/replay cache around any LLM client: ``off``, ``read_write`` or ``read_only``."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -32,6 +32,7 @@ class CachedLLM:
         cache: CacheBackend | None,
         mode: CacheMode,
         params: Mapping[str, Any],
+        on_hit: Callable[[], None] | None = None,
     ) -> None:
         self.provider = inner.provider
         self.model = inner.model
@@ -41,6 +42,7 @@ class CachedLLM:
         self._cache = cache
         self._mode: CacheMode = mode if cache is not None else "off"
         self._params = dict(params)
+        self._on_hit = on_hit
 
     def complete_json(
         self,
@@ -65,6 +67,8 @@ class CachedLLM:
         replay = self._replay(key, output_model)
         if replay is not None:
             self.hits += 1
+            if self._on_hit:
+                self._on_hit()
             return replay
         self.misses += 1
         if self._mode == "read_only":

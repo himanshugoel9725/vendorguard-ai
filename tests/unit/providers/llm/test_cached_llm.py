@@ -237,3 +237,14 @@ def test_record_to_cassettes_and_replay_them_read_only(tmp_path: Path) -> None:
     replay = CachedLLM(reader_inner, JsonlCache(folder), "read_only", {"seed": 1})
     assert _ask(replay).parsed == recorded and reader_inner.calls == 0
     assert (folder / "mapper.jsonl").read_text().count("\n") == 1
+
+
+def test_on_hit_is_called_for_every_replay_and_only_then() -> None:
+    inner, store = Inner(), DictCache()
+    seen: list[int] = []
+    llm = CachedLLM(inner, store, "read_write", {"seed": 1}, on_hit=lambda: seen.append(1))
+    _ask(llm)
+    assert seen == []
+    _ask(llm)
+    _ask(llm)
+    assert seen == [1, 1] and llm.hits == 2
