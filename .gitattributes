@@ -1,3 +1,4 @@
 # Generated samples and golden labels must stay byte-exact (no line-ending or text conversion).
 data/samples/** -text
 data/golden/** -text
+tests/cassettes/** -text

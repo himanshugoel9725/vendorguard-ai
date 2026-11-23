@@ -8,7 +8,7 @@ from typing import Any
 from vendorguard.errors import EmbeddingError
 from vendorguard.interfaces.cache import CacheBackend
 from vendorguard.interfaces.embedder import Embedder
-from vendorguard.utils.hashing import hash_obj, sha256_text
+from vendorguard.providers.cache.keys import embedding_key
 
 PURPOSE = "embedding"
 log = logging.getLogger(__name__)
@@ -34,14 +34,7 @@ class CachedEmbedder:
 
     def key(self, prefix: str, text: str) -> str:
         """Cache key: hash of the model, the prefix and the SHA-256 of the text (never the text)."""
-        return hash_obj(
-            {
-                "kind": PURPOSE,
-                "model": self.model,
-                "prefix": prefix,
-                "text_sha256": sha256_text(text),
-            }
-        )
+        return embedding_key(self.model, prefix, text)
 
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         """Vectors in input order; cached ones are reused, the rest are computed in one call."""
