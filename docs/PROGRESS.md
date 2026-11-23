@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 1: Foundation |
-| Next task | 1.4 |
-| Last completed task | 1.3 |
+| Next task | 1.5 |
+| Last completed task | 1.4 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -43,7 +43,7 @@
 - [x] 1.1 pyproject, uv, dependencies, no-HF guard
 - [x] 1.2 Package skeleton
 - [x] 1.3 config.py (YAML + env + .env, validation, fingerprint)
-- [ ] 1.4 errors.py + logging_setup.py (redaction)
+- [x] 1.4 errors.py + logging_setup.py (redaction)
 - [ ] 1.5 utils: hashing, jsonio, ids, timeutil
 - [ ] 1.6 Makefile, ruff, mypy, pytest, pre-commit
 - [ ] 1.7 conftest + tests (test-writer)
@@ -163,10 +163,11 @@
 
 Half-finished work, uncommitted changes, or things the next session must know:
 
-- 1.3: `errors.py` holds only VendorGuardError + ConfigError; task 1.4 extends it. Task 4.8 must add a registry-vs-Literal test (ADR-009).
+- 1.4: `setup_logging(app, secrets)` is called by cli/ and api/ with `collect_secrets(settings)`. Redaction also pattern-matches `Bearer`, `sk-` and `gsk_` tokens; secrets stored under non-`VG_` names are only caught by those patterns.
+- Task 4.8 must add a registry-vs-Literal test (ADR-009).
 
 ## Session log
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1, 1.2, 1.3 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1, 1.2, 1.3, 1.4 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
