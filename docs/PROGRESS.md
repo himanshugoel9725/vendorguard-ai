@@ -7,40 +7,40 @@
 
 | Field | Value |
 |---|---|
-| Current phase | 0: Setup (👤 user) |
-| Next task | 0.1 |
-| Last completed task | none |
-| Last updated | not yet |
+| Current phase | 1: Foundation |
+| Next task | 1.2 |
+| Last completed task | 1.1 |
+| Last updated | 2026-11-23 |
 | Blockers | none |
 
 ## Environment facts (fill in during Phase 0)
 
 | Fact | Value |
 |---|---|
-| Mac RAM | ? GB |
-| Local LLM (`llm.model`) | qwen2.5:7b (use qwen2.5:3b with 8 GB RAM) |
+| Mac RAM | 16 GB, Intel x86_64 (CPU-only Ollama, slow) |
+| Local LLM (`llm.model`) | qwen2.5:3b pulled (Intel CPU-only; settings.yaml still says 7b, change at Phase 4) |
 | Embedding model | nomic-embed-text |
-| Docker Desktop installed | ? |
+| Docker Desktop installed | no (needed only for self-hosted Letta, Phase 7) |
 | Jev access route | none yet (TypeSafe console / OpenRouter / Vercel AI Gateway / Cloudflare) |
 | Letta mode | self_hosted (cloud only for the final demo) |
-| Hosted LLM fallback | none |
+| Hosted LLM fallback | OpenAI (paid) and Groq (free), keys in .env; use synthetic docs only |
 
 ## Checklist
 
 ### Phase 0: Setup 👤 (77 min)
-- [ ] 0.1 Install git, gh, uv, ollama; VS Code + Claude Code
-- [ ] 0.2 Pull Ollama models (qwen2.5:7b or 3b, nomic-embed-text)
-- [ ] 0.3 Smoke-test the model
-- [ ] 0.4 Connect the folder to the GitHub repo
-- [ ] 0.5 Unzip the starter kit, create `.env`
-- [ ] 0.6 Fix the repo description and topics
-- [ ] 0.7 First commit and push
+- [x] 0.1 Install git, gh, uv, ollama; VS Code + Claude Code
+- [x] 0.2 Pull Ollama models (qwen2.5:7b or 3b, nomic-embed-text)
+- [x] 0.3 Smoke-test the model
+- [x] 0.4 Connect the folder to the GitHub repo
+- [x] 0.5 Unzip the starter kit, create `.env`
+- [x] 0.6 Fix the repo description and topics
+- [x] 0.7 First commit and push
 - [ ] 0.8 Install Docker Desktop
-- [ ] 0.9 (Optional) Jev access, Letta Cloud key, both in `.env` only
-- [ ] 0.10 Open Claude Code and send the first message
+- [x] 0.9 (Optional) Jev access, Letta Cloud key, both in `.env` only
+- [x] 0.10 Open Claude Code and send the first message
 
 ### Phase 1: Foundation (125 min)
-- [ ] 1.1 pyproject, uv, dependencies, no-HF guard
+- [x] 1.1 pyproject, uv, dependencies, no-HF guard
 - [ ] 1.2 Package skeleton
 - [ ] 1.3 config.py (YAML + env + .env, validation, fingerprint)
 - [ ] 1.4 errors.py + logging_setup.py (redaction)
@@ -169,4 +169,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| | | |
+| 2026-11-23 | Phase 0, 1.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
