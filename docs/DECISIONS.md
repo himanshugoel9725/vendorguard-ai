@@ -211,3 +211,19 @@
 - **Cache writes never lose a paid answer:** a failing write is logged (class name only) in `CachedLLM`, as
   it already was in `CachedEmbedder`. JSONL cassettes are compacted through a temporary file and an atomic
   rename, and the JSONL cache has a lock. `json_repair_attempts` is part of the cache key.
+
+## ADR-015: Rule triage floor uses raw cosine similarity, not BM25 (task 5.5)
+
+- **Context.** PLAN 5.5 says triage passes on "keyword hits >= `triage_min_keyword_hits` OR top score >=
+  `triage_min_retrieval_score`" (0.15, a probability). Raw BM25 is unbounded and the fused `score` is scaled so
+  the top chunk is always 1.0, so neither can meet a 0..1 floor. Measured on the 4 samples with BM25-only
+  retrieval: controls the document does not cover still reach a raw BM25 of up to 20, while keyword hits
+  separate perfectly (covered controls 2-4 hits, uncovered 0). With the BM25 floor, triage skipped nothing.
+- **Decision.** The floor applies to the best raw cosine similarity (`ScoredChunk.vector_raw`, 0 when there
+  are no embeddings). Without embeddings the keyword rule alone decides: 15 of 100 control checks are skipped
+  without a model call, 0 of them wrongly. With embeddings the floor is mostly met (cosines are high), so fewer
+  skips: the safe direction.
+- **One formula.** `verification/rule_logic.py` holds triage and verify for both `RuleDecider` and the mock
+  judge (which gained an optional `top_score` hint). Verify reads the WHOLE quote with `read_status` and has
+  confidence 1.0 (binary rules); triage confidence is 0.5 + 0.5 * hits / keywords when addressed, 0.5 for a
+  near miss, 1.0 for a clean miss.

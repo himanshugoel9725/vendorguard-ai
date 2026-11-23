@@ -7,7 +7,8 @@ this provider) and ignores the chat messages. Hints per purpose:
 * ``mapper``:   ``{"keywords": [str], "chunks": [{"chunk_id": str, "text": str}],``
   ``"max_quote_chars": int (optional)}``
 * ``judge``:    triage ``{"task": "triage", "keywords": [str], "evidence": [str]}``; verify
-  ``{"task": "verify", "keywords": [str], "status": str, "quotes": [str]}``
+  ``{"task": "verify", "keywords": [str], "status": str, "quotes": [str]}``; triage also takes an
+  optional ``"top_score"`` (best raw BM25 score, default 0). Both use ``verification/rule_logic``
 * ``reporter``: ``{"vendor_name", "overall", "band", "counts": {status: n}, "gaps": [control ids]}``
 * ``ask``:      ``{"question": str, "runs": [{"run_id", "overall", "band",``
   ``"findings": {id: status}}]}`` (newest run first)
@@ -22,13 +23,12 @@ from pydantic import BaseModel, ValidationError
 
 from vendorguard.config_models.providers import RuleDeciderSettings
 from vendorguard.errors import LLMError, SchemaValidationError
-from vendorguard.models.decision import DecisionLabel
 from vendorguard.models.finding import DraftStatus
 from vendorguard.models.llm import ChatMessage, LLMResult, Usage
 from vendorguard.providers.llm import mock_reports
 from vendorguard.providers.llm.mock_intake import extract_profile
-from vendorguard.utils.keywords import matching_phrases
 from vendorguard.verification.keyword_reading import first_sentence_with, read_status
+from vendorguard.verification.rule_logic import triage_verdict, verify_verdict
 
 T = TypeVar("T", bound=BaseModel)
 Hints = Mapping[str, Any]
@@ -106,46 +106,19 @@ class MockLLM:
 
     def _judge(self, hints: Hints) -> dict[str, Any]:
         task, keywords = _need(hints, "task"), list(_need(hints, "keywords"))
-        total = max(len(keywords), 1)
         if task == "triage":
-            hits = matching_phrases(" ".join(_need(hints, "evidence")), keywords)
-            needed = max(self._rules.triage_min_keyword_hits, 1)
-            if len(hits) >= needed:
-                return _verdict(
-                    DecisionLabel.ADDRESSED, min(1.0, 0.5 + 0.5 * len(hits) / total), hits
-                )
-            return _verdict(DecisionLabel.NOT_ADDRESSED, 0.5 if hits else 1.0, hits)
-        if task == "verify":
-            return self._verify(
-                DraftStatus(_need(hints, "status")), list(_need(hints, "quotes")), keywords
-            )
-        raise LLMError(f"the mock judge does not know the task '{task}'")
-
-    def _verify(
-        self, status: DraftStatus, quotes: list[str], keywords: list[str]
-    ) -> dict[str, Any]:
-        if status is DraftStatus.NO_EVIDENCE:
-            supported = not quotes
-            hits: list[str] = []
+            top = float(hints.get("top_score", 0.0))
+            verdict = triage_verdict(list(_need(hints, "evidence")), keywords, top, self._rules)
+        elif task == "verify":
+            status = DraftStatus(_need(hints, "status"))
+            verdict = verify_verdict(status, list(_need(hints, "quotes")), keywords, self._rules)
         else:
-            first = first_sentence_with(quotes, keywords)
-            hits = matching_phrases(" ".join(quotes), keywords)
-            coverage = len(hits) / max(len(keywords), 1)
-            supported = (
-                first is not None
-                and coverage >= self._rules.verify_min_keyword_coverage
-                and read_status(first[0], self._rules) is status
-            )
-        label = DecisionLabel.SUPPORTED if supported else DecisionLabel.UNSUPPORTED
-        return _verdict(label, 1.0, hits)
-
-
-def _verdict(label: DecisionLabel, confidence: float, hits: list[str]) -> dict[str, Any]:
-    return {
-        "label": label.value,
-        "confidence": round(confidence, 6),
-        "reason": f"Keyword baseline: {len(hits)} keyword(s) matched.",
-    }
+            raise LLMError(f"the mock judge does not know the task '{task}'")
+        return {
+            "label": verdict.label.value,
+            "confidence": verdict.confidence,
+            "reason": f"Keyword baseline: {len(verdict.hits)} keyword(s) matched.",
+        }
 
 
 __all__ = ["MockLLM"]

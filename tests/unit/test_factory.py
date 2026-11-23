@@ -101,11 +101,12 @@ def test_a_hosted_provider_without_a_key_fails_early_naming_the_variable(
         factory.build_providers(settings_override(llm={"provider": "openai"}))
 
 
-def test_deciders_and_memory_are_not_implemented_yet_with_a_clear_message(
+def test_rule_decider_is_built_and_memory_is_not_implemented_yet(
     settings_override: Make,
 ) -> None:
-    with pytest.raises(ConfigError, match=r"decision provider 'rule' is not implemented yet"):
-        factory.build_decider(settings_override())
+    assert factory.build_decider(settings_override()).name == "rule"
+    with pytest.raises(ConfigError, match=r"decision provider 'jev' is not implemented yet"):
+        factory.build_decider(settings_override(decision={"provider": "jev"}))
     with pytest.raises(ConfigError, match=r"memory provider 'sqlite' is not implemented yet"):
         factory.build_memory_store(settings_override())
 

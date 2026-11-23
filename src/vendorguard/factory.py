@@ -19,6 +19,7 @@ from vendorguard.interfaces.memory import MemoryStore
 from vendorguard.observability.cost_tracker import CostTracker
 from vendorguard.providers.cache.jsonl_cache import JsonlCache
 from vendorguard.providers.cache.sqlite_cache import SqliteCache
+from vendorguard.providers.decide.rule import RuleDecider
 from vendorguard.providers.embed.cached import CachedEmbedder
 from vendorguard.providers.embed.null import NullEmbedder
 from vendorguard.providers.embed.ollama import OllamaEmbedder
@@ -50,7 +51,9 @@ CACHE_BACKENDS: dict[str, Callable[[CacheSettings], CacheBackend]] = {
     "sqlite": lambda c: SqliteCache(c.sqlite_path),
     "jsonl": lambda c: JsonlCache(c.jsonl_dir),
 }
-DECIDERS: dict[str, Callable[[Settings], Decider]] = {}  # rule, llm_judge, jev, mock: Phase 5
+DECIDERS: dict[str, Callable[[Settings], Decider]] = {
+    "rule": lambda s: RuleDecider(s.decision.rule),
+}  # llm_judge, jev, mock: 5.6, 5.7
 MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {}  # sqlite, letta: Phase 7
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached
