@@ -5,7 +5,8 @@ import math
 from collections.abc import Sequence
 from typing import Any
 
-from vendorguard.errors import EmbeddingError
+from vendorguard.config_models.base import CacheMode
+from vendorguard.errors import CacheMissError, EmbeddingError
 from vendorguard.interfaces.cache import CacheBackend
 from vendorguard.interfaces.embedder import Embedder
 from vendorguard.providers.cache.keys import embedding_key
@@ -18,17 +19,26 @@ class CachedEmbedder:
     """Looks each text up in the cache and sends only the misses to the wrapped embedder.
 
     ``hits`` and ``misses`` count distinct lookups (a text repeated within one call counts once).
-    The prefixes belong in the key so that changing them never serves stale vectors.
+    The prefixes belong in the key so that changing them never serves stale vectors. ``mode`` is the
+    cache mode: ``off`` bypasses the cache, ``read_write`` records misses, ``read_only`` replays and
+    raises ``CacheMissError`` for a text that was not recorded.
     """
 
     def __init__(
-        self, inner: Embedder, cache: CacheBackend, doc_prefix: str, query_prefix: str
+        self,
+        inner: Embedder,
+        cache: CacheBackend,
+        doc_prefix: str,
+        query_prefix: str,
+        *,
+        mode: CacheMode = "read_write",
     ) -> None:
         self.model = inner.model
         self.hits = 0
         self.misses = 0
         self._inner = inner
         self._cache = cache
+        self._mode = mode
         self._doc_prefix = doc_prefix
         self._query_prefix = query_prefix
 
@@ -38,6 +48,8 @@ class CachedEmbedder:
 
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         """Vectors in input order; cached ones are reused, the rest are computed in one call."""
+        if self._mode == "off":
+            return self._inner.embed_documents(texts)
         keys = [self.key(self._doc_prefix, text) for text in texts]
         found: dict[str, list[float]] = {}
         missing: dict[str, str] = {}
@@ -50,6 +62,12 @@ class CachedEmbedder:
             else:
                 found[key] = vector
                 self.hits += 1
+        if missing and self._mode == "read_only":
+            self.misses += len(missing)
+            raise CacheMissError(
+                f"{len(missing)} text(s) have no recorded embedding (cache is read-only): "
+                "run make record"
+            )
         if missing:
             computed = self._inner.embed_documents(list(missing.values()))
             if len(computed) != len(missing):
@@ -62,11 +80,18 @@ class CachedEmbedder:
 
     def embed_query(self, text: str) -> list[float]:
         """The vector of a query, cached like a document."""
+        if self._mode == "off":
+            return self._inner.embed_query(text)
         key = self.key(self._query_prefix, text)
         vector = self._lookup(key)
         if vector is not None:
             self.hits += 1
             return vector
+        if self._mode == "read_only":
+            self.misses += 1
+            raise CacheMissError(
+                "no recorded embedding for a query (cache is read-only): run make record"
+            )
         vector = self._inner.embed_query(text)
         self._store(key, vector)
         self.misses += 1
