@@ -89,3 +89,20 @@
   ignored; unknown keys inside the YAML are errors.
 - **Consequences:** Adding a provider means editing one Literal plus the registry. A mistyped top-level
   `VG_` variable (for example `VG_LLMM__MODEL`) is silently ignored; mistyped section keys are rejected.
+
+## ADR-010: Data-contract details for the models package
+
+- **Status:** accepted
+- **Context:** `docs/PLAN.md` section 7 lists the contracts but leaves some details open, and `CLAUDE.md`
+  forbids hard-coded tunables.
+- **Decision:** (1) Bounds that appear in a schema sent to the LLM (at most 3 citations, 60-word rationale,
+  20 items and 200 characters per profile field) are constants next to the model, not settings, because
+  changing them changes the JSON schema and therefore needs a new prompt version and re-recorded
+  cassettes. Quote length is still checked against `verification.max_quote_chars` by the citation checker.
+  (2) The LLM returns `DraftCitation(chunk_id, quote)`; `Citation` extends it with document, page, validity
+  and similarity after checking, so the model is not shown fields it must not fill. (3) `StatusChange` uses
+  `from_status` / `to_status` because `from` is a Python keyword. (4) The citation gate is traced as a
+  `Decision` with provider `citation_check`. (5) All contracts are frozen with `extra="forbid"`, datetimes
+  must be timezone-aware, and `AssessmentResult` rejects findings that are unsorted or duplicated.
+  (6) `models/llm.py` (`ChatMessage`, `Usage`, `LLMResult`) stays a stub until task 4.1.
+- **Consequences:** Prompt-facing schemas stay small; the diff and manifest shapes are fixed early.

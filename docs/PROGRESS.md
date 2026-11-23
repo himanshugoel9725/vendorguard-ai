@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 2: Domain models, controls, synthetic vendors |
-| Next task | 2.1 |
-| Last completed task | 1.9 (phase-1-done, not yet pushed) |
+| Next task | 2.2 |
+| Last completed task | 2.1 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -51,7 +51,7 @@
 - [x] 1.9 Checkpoint, push, CI green, tag phase-1-done
 
 ### Phase 2: Models, controls, synthetic vendors (125 min)
-- [ ] 2.1 Pydantic data contracts
+- [x] 2.1 Pydantic data contracts
 - [ ] 2.2 Control-set loader
 - [ ] 2.3 Vendor specs (nimbara-hr, quillfield, brightdock, nimbara-hr-y2)
 - [ ] 2.4 Phrase bank + deterministic PDF/TXT generator + evidence maps
@@ -169,10 +169,12 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.7: 206 tests, 83 % coverage. pytest uses `--import-mode=importlib` (duplicate test basenames are fine). `settings_override(**nested_overrides)` fixture in `tests/conftest.py` is hermetic (mock LLM, temp paths, never reads .env); overrides deep-merge with the YAML, so a nested dict cannot empty a table.
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
+- Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 2.1: models in `src/vendorguard/models/` (see ADR-010). Tests for them come in 2.6.
 - Task 4.8 must add a registry-vs-Literal test (ADR-009).
 
 ## Session log
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
