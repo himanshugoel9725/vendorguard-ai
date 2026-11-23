@@ -45,11 +45,11 @@ llm:
   temperature: 0.0
   seed: 42
   top_p: 1.0
-  max_output_tokens: 800
+  max_output_tokens: 800            # reasoning models (gpt-oss, gpt-6-*) count reasoning tokens here: raise it if replies are cut off
   context_window: 8192              # Ollama num_ctx
   timeout_s: 180
-  retry_backoff_s: 1.0  # pause between retries (connection errors and 5xx only)
-  max_retries: 2                    # retries on connection errors / 5xx only
+  retry_backoff_s: 1.0  # first pause between retries; doubles each attempt, capped by max_retry_wait_s
+  max_retries: 2                    # retries on connection errors, 5xx and (hosted providers) 429
   json_repair_attempts: 1           # re-ask once if the output fails schema validation
   max_retry_wait_s: 60              # longest Retry-After (HTTP 429) the client will wait for; a longer one fails at once
   openai:                           # provider = openai (paid: check cost.* before a real run)

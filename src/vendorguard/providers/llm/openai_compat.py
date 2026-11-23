@@ -16,11 +16,12 @@ from vendorguard.errors import ConfigError, LLMError
 from vendorguard.logging_setup import RedactingFilter
 from vendorguard.models.llm import ChatMessage, LLMResult, Usage
 from vendorguard.providers.llm._http import MAX_ERROR_CHARS, post_json
-from vendorguard.providers.llm._json import run_chat
+from vendorguard.providers.llm._json import run_chat, with_paid_usage
 
 T = TypeVar("T", bound=BaseModel)
 AUTH_STATUSES = frozenset({401, 403})
 RATE_LIMIT_STATUS = 429
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})  # plain http is fine locally
 
 
 class OpenAICompatLLM:
@@ -37,6 +38,11 @@ class OpenAICompatLLM:
         self._env_name = f"VG_LLM__{name.upper()}__API_KEY"
         if not self._key:
             raise ConfigError(f"no API key for llm.{name}: set {self._env_name} in .env")
+        url = httpx.URL(profile.base_url)
+        if url.scheme != "https" and url.host not in LOOPBACK_HOSTS:
+            raise ConfigError(
+                f"llm.{name}.base_url must use https because every request carries the API key"
+            )
         self.provider = name
         self.model = profile.model
         self._llm = llm
@@ -131,18 +137,34 @@ class OpenAICompatLLM:
             raise LLMError(f"{self.provider} returned HTTP {status}: {self._detail(response)}")
         try:
             data = response.json()
-            message = data["choices"][0]["message"]
+            choice = data["choices"][0]
+            message = choice["message"]
             content = message.get("content")
+            finish = choice.get("finish_reason")
         except (ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
             raise LLMError(f"unusable {self.provider} chat response (no message)") from exc
+        raw = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+        usage = Usage(
+            tokens_in=_count(raw.get("prompt_tokens")),
+            tokens_out=_count(raw.get("completion_tokens")),
+        )
+        if (
+            finish == "length"
+        ):  # the reply was cut off: re-asking would pay again for the same limit
+            raise with_paid_usage(
+                LLMError(
+                    f"{self.provider}: the reply was cut off at llm.max_output_tokens "
+                    f"({self._llm.max_output_tokens}); raise it (reasoning models also count "
+                    "their reasoning tokens against this limit)"
+                ),
+                usage,
+            )
         if not isinstance(content, str) or not content.strip():
             reason = "the model refused" if message.get("refusal") else "empty reply"
-            raise LLMError(f"unusable {self.provider} chat response ({reason})")
-        usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
-        return content, Usage(
-            tokens_in=_count(usage.get("prompt_tokens")),
-            tokens_out=_count(usage.get("completion_tokens")),
-        )
+            raise with_paid_usage(
+                LLMError(f"unusable {self.provider} chat response ({reason})"), usage
+            )
+        return content, usage
 
     def _detail(self, response: httpx.Response) -> str:
         try:

@@ -193,3 +193,21 @@
   by `make test-live`, and run only with `make test-hosted`.
 - **Consequences:** Switching provider is `llm.provider: groq`. A free-plan run will be slow rather than failing.
   Prices must be kept in `cost.prices_per_million_tokens` (keys `openai/<model>`, `groq/<model>`).
+
+### ADR-014 addendum (Phase 4 review)
+
+- **Spend is always charged.** A call that fails after paid attempts (invalid replies that were re-asked, or a
+  later HTTP error) carries `paid_usage` on its exception and the budget guard charges it. A call that crosses
+  a limit still returns its paid answer (so the cache can keep it) and the NEXT call is refused. Overspend is
+  bounded, not zero: calls in flight (one per worker), HTTP retries inside a call and repair re-asks can each
+  spend beyond the cap before `ensure_budget` refuses.
+- **The mock is free and not counted:** it is neither cached nor budgeted, so a keyword-baseline run reports
+  0 LLM calls (as the README table says) and `max_llm_calls_per_run` can never stop a mock run.
+- **A reply cut off at `llm.max_output_tokens`** (`finish_reason: length` / Ollama `done_reason: length`) is a
+  clear, non-retried `LLMError` (reasoning models count reasoning tokens against that limit).
+- **Retry pauses double** each attempt (`retry_backoff_s`, then 2x, 4x ...), never beyond
+  `max_retry_wait_s`, with no jitter so runs stay deterministic. `Retry-After` still wins when longer.
+- **Keys only travel over `https`** (or to a loopback host): any other `base_url` is a ConfigError.
+- **Cache writes never lose a paid answer:** a failing write is logged (class name only) in `CachedLLM`, as
+  it already was in `CachedEmbedder`. JSONL cassettes are compacted through a temporary file and an atomic
+  rename, and the JSONL cache has a lock. `json_repair_attempts` is part of the cache key.

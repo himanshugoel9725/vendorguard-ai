@@ -126,13 +126,17 @@ def test_hints_with_pydantic_models_work_or_fail_clearly() -> None:
     assert not _ask(llm, hints={"h": Hint(name="y")}).cached
 
 
-def test_a_failing_put_propagates_from_complete_json_after_the_client_call() -> None:
-    """Documents current behaviour: cache write errors are not swallowed."""
+def test_a_failing_put_never_loses_the_paid_answer(caplog: pytest.LogCaptureFixture) -> None:
+    """A cache write error is logged (class name only) and the answer is still returned."""
     inner, cache = Inner(), DictCache(fail_put=True)
     llm = CachedLLM(inner, cache, "read_write", {"seed": 1})
-    with pytest.raises(OSError, match="disk full"):
-        _ask(llm)
+    with caplog.at_level("WARNING"):
+        result = _ask(llm)
+    assert result.parsed.answer and result.cached is False
     assert inner.calls == 1 and cache.puts == 1 and llm.misses == 1
+    assert (
+        "could not cache an LLM answer (OSError)" in caplog.text and "disk full" not in caplog.text
+    )
 
 
 def test_read_only_entry_for_another_output_model_is_a_miss() -> None:

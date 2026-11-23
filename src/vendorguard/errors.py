@@ -2,7 +2,13 @@
 
 
 class VendorGuardError(Exception):
-    """Base class for every error raised on purpose by VendorGuard."""
+    """Base class for every error raised on purpose by VendorGuard.
+
+    ``paid_usage`` is ``(tokens_in, tokens_out)`` that an LLM call had already paid for when it
+    failed (for example repair attempts), so the budget guard can still charge them.
+    """
+
+    paid_usage: tuple[int, int] | None = None
 
 
 class ConfigError(VendorGuardError):

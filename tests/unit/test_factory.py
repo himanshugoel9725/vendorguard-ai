@@ -113,10 +113,10 @@ def test_deciders_and_memory_are_not_implemented_yet_with_a_clear_message(
 # --- nesting -------------------------------------------------------------------------------------
 
 
-def test_the_mock_is_budgeted_but_never_cached(settings_override: Make) -> None:
+def test_the_mock_is_neither_budgeted_nor_cached(settings_override: Make) -> None:
     p = factory.build_providers(settings_override(llm={"provider": "mock"}))
-    assert isinstance(p.llm, BudgetedLLM) and not isinstance(p.llm, CachedLLM)
-    assert p.llm.provider == "mock"
+    assert isinstance(p.llm, MockLLM)
+    assert not isinstance(p.llm, BudgetedLLM | CachedLLM)
 
 
 def test_a_real_provider_is_cached_around_the_budget_guard(settings_override: Make) -> None:
@@ -161,6 +161,7 @@ def test_cache_params_cover_generation_settings_and_hosted_profile_options(
 ) -> None:
     base_params = factory.llm_cache_params(settings_override(llm={"provider": "ollama"}))
     assert set(base_params) == {
+        "json_repair_attempts",
         "temperature",
         "seed",
         "top_p",
@@ -270,13 +271,13 @@ def test_embeddings_honour_the_cache_mode(settings_override: Make, tmp_path: Pat
     assert off.embedder.embed_query("anything") == [1.0, 2.0]
 
 
-def test_mock_runs_are_counted_and_free(settings_override: Make) -> None:
+def test_mock_runs_are_free_and_not_counted_as_llm_calls(settings_override: Make) -> None:
     p = factory.build_providers(settings_override())
     hints = {"keywords": ["mfa"], "chunks": [{"chunk_id": "a:p001:c000", "text": "MFA is on."}]}
     result = p.llm.complete_json([], DraftFinding, purpose="mapper", hints=hints)
     assert result.parsed.status.value == "met" and result.cached is False
     s = p.tracker.summary()
-    assert (s.llm_calls, s.cache_hits, s.tokens_in, s.tokens_out, s.usd) == (1, 0, 0, 0, 0.0)
+    assert (s.llm_calls, s.cache_hits, s.tokens_in, s.tokens_out, s.usd) == (0, 0, 0, 0, 0.0)
 
 
 @pytest.mark.parametrize("backend", ["sqlite", "jsonl"])

@@ -55,7 +55,9 @@ def test_5xx_is_always_retried_and_headers_are_sent() -> None:
 
 
 @respx.mock
-def test_the_wait_is_the_longer_of_backoff_and_retry_after(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_wait_is_the_longer_of_the_doubling_backoff_and_retry_after(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     waits: list[float] = []
     monkeypatch.setattr("tenacity.nap.time.sleep", waits.append)
     respx.post(URL).mock(
@@ -66,7 +68,7 @@ def test_the_wait_is_the_longer_of_backoff_and_retry_after(monkeypatch: pytest.M
         ]
     )
     _post(httpx.Client(), backoff_s=1.0, max_retries=2)
-    assert waits == [2.0, 1.0]  # max(1, 2) then max(1, 0.5)
+    assert waits == [2.0, 2.0]  # max(1, 2), then max(2, 0.5): the backoff doubled
 
 
 @respx.mock

@@ -10,7 +10,7 @@ from vendorguard.config_models.providers import LlmSettings
 from vendorguard.errors import LLMError
 from vendorguard.models.llm import ChatMessage, LLMResult, Usage
 from vendorguard.providers.llm._http import MAX_ERROR_CHARS, post_json
-from vendorguard.providers.llm._json import run_chat
+from vendorguard.providers.llm._json import run_chat, with_paid_usage
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -88,12 +88,22 @@ def _read_reply(response: httpx.Response) -> tuple[str, Usage]:
         content = data["message"]["content"]
     except (ValueError, KeyError, TypeError) as exc:
         raise LLMError("unusable Ollama chat response (no message content)") from exc
-    if not isinstance(content, str):
-        raise LLMError("unusable Ollama chat response (content is not text)")
     usage = Usage(
         tokens_in=_count(data.get("prompt_eval_count")),
         tokens_out=_count(data.get("eval_count")),
     )
+    if not isinstance(content, str):
+        raise with_paid_usage(
+            LLMError("unusable Ollama chat response (content is not text)"), usage
+        )
+    if data.get("done_reason") == "length":
+        raise with_paid_usage(
+            LLMError(
+                "Ollama: the reply was cut off at llm.max_output_tokens; raise it "
+                "(or use a larger context_window)"
+            ),
+            usage,
+        )
     return content, usage
 
 

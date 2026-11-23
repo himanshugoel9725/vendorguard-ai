@@ -3,9 +3,14 @@
 import re
 from typing import Any
 
+from vendorguard.models.finding import DraftStatus
+
 CONTROL_ID = re.compile(r"\b[A-Z]{3}-\d{2}\b")
-_CHANGE_WORDS = ("change", "changed", "since", "diff", "differ", "improve", "worse", "new gap")
-_OK = "met"
+_CHANGE_WORDS = re.compile(
+    r"\b(?:change[sd]?|since|diff|differ(?:s|ed|ent|ences?)?|improv\w*|worse|new gaps?)\b",
+    re.IGNORECASE,
+)
+_OK = DraftStatus.MET.value
 
 
 def summary_text(facts: dict[str, Any]) -> str:
@@ -38,7 +43,7 @@ def answer(question: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
     latest = runs[0]
     findings: dict[str, str] = latest["findings"]
     asked = sorted({c for c in CONTROL_ID.findall(question) if c in findings})
-    if len(runs) > 1 and any(w in question.lower() for w in _CHANGE_WORDS):
+    if len(runs) > 1 and _CHANGE_WORDS.search(question):
         previous = runs[1]
         before, after = set(_gaps(previous["findings"])), set(_gaps(findings))
         new, resolved = sorted(after - before), sorted(before - after)

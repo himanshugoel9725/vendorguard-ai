@@ -1,5 +1,6 @@
 """Record/replay cache around any LLM client: ``off``, ``read_write`` or ``read_only``."""
 
+import logging
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypeVar
 
@@ -13,6 +14,7 @@ from vendorguard.models.llm import ChatMessage, LLMResult, Usage
 from vendorguard.providers.cache.keys import llm_key
 
 T = TypeVar("T", bound=BaseModel)
+log = logging.getLogger(__name__)
 
 
 class CachedLLM:
@@ -76,16 +78,16 @@ class CachedLLM:
                 f"no recorded answer for a '{purpose}' call (cache is read-only): run make record"
             )
         result = self._inner.complete_json(messages, output_model, purpose=purpose, hints=hints)
-        self._cache.put(
-            key,
-            {
-                "parsed": result.parsed.model_dump(mode="json"),
-                "usage": result.usage.model_dump(),
-                "provider": result.provider,
-                "model": result.model,
-            },
-            purpose=purpose,
-        )
+        entry = {
+            "parsed": result.parsed.model_dump(mode="json"),
+            "usage": result.usage.model_dump(),
+            "provider": result.provider,
+            "model": result.model,
+        }
+        try:
+            self._cache.put(key, entry, purpose=purpose)
+        except Exception as exc:  # the answer is already paid for: a cache problem must not lose it
+            log.warning("could not cache an LLM answer (%s)", type(exc).__name__)
         return result
 
     def _replay(self, key: str, output_model: type[T]) -> LLMResult[T] | None:

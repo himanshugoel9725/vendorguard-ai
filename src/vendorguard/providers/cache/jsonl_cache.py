@@ -5,7 +5,9 @@ rewrites every file sorted by key with one line per key, so committed cassettes 
 """
 
 import json
+import os
 import re
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -21,40 +23,50 @@ class JsonlCache:
     def __init__(self, directory: Path) -> None:
         self._dir = directory
         self._dirty = False  # becomes True once something is recorded
+        self._lock = threading.Lock()
         self._entries: dict[str, tuple[str, dict[str, Any]]] = {}  # key -> (purpose, value)
         for path in sorted(directory.glob("*.jsonl")) if directory.is_dir() else []:
             self._load(path)
 
     def get(self, key: str) -> dict[str, Any] | None:
         """The recorded value, or ``None`` on a miss."""
-        entry = self._entries.get(key)
+        with self._lock:
+            entry = self._entries.get(key)
         return entry[1] if entry else None
 
     def put(self, key: str, value: dict[str, Any], *, purpose: str) -> None:
         """Record ``value``: remembered in memory and appended to ``<purpose>.jsonl``."""
         if not _PURPOSE.match(purpose):
             raise ValueError(f"unsafe cache purpose {purpose!r}")
-        self._dir.mkdir(parents=True, exist_ok=True)
-        with (self._dir / f"{purpose}.jsonl").open("a", encoding="ascii") as handle:
-            handle.write(_line(key, value))
-        self._entries[key] = (purpose, value)
-        self._dirty = True
+        with self._lock:
+            self._dir.mkdir(parents=True, exist_ok=True)
+            with (self._dir / f"{purpose}.jsonl").open("a", encoding="ascii") as handle:
+                handle.write(_line(key, value))
+            self._entries[key] = (purpose, value)
+            self._dirty = True
 
     def save(self) -> None:
         """Rewrite every purpose file sorted by key, one line per key (compaction).
 
         Does nothing unless something was recorded, so a replay never touches the cassettes.
         """
-        if not self._dirty:
-            return
-        self._dirty = False
+        with self._lock:
+            if not self._dirty:
+                return
+            self._dirty = False
+            self._write_sorted()
+
+    def _write_sorted(self) -> None:
         by_purpose: dict[str, list[tuple[str, dict[str, Any]]]] = {}
         for key, (purpose, value) in self._entries.items():
             by_purpose.setdefault(purpose, []).append((key, value))
         self._dir.mkdir(parents=True, exist_ok=True)
         for purpose, items in sorted(by_purpose.items()):
             text = "".join(_line(k, v) for k, v in sorted(items))
-            (self._dir / f"{purpose}.jsonl").write_text(text, encoding="ascii")
+            target = self._dir / f"{purpose}.jsonl"
+            temporary = target.with_suffix(".jsonl.tmp")  # a crash must never truncate a cassette
+            temporary.write_text(text, encoding="ascii")
+            os.replace(temporary, target)
 
     def close(self) -> None:
         """Compact the files if anything was recorded."""

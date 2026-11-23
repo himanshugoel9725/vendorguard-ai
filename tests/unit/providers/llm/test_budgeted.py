@@ -87,13 +87,16 @@ def test_the_call_budget_stops_the_run_and_the_extra_call_is_never_made(
     assert inner.calls == 3
 
 
-def test_the_dollar_budget_stops_the_run_after_the_call_that_crossed_it(
-    tracker: Callable[..., CostTracker],
+def test_the_call_that_crosses_the_dollar_budget_still_returns_its_paid_answer(
+    tracker: Callable[..., CostTracker], caplog: pytest.LogCaptureFixture
 ) -> None:
+    """The answer was paid for, so it is returned (and can be cached); the NEXT call is refused."""
     inner = Inner(tokens=2_000_000)  # 2M in + 2M out at 0.10 / 0.50 = $1.20
-    llm = BudgetedLLM(inner, tracker(max_usd_per_run=0.50))
-    with pytest.raises(BudgetExceededError, match="above cost.max_usd_per_run"):
-        _ask(llm)
+    t = tracker(max_usd_per_run=0.50)
+    llm = BudgetedLLM(inner, t)
+    with caplog.at_level("WARNING"):
+        assert _ask(llm).parsed.answer == "a"
+    assert "above cost.max_usd_per_run" in caplog.text and t.summary().usd == 1.2
     with pytest.raises(BudgetExceededError, match="reached cost.max_usd_per_run"):
         _ask(llm, "again")
     assert inner.calls == 1

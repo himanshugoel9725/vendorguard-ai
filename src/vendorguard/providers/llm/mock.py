@@ -68,7 +68,12 @@ class MockLLM:
         handler = self._handlers.get(purpose)
         if handler is None:
             raise LLMError(f"the mock LLM does not know the purpose '{purpose}'")
-        data = handler(hints or {})
+        try:
+            data = handler(hints or {})
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            raise LLMError(
+                f"the mock LLM got malformed hints for '{purpose}' ({type(exc).__name__})"
+            ) from exc
         try:
             parsed = output_model.model_validate(data)
         except ValidationError as exc:

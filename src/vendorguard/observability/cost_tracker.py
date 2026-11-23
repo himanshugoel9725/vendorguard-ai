@@ -22,6 +22,10 @@ class CostTracker:
 
     Dollars are summed as exact decimals so the totals do not depend on float rounding.
     Cache hits are counted separately and cost nothing. Safe to share between threads.
+
+    Overspend is bounded, not zero: the limit is checked before a call and charged after it, so
+    calls already in flight (one per worker thread), the retries inside a call and its repair
+    re-asks can all spend beyond the cap before the next ``ensure_budget`` refuses.
     """
 
     def __init__(self, settings: CostSettings) -> None:

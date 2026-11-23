@@ -54,6 +54,7 @@ DECIDERS: dict[str, Callable[[Settings], Decider]] = {}  # rule, llm_judge, jev,
 MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {}  # sqlite, letta: Phase 7
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached
+UNBUDGETED_LLM_PROVIDERS = frozenset({"mock"})  # ... and never counted or capped (0 LLM calls)
 UNCACHED_EMBEDDERS = frozenset({"none"})
 
 
@@ -90,6 +91,7 @@ def llm_cache_params(settings: Settings) -> dict[str, Any]:
         "top_p": llm.top_p,
         "max_output_tokens": llm.max_output_tokens,
         "context_window": llm.context_window,
+        "json_repair_attempts": llm.json_repair_attempts,  # changes the answer when a reply is bad
     }
     if llm.provider in ("openai", "groq", "openai_compat"):
         profile = getattr(llm, llm.provider)
@@ -122,8 +124,9 @@ def build_providers(settings: Settings) -> Providers:
     """Create the LLM, embedder, cache and cost tracker of a run and nest them correctly.
 
     LLM: ``CachedLLM(BudgetedLLM(client))``, so only real calls are checked and paid and replays
-    still work after the budget is spent. Embeddings: ``CachedEmbedder(client)``. The mock LLM and
-    the ``none`` embedder are never cached.
+    still work after the budget is spent. Embeddings: ``CachedEmbedder(client)``. The mock LLM is
+    neither cached nor budgeted (free, deterministic, not counted as an LLM call) and the ``none``
+    embedder is never cached.
     """
     tracker = CostTracker(settings.cost)
     cache = build_cache(settings)
@@ -133,7 +136,9 @@ def build_providers(settings: Settings) -> Providers:
     for client in (raw_llm, raw_embedder):
         if hasattr(client, "close"):
             closers.append(client.close)
-    llm: LLMClient = BudgetedLLM(raw_llm, tracker)
+    llm: LLMClient = raw_llm
+    if settings.llm.provider not in UNBUDGETED_LLM_PROVIDERS:
+        llm = BudgetedLLM(raw_llm, tracker)
     embedder = raw_embedder
     if cache is not None:
         mode = settings.cache.mode

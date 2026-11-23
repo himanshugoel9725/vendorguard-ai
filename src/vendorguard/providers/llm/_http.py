@@ -58,7 +58,8 @@ def post_json(
 ) -> httpx.Response:
     """POST ``body`` as JSON; retry connection errors, every 5xx and ``retry_statuses``.
 
-    The pause before a retry is ``backoff_s`` or the server's ``Retry-After``, whichever is longer.
+    The pause before a retry is ``backoff_s`` doubled each attempt, or the server's ``Retry-After``
+    if that is longer, never more than ``max_wait_s``.
     A ``Retry-After`` above ``max_wait_s`` fails at once. Any other status is returned to the
     caller. Raises LLMError (``label`` names the provider) when the call cannot be completed.
     """
@@ -75,7 +76,8 @@ def post_json(
     def pause(state: RetryCallState) -> float:
         error = state.outcome.exception() if state.outcome else None
         asked = error.retry_after if isinstance(error, _Retryable) else None
-        return min(max(backoff_s, asked or 0.0), max_wait_s) if asked else backoff_s
+        delay = float(backoff_s * 2 ** (state.attempt_number - 1))  # exponential, no jitter
+        return min(max(delay, asked or 0.0), max_wait_s)
 
     retrying = Retrying(
         stop=stop_after_attempt(max_retries + 1),
