@@ -32,7 +32,7 @@ Administrator accounts are restricted for most systems, and privileged access ma
 
 Employees can reset forgotten passwords through the self-service page.Section 3: Data handling
 
-Customer data is stored in the region chosen by the customer at signup.
+The sections that follow describe how customer information is handled day to day.
 
 Databases use encryption at rest with AES-256, and disk encryption for file storage is on the roadmap.
 

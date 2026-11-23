@@ -14,7 +14,6 @@ from vendorguard.models.control import ControlSet
 from vendorguard.models.vendor import DataCategory
 from vendorguard.utils.keywords import matching_phrases
 
-MIN_OWN_KEYWORDS = 2  # triage needs two keyword hits and verify a coverage of 2/6 (tasks 5.5)
 COUNTS = {"met": (2, 3), "partial": (1, 2), "not_met": (1, 1)}
 
 
@@ -89,8 +88,9 @@ def _lint_phrasing(
     problems = []
     if len(split_sentences(text)) != 1 or not text.endswith("."):
         problems.append(f"{tag} must be exactly one sentence ending with a full stop")
-    if len(matching_phrases(text, keywords)) < MIN_OWN_KEYWORDS:
-        problems.append(f"{tag} needs at least {MIN_OWN_KEYWORDS} of the control's keywords")
+    wanted = max(rules.triage_min_keyword_hits, 1)  # what the rule decider's triage gate needs
+    if len(matching_phrases(text, keywords)) < wanted:
+        problems.append(f"{tag} needs at least {wanted} of the control's keywords")
     partial, negative = signals(text, rules)
     if state == "met" and (partial or negative):
         problems.append(f"{tag} is 'met' but has signal phrases {partial + negative}")

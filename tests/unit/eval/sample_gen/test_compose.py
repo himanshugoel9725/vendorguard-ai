@@ -127,3 +127,20 @@ def test_compose_is_deterministic(env) -> None:  # type: ignore[no-untyped-def]
     assert compose(spec("quillfield"), bank, controls, s) == compose(
         spec("quillfield"), bank, controls, s
     )
+
+
+def test_cover_names_certifications_only_when_tpr02_is_met(env) -> None:  # type: ignore[no-untyped-def]
+    """The certification line matches TPR-02 keywords, so it must never contradict the spec."""
+    from vendorguard.eval.specs import SampleState
+
+    so, controls, bank, spec = env
+    s = so().samples
+    base = spec("nimbara-hr")
+    assert base.controls["TPR-02"] is SampleState.MET and base.certifications
+    cover = compose(base, bank, controls, s).pages[0]
+    assert any("Independent reports held" in b.text for b in cover)
+    for state in (SampleState.PARTIAL, SampleState.NOT_MET, SampleState.MISSING):
+        altered = base.model_copy(update={"controls": {**base.controls, "TPR-02": state}})
+        cover = compose(altered, bank, controls, s).pages[0]
+        assert not any("Independent reports held" in b.text for b in cover)
+        assert not any("SOC 2" in b.text for b in cover)

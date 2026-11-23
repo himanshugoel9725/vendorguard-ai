@@ -60,7 +60,9 @@ def test_pypdf_extracts_every_evidence_sentence_from_its_page(project_root: Path
     """The PDF text layer holds each recorded evidence sentence on the recorded page."""
     for stem in STEMS:
         reader = PdfReader(project_root / f"data/samples/{stem}.pdf", strict=True)
-        evidence = json.loads((project_root / f"data/samples/{stem}.evidence.json").read_text())
+        evidence = json.loads(
+            (project_root / f"data/samples/{stem}.evidence.json").read_text(encoding="utf-8")
+        )
         assert len(reader.pages) == evidence["page_count"] > 1
         assert len(evidence["controls"]) == 25
         for control_id, entry in evidence["controls"].items():
@@ -74,8 +76,10 @@ def test_pypdf_extracts_every_evidence_sentence_from_its_page(project_root: Path
 def test_text_twin_has_the_same_pages_as_the_pdf(project_root: Path) -> None:
     """Form feeds split the twin into as many pages as the PDF, with the same evidence sentences."""
     for stem in STEMS:
-        pages = (project_root / f"data/samples/{stem}.txt").read_text().split("\f")
-        evidence = json.loads((project_root / f"data/samples/{stem}.evidence.json").read_text())
+        pages = (project_root / f"data/samples/{stem}.txt").read_text(encoding="utf-8").split("\f")
+        evidence = json.loads(
+            (project_root / f"data/samples/{stem}.evidence.json").read_text(encoding="utf-8")
+        )
         assert len(pages) == evidence["page_count"]
         for control_id, entry in evidence["controls"].items():
             if entry["sentence"]:
@@ -86,7 +90,9 @@ def test_year2_reuses_wording_except_for_the_declared_changes(project_root: Path
     """Only the fixed gaps and the new gap get new sentences in the year-2 document."""
 
     def sentences(stem: str) -> dict[str, str | None]:
-        data = json.loads((project_root / f"data/samples/{stem}.evidence.json").read_text())
+        data = json.loads(
+            (project_root / f"data/samples/{stem}.evidence.json").read_text(encoding="utf-8")
+        )
         return {c: e["sentence"] for c, e in data["controls"].items()}
 
     y1, y2 = sentences("nimbara-hr"), sentences("nimbara-hr-y2")
@@ -100,15 +106,17 @@ def test_injection_is_in_the_quillfield_text_but_never_cited_as_evidence(
     project_root: Path,
 ) -> None:
     """The planted paragraph is part of the document and is not any control's evidence."""
-    text = (project_root / "data/samples/quillfield.txt").read_text().lower()
+    text = (project_root / "data/samples/quillfield.txt").read_text(encoding="utf-8").lower()
     assert "ignore all previous instructions" in text
     for stem in STEMS:
-        evidence = json.loads((project_root / f"data/samples/{stem}.evidence.json").read_text())
+        evidence = json.loads(
+            (project_root / f"data/samples/{stem}.evidence.json").read_text(encoding="utf-8")
+        )
         assert not any(
             "ignore all previous" in (e["sentence"] or "").lower()
             for e in evidence["controls"].values()
         )
-        other = (project_root / f"data/samples/{stem}.txt").read_text().lower()
+        other = (project_root / f"data/samples/{stem}.txt").read_text(encoding="utf-8").lower()
         assert ("ignore all previous instructions" in other) == (stem == "quillfield")
 
 

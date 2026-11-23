@@ -8,10 +8,12 @@ from vendorguard.eval.specs import SampleState, VendorSpec
 from vendorguard.models.control import Control, ControlSet
 
 INJECTION_AFTER_CONTROLS = 2  # the injection paragraph follows the second control paragraph
+CERTIFICATION_CONTROL = "TPR-02"  # the control whose keywords the certification names match
 
 
 def _cover(spec: VendorSpec, bank: PhraseBank) -> list[Block]:
-    """Cover page; it avoids control keywords so only control sentences decide a status."""
+    """Cover page. Only the certification line can match control keywords (TPR-02's), and it is
+    written only when that control is met, so the cover never contradicts the spec."""
     data = "; ".join(bank.data_category_phrases[c] for c in spec.data_categories)
     lines = [
         f"Reporting period: {spec.report_period}.",
@@ -22,7 +24,7 @@ def _cover(spec: VendorSpec, bank: PhraseBank) -> list[Block]:
     ]
     if spec.subprocessors:
         lines.append(f"Key suppliers: {'; '.join(spec.subprocessors)}.")
-    if spec.certifications:
+    if spec.certifications and spec.controls[CERTIFICATION_CONTROL] is SampleState.MET:
         lines.append(f"Independent reports held: {'; '.join(spec.certifications)}.")
     return [
         Block(kind="title", text="Security & Trust Overview"),

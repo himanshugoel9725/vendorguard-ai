@@ -16,7 +16,7 @@ hosting:
   - Northbound Cloud, US East region
 certifications:
   - SOC 2 Type II
-subprocessors: []
+subprocessors: []   # the document does not discuss suppliers at all (TPR-01 is missing)
 injection:
   section: DAT
   text: >

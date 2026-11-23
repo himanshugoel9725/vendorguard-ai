@@ -17,8 +17,8 @@ data_categories: [none]
 hosting:
   - Self-managed servers in a colocation facility
 certifications:
-  - ISO/IEC 27001:2022
-subprocessors: []
+  - ISO/IEC 27001:2022   # scope is narrow (the tracking platform only), which is why many controls are weak
+subprocessors: []   # the document does not discuss suppliers at all (TPR-01 is missing)
 controls:
   GOV-01: met
   GOV-02: met

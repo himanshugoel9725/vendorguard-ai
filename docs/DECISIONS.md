@@ -119,13 +119,16 @@
   draws from another list. This refines the plan's "hash(vendor, control)". (2) Pages are composed in code
   (line budget, one domain per page, paragraphs never split) and the PDF is drawn from that composition with
   manual wrapping at spaces, so evidence sentences never straddle a page or a hyphen break; the text twin
-  has the same pages joined by form feeds. (3) The cover and section headings avoid every control keyword, so
-  only a control's own sentence decides its status; the cover states data categories through the neutral
+  has the same pages joined by form feeds. (3) Section headings and the cover avoid control keywords, so only a control's own sentence decides its
+  status, with one exception: the certification names (`SOC 2 Type II`) on the cover match TPR-02, so that
+  line is written only when the spec has TPR-02 met. The cover states data categories through the neutral
   wording in `phrases.yaml`. (4) One definition of a keyword match (`utils/keywords.py`: whole word,
   case-insensitive) is shared with the future mock LLM and rule decider. (5) The generator refuses to write
   anything unless the phrase bank lints clean, a keyword reading of each document equals its spec, and
   pypdf finds every evidence sentence on its recorded page. (6) PDF layout and the creation date live in a
   new `samples:` section of `config/settings.yaml`; PDFs use core fonts, no compression, a fixed file ID.
-  (7) The outputs (about 110 KB) are committed, and a test fails when they drift from a fresh generation.
+  (7) Small layout constants (footer size and offset, line costs of titles and headings, the injection
+  position after the second control paragraph, the certification control ID) are named constants in the
+  modules, not settings. (8) The outputs (about 110 KB) are committed, marked as binary in `.gitattributes`, and a test fails when they drift from a fresh generation.
 - **Consequences:** Upgrading fpdf2 can change PDF bytes; run `make sample`, review and commit. Documents are
   short (9 pages): they test mapping and verification, not long-document performance.

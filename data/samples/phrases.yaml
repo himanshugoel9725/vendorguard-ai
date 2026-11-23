@@ -38,7 +38,7 @@ filler:
     - Customers sign in through a web portal, and staff use company laptops for daily work.
     - Accounts for new staff are created on their first day at the company.
   DAT:
-    - Customer data is stored in the region chosen by the customer at signup.
+    - The sections that follow describe how customer information is handled day to day.
     - Customers can export their own data from the portal at any time.
   OPS:
     - The operations group looks after servers, databases and the tools that keep the service running.
@@ -141,7 +141,7 @@ controls:
       - A user access review has not been performed, and offboarding does not trigger account removal.
   DAT-01:
     met:
-      - Customer data is encrypted at rest with AES-256, and encryption keys are handled through a managed key management service.
+      - Customer data is encrypted at rest with AES-256, and encryption keys are handled under a documented key management process.
       - Disk encryption and KMS-managed keys protect all databases and file storage, in line with our encryption at rest standard.
     partial:
       - Databases use encryption at rest with AES-256, and disk encryption for file storage is on the roadmap.
