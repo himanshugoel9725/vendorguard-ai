@@ -23,6 +23,7 @@ from typing import Any, Literal
 
 import yaml
 from jinja2 import StrictUndefined, TemplateError, TemplateSyntaxError, UndefinedError
+from jinja2.exceptions import SecurityError
 from jinja2.sandbox import SandboxedEnvironment
 from pydantic import ValidationError
 
@@ -35,7 +36,33 @@ from vendorguard.utils.hashing import sha256_text
 Role = Literal["system", "user"]
 _FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.DOTALL)
 _SECTION = re.compile(r"^## (system|user)[ \t]*$", re.MULTILINE)
-_ENV = SandboxedEnvironment(
+MAX_SEQUENCE = (
+    100_000  # longest string or list a template may build with ``*`` (as Jinja's range limit)
+)
+MAX_EXPONENT = 1_000  # largest exponent a template may use with ``**``
+
+
+class _LimitedSandbox(SandboxedEnvironment):
+    """Jinja's sandbox plus size limits on ``*`` and ``**``, so a template cannot exhaust memory."""
+
+    intercepted_binops = frozenset({"*", "**"})
+
+    def call_binop(self, context: Any, operator: str, left: Any, right: Any) -> Any:
+        """Refuse results that would be huge; everything else is evaluated as usual."""
+        if operator == "*":
+            for sequence, count in ((left, right), (right, left)):
+                if (
+                    isinstance(sequence, str | bytes | list | tuple)
+                    and isinstance(count, int)
+                    and len(sequence) * max(count, 0) > MAX_SEQUENCE
+                ):
+                    raise SecurityError(f"a template may not build more than {MAX_SEQUENCE} items")
+        elif isinstance(right, int) and abs(right) > MAX_EXPONENT:
+            raise SecurityError(f"a template may not use an exponent above {MAX_EXPONENT}")
+        return super().call_binop(context, operator, left, right)
+
+
+_ENV = _LimitedSandbox(
     undefined=StrictUndefined, autoescape=False, trim_blocks=True, lstrip_blocks=True
 )
 
@@ -79,6 +106,11 @@ class Prompt:
         except TemplateError as exc:
             raise ConfigError(
                 f"prompt '{self.meta.id}' {self.meta.version} cannot be rendered: {exc}"
+            ) from exc
+        except Exception as exc:  # TypeError (no loader), OverflowError (range), broken variables
+            raise ConfigError(
+                f"prompt '{self.meta.id}' {self.meta.version} cannot be rendered "
+                f"({type(exc).__name__})"
             ) from exc
         return RenderedPrompt(messages=messages, prompt_hash=self.prompt_hash)
 
