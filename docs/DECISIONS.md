@@ -147,3 +147,24 @@
 - **Consequences:** Scores are never negative and a chunk without a query term scores exactly 0. The
   `rank-bm25` classes are subclassed through a documented extension point and must be re-checked when the
   library is upgraded (the tests pin the behaviour).
+
+## ADR-013: Zero-floored score scaling, raw signals, and ingestion limits (Phase 3 review)
+
+- **Status:** accepted
+- **Context:** The Phase 3 review showed that min-max scaling turned the weakest real BM25 match into 0.0,
+  which `min_score` then discarded (hidden on 9-chunk samples), that scaled scores carry no absolute
+  meaning, that digit-masked repeated-line stripping could delete body text in short documents, and that
+  ingestion had no cap on extracted text and let control characters through.
+- **Decision:** (1) Signals are scaled by their best value with a floor of `min(0, lowest)`, not min-max:
+  BM25 is divided by its maximum (zero stays zero), cosine is only shifted when some values are negative,
+  all-equal positive scores become 1.0. (2) `ScoredChunk` also carries `bm25_raw` and `vector_raw`; `score`
+  and `min_score` are relative to the best chunk of a query, and deciders that need absolute relevance
+  (triage, task 5.5) must use the raw values or keyword hits. (3) Only the first and last
+  `ingest.repeated_line_scan_lines` lines of a page can be removed as headers or footers. (4) New
+  `ingest.max_text_chars` caps extracted text (PDF extraction stops as soon as it is exceeded) and file
+  reads are bounded by `max_file_mb` instead of trusting `stat()`. (5) Control characters (C0, C1, DEL),
+  lone surrogates and invisible bidirectional or zero-width characters are removed at load time; NUL
+  still rejects a text file. (6) A cache write failure is logged (class name only) and never loses
+  computed vectors; a cached vector that is not a non-empty list of finite numbers is treated as a miss.
+- **Consequences:** The scaled score is a ranking aid only. Cleaning and loading can no longer produce text
+  that cannot be hashed or encoded.

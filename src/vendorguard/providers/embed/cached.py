@@ -1,5 +1,7 @@
 """Cache wrapper for any embedder: each text is embedded once per (model, prefix, text)."""
 
+import logging
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -9,6 +11,7 @@ from vendorguard.interfaces.embedder import Embedder
 from vendorguard.utils.hashing import hash_obj, sha256_text
 
 PURPOSE = "embedding"
+log = logging.getLogger(__name__)
 
 
 class CachedEmbedder:
@@ -59,7 +62,7 @@ class CachedEmbedder:
             if len(computed) != len(missing):
                 raise EmbeddingError("the embedder returned the wrong number of vectors")
             for key, vector in zip(missing, computed, strict=True):
-                self._cache.put(key, {"embedding": vector}, purpose=PURPOSE)
+                self._store(key, vector)
                 found[key] = vector
             self.misses += len(missing)
         return [found[key] for key in keys]
@@ -72,14 +75,31 @@ class CachedEmbedder:
             self.hits += 1
             return vector
         vector = self._inner.embed_query(text)
-        self._cache.put(key, {"embedding": vector}, purpose=PURPOSE)
+        self._store(key, vector)
         self.misses += 1
         return vector
+
+    def _store(self, key: str, vector: list[float]) -> None:
+        """Cache a vector; a failing cache must not lose vectors that were already computed."""
+        try:
+            self._cache.put(key, {"embedding": vector}, purpose=PURPOSE)
+        except Exception as exc:  # the cache is an optimisation, so any backend error is non-fatal
+            log.warning("could not cache an embedding (%s)", type(exc).__name__)
 
     def _lookup(self, key: str) -> list[float] | None:
         entry: dict[str, Any] | None = self._cache.get(key)
         vector = entry.get("embedding") if entry else None
-        return vector if isinstance(vector, list) else None  # a damaged entry counts as a miss
+        return vector if _usable(vector) else None  # a damaged entry counts as a miss
+
+
+def _usable(vector: object) -> bool:
+    """A non-empty list of finite numbers."""
+    return (
+        isinstance(vector, list)
+        and len(vector) > 0
+        and all(isinstance(x, int | float) and not isinstance(x, bool) for x in vector)
+        and all(math.isfinite(x) for x in vector)
+    )
 
 
 __all__ = ["CachedEmbedder"]

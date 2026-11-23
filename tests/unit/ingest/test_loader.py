@@ -211,9 +211,10 @@ def test_file_disappearing_during_read_raises_ingest_error(
 ) -> None:
     path = _write(tmp_path / "gone.txt", "x")
 
-    def boom(self: Path) -> bytes:
+    def boom(self: Path, *args: object, **kwargs: object) -> object:
         raise FileNotFoundError("vanished")
 
-    monkeypatch.setattr(Path, "read_bytes", boom)
+    ingest = settings_override().ingest  # read the settings before the patch takes effect
+    monkeypatch.setattr(Path, "open", boom)
     with pytest.raises(IngestError, match=r"^gone\.txt: cannot be read \(FileNotFoundError\)"):
-        load_document(path, settings_override().ingest)
+        load_document(path, ingest)

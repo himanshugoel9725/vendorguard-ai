@@ -20,7 +20,7 @@ _DIGITS = re.compile(r"\d+")
 _WORD = r"[^\W\d_]+"
 _TOKEN = re.compile(rf"{_WORD}(?:-{_WORD})*")
 _LINE_BREAK_HYPHEN = re.compile(rf"({_WORD})-\n({_WORD})")
-_OTHER_LINE_BREAK_HYPHEN = re.compile(r"(?<=\S)-\n(?=\S)")  # for example ISO-\n27001
+_OTHER_LINE_BREAK_HYPHEN = re.compile(r"(?<=[^\W_])-\n(?=\S)")  # ISO-\n27001, not --- table rules
 _HORIZONTAL_SPACE = re.compile(r"[^\S\n]+")
 _PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
 
@@ -30,11 +30,21 @@ def normalize_unicode(text: str) -> str:
     return unicodedata.normalize("NFKC", text)
 
 
-def strip_repeated_lines(pages: list[str], min_ratio: float) -> list[str]:
+def _zone(lines: list[str], scan_lines: int | None) -> set[int]:
+    """Indices of the non-blank lines that may be headers or footers (first and last N)."""
+    filled = [i for i, line in enumerate(lines) if line.strip()]
+    return set(filled) if scan_lines is None else set(filled[:scan_lines] + filled[-scan_lines:])
+
+
+def strip_repeated_lines(
+    pages: list[str], min_ratio: float, scan_lines: int | None = None
+) -> list[str]:
     """Drop lines that repeat on at least ``min_ratio`` of the pages (running headers, footers).
 
-    Digit runs are masked when comparing, so ``Page 2 of 9`` and ``Page 3 of 9`` count as the same
-    line. Documents with a single page are left alone.
+    Only the first and last ``scan_lines`` non-blank lines of a page can be removed (every line when
+    ``scan_lines`` is None), so body text such as ``Backups kept 30 days`` is never mistaken for a
+    footer. Digit runs are masked when comparing, so ``Page 2 of 9`` and ``Page 3 of 9`` count as
+    the same line. Documents with a single page are left alone.
     """
     if len(pages) < MIN_REPEATS:
         return list(pages)
@@ -42,16 +52,16 @@ def strip_repeated_lines(pages: list[str], min_ratio: float) -> list[str]:
     def key(line: str) -> str:
         return _DIGITS.sub("#", line.strip())
 
+    split = [text.splitlines() for text in pages]
+    zones = [_zone(lines, scan_lines) for lines in split]
     seen: Counter[str] = Counter()
-    for text in pages:
-        seen.update({key(line) for line in text.splitlines() if line.strip()})
+    for lines, zone in zip(split, zones, strict=True):
+        seen.update({key(lines[i]) for i in zone})
     needed = max(MIN_REPEATS, math.ceil(round(min_ratio * len(pages), 9)))
     repeated = {k for k, count in seen.items() if count >= needed}
     return [
-        "\n".join(
-            line for line in text.splitlines() if not (line.strip() and key(line) in repeated)
-        )
-        for text in pages
+        "\n".join(line for i, line in enumerate(lines) if not (i in zone and key(line) in repeated))
+        for lines, zone in zip(split, zones, strict=True)
     ]
 
 
@@ -91,7 +101,9 @@ def clean_document(document: Document, settings: IngestSettings) -> Document:
     """Return the document with every page cleaned (identity, hash and page numbers are kept)."""
     texts = [normalize_unicode(page.text) for page in document.pages]
     if settings.strip_repeated_lines:
-        texts = strip_repeated_lines(texts, settings.repeated_line_min_ratio)
+        texts = strip_repeated_lines(
+            texts, settings.repeated_line_min_ratio, settings.repeated_line_scan_lines
+        )
     known = vocabulary(texts)
     cleaned = [collapse_whitespace(dehyphenate(text, known)) for text in texts]
     pages = [

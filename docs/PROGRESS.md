@@ -7,9 +7,9 @@
 
 | Field | Value |
 |---|---|
-| Current phase | 3: Ingestion and retrieval |
-| Next task | 3.8 |
-| Last completed task | 3.7 |
+| Current phase | 4: LLM providers, cache, cost guard |
+| Next task | 4.1 |
+| Last completed task | 3.8 (phase-3-done, not yet pushed) |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -67,7 +67,7 @@
 - [x] 3.5 Embedders (Ollama, null, cached)
 - [x] 3.6 Vector index, query builder, hybrid retriever
 - [x] 3.7 Tests (3 parallel test-writers) + coverage gate 80 %
-- [ ] 3.8 Checkpoint, tag phase-3-done
+- [x] 3.8 Checkpoint, tag phase-3-done
 
 ### Phase 4: LLM providers, cache, cost guard (150 min)
 - [ ] 4.1 LLM models + interfaces
@@ -170,6 +170,7 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
 - Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 3.8 review (code-reviewer, verdict: ready, no blockers). FIXED (ADR-013): min-max scaling dropped weak real matches -> zero-floored scaling + `bm25_raw`/`vector_raw` on `ScoredChunk`; header/footer stripping limited to the first/last `repeated_line_scan_lines` (3) lines of a page; `ingest.max_text_chars` cap + bounded file read; control characters/surrogates/bidi controls removed at load; `CachedEmbedder` validates cached vectors and survives cache write failures; negative `top_k` raises; vector problems raise `EmbeddingError`; OverflowError in embedding parsing; Markdown table rules (`---`) no longer joined by de-hyphenation. 1026 tests, 96 % coverage. FOR LATER: (a) task 5.5 triage must use `bm25_raw`/keyword hits, not the scaled score; (b) task 8.2 (API upload): `load_document` follows symlinks (fine for the CLI), so uploads must be saved under a server-chosen name in a private folder first; (c) the orchestrator must decide what happens when the embedder fails at `HybridRetriever` construction (recommended: log, fall back to BM25 only, record `decider_fallback`-style audit event); (d) repeated query tokens count per occurrence in BM25 (deterministic, standard); (e) chunk IDs sort lexicographically only up to 999 pages/chunks (max_pages is 300); (f) `sanitize_filename` loses non-ASCII letters (`r_sum_.pdf`).
 - 3.7: 984 tests, 96 % coverage; the gate `fail_under = 80` is ON (pyproject `[tool.coverage.report]`; verified to fail at 14 %). Three test-writer agents added ~290 tests: ingest 107 (coverage 88 -> 100 %), retrieval 147 (property tests over 12 seeds; already 100 %), embed 34 (100 %). One hardening fix came out of it: `OllamaEmbedder` now rejects NaN/Infinity in vectors (Python's json accepts them). Documented behaviours, not bugs: NFC vs NFD text tokenise differently (the cleaner's NFKC runs first); stop words are not whitespace-stripped; a CachedEmbedder counts hits before an inner failure and propagates cache `get()` errors.
 - 3.6: `HybridRetriever(chunks, tokenizer, embedder_or_None, settings.retrieval)` with `.retrieve(query, top_k)` and `.for_control(control, top_k)` (query = title + requirement + keywords via `build_query`); returns `ScoredChunk` (score = weighted mean of the min-max-normalised BM25 and cosine signals, or BM25 alone when there is no embedder / the vectors are empty; `bm25` and `vector` hold the normalised parts; filtered by `min_score`, ties by chunk id; default `top_k` from settings, the Reviewer should ask for `top_k + review_extra_chunks`). `VectorIndex` is numpy cosine. min-max of equal positive scores is 1.0 (a bug found by a test: a one-chunk document would otherwise lose its only match). Measured on the 4 samples (85 controls with evidence): BM25-only recall@4 100 % (rank-1 98 %), hybrid with real nomic-embed-text recall@4 100 % (rank-1 100 %), vector-only recall@4 100 % (rank-1 96 %). Caveat: documents are 9 chunks, so recall@4 is easier than on long real documents. With vectors a lexical miss is still returned (similarity is always positive); the triage gate decides relevance.
 - 3.5: `Embedder` and `CacheBackend` protocols now exist in `interfaces/` (as in PLAN section 6; 4.1 adds llm/decider/memory). `OllamaEmbedder(settings.embeddings)` (POST /api/embed, `batch_size`, doc/query prefixes, every failure an `EmbeddingError`), `NullEmbedder` (empty vectors; 3.6 must skip the vector signal when `embeddings.provider == none`), `CachedEmbedder(inner, cache, doc_prefix, query_prefix)` with `.hits/.misses` (key = hash of model + prefix + SHA-256 of text; only misses reach the inner embedder; damaged entries are recomputed). Tests use respx (33) plus one live test `tests/live/test_ollama_embeddings.py` (run with `uv run pytest -o addopts="" -m ollama tests/live`; passed against local nomic-embed-text). The real cache backends and `keys.py` are 4.5; they must accept `put(key, {"embedding": [...]}, purpose="embedding")`.
@@ -191,4 +192,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.7 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

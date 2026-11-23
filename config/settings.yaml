@@ -69,7 +69,9 @@ ingest:
   max_file_mb: 20
   max_pages: 300
   max_filename_chars: 120   # sanitised file names are cut to this length (extension kept)
+  max_text_chars: 5000000   # total extracted characters per document; a larger one is refused
   strip_repeated_lines: true        # remove headers/footers
+  repeated_line_scan_lines: 3   # only the first and last N lines of a page can be headers or footers
   repeated_line_min_ratio: 0.6      # a line on >= 60 % of pages counts as header/footer
 
 chunking:

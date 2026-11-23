@@ -25,12 +25,18 @@ class Chunk(ContractModel):
 
 
 class ScoredChunk(ContractModel):
-    """A retrieved chunk with its hybrid score and the two signals behind it."""
+    """A retrieved chunk: the fused score, the two scaled signals and the two raw signals.
+
+    ``score`` ranks chunks within one query. ``bm25_raw`` and ``vector_raw`` are the unscaled
+    values, the only ones with an absolute meaning (for example for the triage gate).
+    """
 
     chunk: Chunk
     score: float
     bm25: float
     vector: float | None = None
+    bm25_raw: float = 0.0
+    vector_raw: float | None = None
 
 
 class DraftCitation(ContractModel):

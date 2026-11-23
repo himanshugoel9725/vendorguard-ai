@@ -14,7 +14,7 @@ from vendorguard.ingest.loader import load_document
 from vendorguard.ingest.text_cleaner import clean_document
 from vendorguard.models.evidence import Chunk
 from vendorguard.providers.embed.null import NullEmbedder
-from vendorguard.retrieval.hybrid import HybridRetriever, min_max
+from vendorguard.retrieval.hybrid import HybridRetriever, scale_to_unit
 from vendorguard.retrieval.tokenizer import Tokenizer
 
 STEMS = ["brightdock", "nimbara-hr", "nimbara-hr-y2", "quillfield"]
@@ -58,27 +58,30 @@ def make(settings_override: Callable[..., Settings]) -> Callable[..., HybridRetr
     return build
 
 
-# --- min_max ----------------------------------------------------------------------------------
+# --- scale_to_unit ----------------------------------------------------------------------
 
 
-def test_min_max_scales_to_unit_range() -> None:
-    assert min_max({"a": 2.0, "b": 4.0, "c": 3.0}) == {"a": 0.0, "b": 1.0, "c": 0.5}
+def test_scale_to_unit_divides_by_the_best_score_and_keeps_zero_at_zero() -> None:
+    """The weakest real match must stay positive (plain min-max would map it to 0.0)."""
+    assert scale_to_unit({"a": 2.0, "b": 4.0, "c": 3.0, "z": 0.0}) == {
+        "a": 0.5, "b": 1.0, "c": 0.75, "z": 0.0,
+    }  # fmt: skip
 
 
 def test_equal_positive_scores_are_a_uniform_signal() -> None:
     """All chunks matching equally, or a single matching chunk, must not be erased."""
-    assert min_max({"a": 5.0, "b": 5.0}) == {"a": 1.0, "b": 1.0}
-    assert min_max({"a": 0.3}) == {"a": 1.0}
+    assert scale_to_unit({"a": 5.0, "b": 5.0}) == {"a": 1.0, "b": 1.0}
+    assert scale_to_unit({"a": 0.3}) == {"a": 1.0}
 
 
 def test_equal_zero_or_negative_scores_and_empty_input_give_no_signal() -> None:
-    assert min_max({"a": 0.0, "b": 0.0}) == {"a": 0.0, "b": 0.0}
-    assert min_max({"a": -0.2}) == {"a": 0.0}
-    assert min_max({}) == {}
+    assert scale_to_unit({"a": 0.0, "b": 0.0}) == {"a": 0.0, "b": 0.0}
+    assert scale_to_unit({"a": -0.2}) == {"a": 0.0}
+    assert scale_to_unit({}) == {}
 
 
-def test_min_max_handles_negative_scores() -> None:
-    assert min_max({"a": -1.0, "b": 1.0}) == {"a": 0.0, "b": 1.0}
+def test_scale_to_unit_handles_negative_scores() -> None:
+    assert scale_to_unit({"a": -1.0, "b": 1.0}) == {"a": 0.0, "b": 1.0}
 
 
 # --- BM25 only --------------------------------------------------------------------------------

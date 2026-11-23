@@ -32,19 +32,21 @@ def load_document(path: Path, settings: IngestSettings) -> Document:
     extension = path.suffix.lower()
     if extension not in {e.lower() for e in settings.allowed_extensions}:
         raise IngestError(f"{shown}: file type '{extension}' is not allowed")
+    limit = settings.max_file_mb * BYTES_PER_MB
     try:
         if not path.is_file():
             raise IngestError(f"{shown}: not a file")
-        if path.stat().st_size > settings.max_file_mb * BYTES_PER_MB:
-            raise IngestError(f"{shown}: larger than the limit of {settings.max_file_mb} MB")
-        data = path.read_bytes()
+        with path.open("rb") as handle:
+            data = handle.read(limit + 1)  # bounded read: a file that grows cannot exceed the limit
     except OSError as exc:
         raise IngestError(f"{shown}: cannot be read ({type(exc).__name__})") from exc
+    if len(data) > limit:
+        raise IngestError(f"{shown}: larger than the limit of {settings.max_file_mb} MB")
     try:
         if extension == ".pdf":
-            pages = load_pdf_pages(data, settings.max_pages)
+            pages = load_pdf_pages(data, settings.max_pages, settings.max_text_chars)
         else:
-            pages = load_text_pages(data, settings.max_pages)
+            pages = load_text_pages(data, settings.max_pages, settings.max_text_chars)
     except IngestError as exc:
         raise IngestError(f"{shown}: {exc}") from exc
     digest = sha256_bytes(data)

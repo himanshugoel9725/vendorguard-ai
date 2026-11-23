@@ -49,7 +49,7 @@ class OllamaEmbedder:
             )
         try:
             vectors = _parse(response.json(), len(inputs))
-        except ValueError as exc:
+        except (ValueError, OverflowError) as exc:
             raise EmbeddingError(f"unusable Ollama embedding response: {exc}") from exc
         return vectors
 

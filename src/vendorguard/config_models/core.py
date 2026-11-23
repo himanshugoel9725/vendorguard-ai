@@ -59,7 +59,9 @@ class IngestSettings(StrictModel):
     max_file_mb: PositiveInt
     max_pages: PositiveInt
     max_filename_chars: PositiveInt
+    max_text_chars: PositiveInt
     strip_repeated_lines: bool
+    repeated_line_scan_lines: PositiveInt
     repeated_line_min_ratio: Probability
 
 

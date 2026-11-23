@@ -12,6 +12,7 @@ import pytest
 
 from vendorguard.config import Settings
 from vendorguard.controls.loader import load_controls
+from vendorguard.errors import EmbeddingError
 from vendorguard.models.evidence import Chunk
 from vendorguard.retrieval.hybrid import HybridRetriever
 from vendorguard.retrieval.query_builder import build_query
@@ -160,8 +161,10 @@ def test_empty_vectors_disable_the_vector_signal(
     assert emb.queries == 0
 
 
-def test_wrong_vector_count_raises_value_error(settings_override: Callable[..., Settings]) -> None:
-    with pytest.raises(ValueError, match="one vector per chunk"):
+def test_wrong_vector_count_raises_embedding_error(
+    settings_override: Callable[..., Settings],
+) -> None:
+    with pytest.raises(EmbeddingError, match="one vector per chunk"):
         _retriever(settings_override, CountingEmbedder([[1.0, 2.0]]))
 
 
