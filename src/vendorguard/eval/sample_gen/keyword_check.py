@@ -4,36 +4,17 @@ This is the same logic the mock LLM (task 4.4) uses, so a clean result here mean
 baseline can reach the golden labels.
 """
 
-import re
-
 from vendorguard.config_models.providers import RuleDeciderSettings
 from vendorguard.eval.sample_gen.models import ComposedSample
 from vendorguard.eval.specs import SampleState, VendorSpec
 from vendorguard.models.control import ControlSet
 from vendorguard.utils.keywords import matching_phrases
-
-_SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+")
-
-
-def split_sentences(text: str) -> list[str]:
-    """Split a paragraph into sentences at ``.``, ``!`` or ``?`` followed by whitespace."""
-    return [s for s in _SENTENCE_BREAK.split(text.strip()) if s]
-
-
-def signals(text: str, rules: RuleDeciderSettings) -> tuple[list[str], list[str]]:
-    """The (partial, negative) signal phrases found in ``text``."""
-    return (
-        matching_phrases(text, rules.partial_signal_phrases),
-        matching_phrases(text, rules.negative_signal_phrases),
-    )
+from vendorguard.verification.keyword_reading import read_status, signals, split_sentences
 
 
 def read_state(sentence: str, rules: RuleDeciderSettings) -> SampleState:
     """The state a keyword reader infers from the first sentence that mentions a control."""
-    partial, negative = signals(sentence, rules)
-    if negative:
-        return SampleState.NOT_MET
-    return SampleState.PARTIAL if partial else SampleState.MET
+    return SampleState(read_status(sentence, rules).value)
 
 
 def check_composed(
