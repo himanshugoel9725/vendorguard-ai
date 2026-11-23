@@ -74,3 +74,18 @@
   control's true status, producing golden labels and evidence maps for evaluation.
 - **Consequences:** Measured accuracy is on synthetic data and must be reported with that caveat; real
   public documents can be tried through `data/inbox/` (git-ignored).
+
+## ADR-009: Settings split into a `config_models/` package; provider names as Literals
+
+- **Status:** accepted
+- **Context:** One `config.py` holding all 19 section models would pass the 250-line hard limit in
+  `CLAUDE.md`. PLAN section 5 also asks for provider names to be validated against the factory registries,
+  which do not exist until task 4.8.
+- **Decision:** `config.py` holds the root `Settings`, loading and fingerprint. Section models live in
+  `config_models/{base,core,providers,scoring}.py`. Provider names are `Literal` types in
+  `config_models/base.py`. Task 4.8 must add a test that every registry key equals its Literal. The config
+  file location comes from `VENDORGUARD_CONFIG` (not a `VG_` name, so it never collides with `.env` keys) or
+  defaults to `config/settings.yaml` in the repository. Entries in `.env` that are not `VG_` settings are
+  ignored; unknown keys inside the YAML are errors.
+- **Consequences:** Adding a provider means editing one Literal plus the registry. A mistyped top-level
+  `VG_` variable (for example `VG_LLMM__MODEL`) is silently ignored; mistyped section keys are rejected.

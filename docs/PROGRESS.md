@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 1: Foundation |
-| Next task | 1.3 |
-| Last completed task | 1.2 |
+| Next task | 1.4 |
+| Last completed task | 1.3 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -42,7 +42,7 @@
 ### Phase 1: Foundation (125 min)
 - [x] 1.1 pyproject, uv, dependencies, no-HF guard
 - [x] 1.2 Package skeleton
-- [ ] 1.3 config.py (YAML + env + .env, validation, fingerprint)
+- [x] 1.3 config.py (YAML + env + .env, validation, fingerprint)
 - [ ] 1.4 errors.py + logging_setup.py (redaction)
 - [ ] 1.5 utils: hashing, jsonio, ids, timeutil
 - [ ] 1.6 Makefile, ruff, mypy, pytest, pre-commit
@@ -163,10 +163,10 @@
 
 Half-finished work, uncommitted changes, or things the next session must know:
 
-- none
+- 1.3: `errors.py` holds only VendorGuardError + ConfigError; task 1.4 extends it. Task 4.8 must add a registry-vs-Literal test (ADR-009).
 
 ## Session log
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1, 1.2 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1, 1.2, 1.3 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
