@@ -39,7 +39,7 @@ prompts:                            # active prompt version per agent (files in 
 # -----------------------------------------------------------------------------
 llm:
   provider: ollama
-  model: qwen2.5:7b                 # 8 GB RAM Mac: qwen2.5:3b or llama3.2:3b
+  model: qwen2.5:3b   # Intel Mac, 16 GB RAM, CPU only: 3b is the practical size (7b is far slower)
   base_url: http://localhost:11434
   temperature: 0.0
   seed: 42
@@ -47,6 +47,7 @@ llm:
   max_output_tokens: 800
   context_window: 8192              # Ollama num_ctx
   timeout_s: 180
+  retry_backoff_s: 1.0  # pause between retries (connection errors and 5xx only)
   max_retries: 2                    # retries on connection errors / 5xx only
   json_repair_attempts: 1           # re-ask once if the output fails schema validation
   openai_compat:                    # used only when provider = openai_compat

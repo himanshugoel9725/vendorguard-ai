@@ -44,6 +44,7 @@ class LlmSettings(StrictModel):
     max_output_tokens: PositiveInt
     context_window: PositiveInt
     timeout_s: PositiveFloat
+    retry_backoff_s: NonNegFloat
     max_retries: NonNegInt
     json_repair_attempts: NonNegInt
     openai_compat: OpenAICompatSettings

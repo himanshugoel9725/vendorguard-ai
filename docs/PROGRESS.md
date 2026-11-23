@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 4: LLM providers, cache, cost guard |
-| Next task | 4.2 |
-| Last completed task | 4.1 (phase-3-done pushed, CI green) |
+| Next task | 4.3 |
+| Last completed task | 4.2 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -18,7 +18,7 @@
 | Fact | Value |
 |---|---|
 | Mac RAM | 16 GB, Intel x86_64 (CPU-only Ollama, slow) |
-| Local LLM (`llm.model`) | qwen2.5:3b pulled (Intel CPU-only; settings.yaml still says 7b, change at Phase 4) |
+| Local LLM (`llm.model`) | qwen2.5:3b (settings.yaml now says 3b; Intel CPU-only, about 6 s per short request) |
 | Embedding model | nomic-embed-text |
 | Docker Desktop installed | no (needed only for self-hosted Letta, Phase 7) |
 | Jev access route | none yet (TypeSafe console / OpenRouter / Vercel AI Gateway / Cloudflare) |
@@ -71,7 +71,7 @@
 
 ### Phase 4: LLM providers, cache, cost guard (150 min)
 - [x] 4.1 LLM models + interfaces
-- [ ] 4.2 Ollama LLM provider
+- [x] 4.2 Ollama LLM provider
 - [ ] 4.3 OpenAI-compatible provider
 - [ ] 4.4 Mock provider (keyword baseline)
 - [ ] 4.5 Cache keys, SQLite/JSONL backends, CachedLLM
@@ -170,6 +170,7 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
 - Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 4.2: `OllamaLLM(settings.llm).complete_json(messages, output_model, purpose=, hints=)` (POST /api/chat, `format` = the model's JSON schema, options from settings, usage from prompt_eval_count/eval_count). Retries (tenacity, `llm.max_retries`, `llm.retry_backoff_s`) only for connect errors/timeouts and 5xx; a read timeout and 4xx are NOT retried; invalid output is re-asked `llm.json_repair_attempts` times with the problem (no values) and the tokens are summed; then `SchemaValidationError`. Shared helper `providers/llm/_json.py` (`complete_with_repair`, `extract_json`, ...) is for 4.3 too. `utils/timeutil.monotonic_s()` added (latency). LIVE FINDINGS with real qwen2.5:3b: (1) Ollama accepts the real `DraftFinding`/`VendorProfile` schemas ($defs/$ref are fine). (2) Determinism: at temperature 0 + seed the FIRST call after a model load (cold prompt evaluation) can differ from later calls, which agree with each other; so exactness must come from the record/replay cache (L1), and the Phase 9 cache-off determinism numbers will show this (document it in EVALUATION.md). (3) qwen2.5:3b invents facts on thin input (it reported financial data and on-premises hosting for a one-line document): use OpenAI/Groq for real assessments, keep Ollama for free dev runs. Live tests: `tests/live/test_ollama_llm.py` (3, about 35 s).
 - 4.1: `models/llm.py` has `ChatMessage(role system|user|assistant, content)`, `Usage(tokens_in, tokens_out)` and generic `LLMResult[T](parsed, usage, provider, model, cached, latency_ms)`. `interfaces/` now has `LLMClient`, `Decider`, `MemoryStore`, `MemoryAssistant` besides `Embedder` and `CacheBackend`; a test pins every protocol's members and signatures to PLAN section 6. NEXT (4.2/4.3 design, to confirm with the user): OpenAI and Groq both use the OpenAI-compatible client, so the plan's single `llm.openai_compat` block becomes named profiles `llm.openai` and `llm.groq` (plus the generic `openai_compat`), each with its own base_url, model and key, selected by `llm.provider`; env vars `VG_LLM__OPENAI__API_KEY`, `VG_LLM__GROQ__API_KEY`; real prices for OpenAI in `cost.prices_per_million_tokens`; Groq priced 0. ADR to be written with 4.3. The user must verify current model names (the settings file says so) and rename the keys in `.env` (names unknown to me; I never read .env).
 - 3.8 review (code-reviewer, verdict: ready, no blockers). FIXED (ADR-013): min-max scaling dropped weak real matches -> zero-floored scaling + `bm25_raw`/`vector_raw` on `ScoredChunk`; header/footer stripping limited to the first/last `repeated_line_scan_lines` (3) lines of a page; `ingest.max_text_chars` cap + bounded file read; control characters/surrogates/bidi controls removed at load; `CachedEmbedder` validates cached vectors and survives cache write failures; negative `top_k` raises; vector problems raise `EmbeddingError`; OverflowError in embedding parsing; Markdown table rules (`---`) no longer joined by de-hyphenation. 1026 tests, 96 % coverage. FOR LATER: (a) task 5.5 triage must use `bm25_raw`/keyword hits, not the scaled score; (b) task 8.2 (API upload): `load_document` follows symlinks (fine for the CLI), so uploads must be saved under a server-chosen name in a private folder first; (c) the orchestrator must decide what happens when the embedder fails at `HybridRetriever` construction (recommended: log, fall back to BM25 only, record `decider_fallback`-style audit event); (d) repeated query tokens count per occurrence in BM25 (deterministic, standard); (e) chunk IDs sort lexicographically only up to 999 pages/chunks (max_pages is 300); (f) `sanitize_filename` loses non-ASCII letters (`r_sum_.pdf`).
 - 3.7: 984 tests, 96 % coverage; the gate `fail_under = 80` is ON (pyproject `[tool.coverage.report]`; verified to fail at 14 %). Three test-writer agents added ~290 tests: ingest 107 (coverage 88 -> 100 %), retrieval 147 (property tests over 12 seeds; already 100 %), embed 34 (100 %). One hardening fix came out of it: `OllamaEmbedder` now rejects NaN/Infinity in vectors (Python's json accepts them). Documented behaviours, not bugs: NFC vs NFD text tokenise differently (the cleaner's NFKC runs first); stop words are not whitespace-stripped; a CachedEmbedder counts hits before an inner failure and propagates cache `get()` errors.
@@ -193,4 +194,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.2 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

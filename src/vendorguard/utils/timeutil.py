@@ -1,5 +1,6 @@
 """The only clock in VendorGuard: no other module may read the current time directly."""
 
+import time
 from datetime import UTC, datetime
 
 
@@ -8,4 +9,9 @@ def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-__all__ = ["utcnow"]
+def monotonic_s() -> float:
+    """Seconds from a monotonic clock, for measuring durations (patch this in tests)."""
+    return time.monotonic()
+
+
+__all__ = ["monotonic_s", "utcnow"]
