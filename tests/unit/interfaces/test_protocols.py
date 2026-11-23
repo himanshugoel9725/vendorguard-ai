@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from vendorguard.interfaces.audit import AuditSink
 from vendorguard.interfaces.cache import CacheBackend
 from vendorguard.interfaces.decider import Decider
 from vendorguard.interfaces.embedder import Embedder
@@ -39,6 +40,7 @@ def _members(protocol: type) -> tuple[set[str], set[str]]:
         ),
         (MemoryAssistant, {"ask"}, set()),
         (CacheBackend, {"get", "put"}, set()),
+        (AuditSink, {"record"}, set()),
     ],
 )
 def test_protocol_members_match_the_plan(
@@ -81,3 +83,18 @@ def test_a_plain_class_can_implement_a_protocol_without_inheriting() -> None:
 
     client: LLMClient = Fake()  # structural typing: no inheritance needed
     assert client.provider == "fake"
+
+
+def test_audit_sink_record_is_keyword_only_with_the_documented_fields() -> None:
+    sig = inspect.signature(AuditSink.record)
+    names = list(sig.parameters)
+    assert names[0] == "self" and all(
+        sig.parameters[n].kind is inspect.Parameter.KEYWORD_ONLY for n in names[1:]
+    )
+    assert set(names[1:]) == {
+        "stage", "actor", "input_hash", "output_hash", "tokens_in", "tokens_out", "usd",
+        "latency_ms", "cached", "control_id", "decision",
+    }  # fmt: skip
+    assert (
+        sig.parameters["control_id"].default is None and sig.parameters["decision"].default is None
+    )

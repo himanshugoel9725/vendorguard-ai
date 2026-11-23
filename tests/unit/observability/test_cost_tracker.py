@@ -221,3 +221,28 @@ def test_record_cache_hit_counts_without_cost_or_calls(make: Make) -> None:
     tracker.record_cache_hit()
     s = tracker.summary()
     assert (s.cache_hits, s.llm_calls, s.usd) == (2, 0, 0.0)
+
+
+def test_cost_of_is_exact_rounded_and_does_not_change_the_totals(make: Make) -> None:
+    tracker = make(PRICES)
+    assert (
+        tracker.cost_of("openai", "gpt-6-luna", Usage(tokens_in=1_000_000, tokens_out=500_000))
+        == 0.35
+    )
+    assert tracker.cost_of("openai", "gpt-6-luna", Usage(tokens_in=1)) == 1e-07  # 0.10 / 1e6
+    assert tracker.cost_of("openai", "gpt-6-luna", Usage(tokens_in=1, tokens_out=1)) == 6e-07
+    assert tracker.cost_of("groq", "m", Usage(tokens_in=10**9, tokens_out=10**9)) == 0.0
+    assert tracker.summary().usd == 0.0 and tracker.summary().llm_calls == 0
+
+
+def test_cost_of_agrees_with_what_record_adds(make: Make) -> None:
+    tracker = make(PRICES, max_usd_per_run=100.0)
+    usage = Usage(tokens_in=123_456, tokens_out=7_890)
+    expected = tracker.cost_of("openai", "gpt-other", usage)
+    tracker.record("openai", "gpt-other", usage)
+    assert tracker.summary().usd == pytest.approx(expected, abs=1e-6)
+
+
+def test_cost_of_needs_a_price(make: Make) -> None:
+    with pytest.raises(ConfigError, match="no price for"):
+        make(PRICES).cost_of("unknown", "m", Usage())

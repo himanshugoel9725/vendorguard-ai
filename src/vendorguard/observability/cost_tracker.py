@@ -14,7 +14,15 @@ from vendorguard.models.run import CostSummary
 log = logging.getLogger(__name__)
 TOKENS_PER_PRICE_UNIT = Decimal(1_000_000)  # prices are per million tokens
 USD_DECIMALS = 6
+EVENT_USD_DECIMALS = 9  # a single cheap call costs fractions of a cent
 Kind = Literal["llm", "decider"]
+
+
+def _cost(price: PriceSettings, usage: Usage) -> Decimal:
+    """Dollars for the tokens of one call at ``price`` (per million tokens)."""
+    return (
+        usage.tokens_in * Decimal(str(price.input)) + usage.tokens_out * Decimal(str(price.output))
+    ) / TOKENS_PER_PRICE_UNIT
 
 
 class CostTracker:
@@ -52,6 +60,10 @@ class CostTracker:
         best = max(matches, key=lambda p: (len(p.replace("*", "")), p))
         return self._s.prices_per_million_tokens[best]
 
+    def cost_of(self, provider: str, model: str, usage: Usage) -> float:
+        """The dollars of one call (exact decimal arithmetic, rounded to 9 places)."""
+        return round(float(_cost(self.price_for(provider, model), usage)), EVENT_USD_DECIMALS)
+
     def ensure_budget(self, provider: str, model: str, kind: Kind = "llm") -> None:
         """Call before a model call: the model must be priced and the budget not yet used up."""
         self.price_for(provider, model)
@@ -77,11 +89,7 @@ class CostTracker:
             self._calls[kind] += 1
             self._tokens_in += usage.tokens_in
             self._tokens_out += usage.tokens_out
-            cost = (
-                usage.tokens_in * Decimal(str(price.input))
-                + usage.tokens_out * Decimal(str(price.output))
-            ) / TOKENS_PER_PRICE_UNIT
-            self._usd += cost
+            self._usd += _cost(price, usage)
             self._check_after_call()
 
     def record_cache_hit(self) -> None:
