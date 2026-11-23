@@ -1,0 +1,157 @@
+{
+  "controls": {
+    "DAT-01": {
+      "page": 4,
+      "sentence": "Disk encryption and KMS-managed keys protect all databases and file storage, in line with our encryption at rest standard.",
+      "state": "met",
+      "variant": 1
+    },
+    "DAT-02": {
+      "page": 4,
+      "sentence": "All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.",
+      "state": "met",
+      "variant": 0
+    },
+    "DAT-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "DAT-04": {
+      "page": 4,
+      "sentence": "A privacy programme exists and GDPR compliance work is in progress, with a data processing agreement drafted for some customers.",
+      "state": "partial",
+      "variant": 0
+    },
+    "DAT-05": {
+      "page": 4,
+      "sentence": "Backups are taken regularly and kept offsite, but restore tests are informal.",
+      "state": "partial",
+      "variant": 0
+    },
+    "GOV-01": {
+      "page": 2,
+      "sentence": "A written security policy covers all staff, and management approval is renewed at each annual policy review.",
+      "state": "met",
+      "variant": 1
+    },
+    "GOV-02": {
+      "page": 2,
+      "sentence": "The Chief Information Security Officer is accountable for information security and leads a dedicated security team.",
+      "state": "met",
+      "variant": 0
+    },
+    "GOV-03": {
+      "page": 2,
+      "sentence": "Risk assessment is carried out ad hoc, and a risk register is being rolled out for risk management.",
+      "state": "partial",
+      "variant": 0
+    },
+    "IAM-01": {
+      "page": 3,
+      "sentence": "Every access request is approved by the data owner on a need to know basis, and RBAC groups define standard permissions.",
+      "state": "met",
+      "variant": 1
+    },
+    "IAM-02": {
+      "page": 3,
+      "sentence": "Multi-factor authentication is mandatory for all staff, administrators and remote access, and single sign-on is required for production tools.",
+      "state": "met",
+      "variant": 0
+    },
+    "IAM-03": {
+      "page": 3,
+      "sentence": "Admin access uses a break-glass procedure, and elevated privileges are granted only for the time needed.",
+      "state": "met",
+      "variant": 1
+    },
+    "IAM-04": {
+      "page": 3,
+      "sentence": "An access review takes place once a year, and deprovisioning is handled manually for some systems.",
+      "state": "partial",
+      "variant": 0
+    },
+    "OPS-01": {
+      "page": 5,
+      "sentence": "Security-relevant events are sent to a central SIEM for logging, and audit logs are kept for twelve months under our log retention rule.",
+      "state": "met",
+      "variant": 0
+    },
+    "OPS-02": {
+      "page": 5,
+      "sentence": "A patch management process applies updates monthly, and every CVE rated critical is tracked until closed.",
+      "state": "met",
+      "variant": 1
+    },
+    "OPS-03": {
+      "page": 5,
+      "sentence": "A penetration test is not performed, and no independent security testing takes place.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "OPS-04": {
+      "page": 5,
+      "sentence": "A firewall protects the production network, and network segmentation is being rolled out between environments.",
+      "state": "partial",
+      "variant": 0
+    },
+    "PEO-01": {
+      "page": 9,
+      "sentence": "Security awareness training is not performed, and no phishing simulation is run.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "PEO-02": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "RES-01": {
+      "page": 6,
+      "sentence": "A documented incident response plan defines roles and severity levels, and a tabletop exercise tests it every year.",
+      "state": "met",
+      "variant": 0
+    },
+    "RES-02": {
+      "page": 6,
+      "sentence": "The company does not commit to notify customers of a data breach within a set time.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "RES-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "SDL-01": {
+      "page": 7,
+      "sentence": "Software follows a secure development lifecycle in which every change gets a code review and SAST runs in the pipeline.",
+      "state": "met",
+      "variant": 0
+    },
+    "SDL-02": {
+      "page": 7,
+      "sentence": "Change approval is required for major releases, and rollback is tested ad hoc.",
+      "state": "partial",
+      "variant": 0
+    },
+    "TPR-01": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "TPR-02": {
+      "page": 8,
+      "sentence": "The in-scope services hold a current certification, and an annual independent audit renews it.",
+      "state": "met",
+      "variant": 1
+    }
+  },
+  "doc": "quillfield.pdf",
+  "page_count": 9,
+  "vendor_id": "quillfield"
+}

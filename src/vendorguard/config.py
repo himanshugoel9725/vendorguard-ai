@@ -29,6 +29,7 @@ from vendorguard.config_models.core import (
     PromptsSettings,
     ReportingSettings,
     RetrievalSettings,
+    SamplesSettings,
 )
 from vendorguard.config_models.providers import (
     CacheSettings,
@@ -77,6 +78,7 @@ class Settings(BaseSettings):
     cost: CostSettings
     reporting: ReportingSettings
     api: ApiSettings
+    samples: SamplesSettings
     eval: EvalSettings
 
     def fingerprint(self) -> str:

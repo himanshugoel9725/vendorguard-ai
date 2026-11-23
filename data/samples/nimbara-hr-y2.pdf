@@ -1,0 +1,439 @@
+%PDF-1.3
+%יכס¿
+1 0 obj
+<<
+/Count 9
+/Kids [3 0 R
+5 0 R
+7 0 R
+9 0 R
+11 0 R
+13 0 R
+15 0 R
+17 0 R
+19 0 R]
+/MediaBox [0 0 595.28 841.89]
+/Type /Pages
+>>
+endobj
+2 0 obj
+<<
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+/Pages 1 0 R
+/Type /Catalog
+>>
+endobj
+3 0 obj
+<<
+/Contents 4 0 R
+/Parent 1 0 R
+/Resources 23 0 R
+/Type /Page
+>>
+endobj
+4 0 obj
+<<
+/Length 1103
+>>
+stream
+2 J
+0.57 w
+BT /F1 20.00 Tf ET
+BT 59.53 763.61 Td (Security & Trust Overview) Tj ET
+BT /F1 14.00 Tf ET
+BT 59.53 726.43 Td (Nimbara HR) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 696.45 Td (Reporting period: 2026.) Tj ET
+BT 59.53 665.27 Td (Nimbara HR provides a cloud payroll and human-resources platform for mid-sized) Tj ET
+BT 59.53 649.68 Td (employers. It processes employee records and bank details on behalf of its customers.) Tj ET
+BT 59.53 618.50 Td (Services: Cloud payroll processing; Employee records and leave management; Payslip) Tj ET
+BT 59.53 602.91 Td (delivery portal.) Tj ET
+BT 59.53 571.72 Td (Hosting: Stratus Cloud, Frankfurt region.) Tj ET
+BT 59.53 540.54 Td (Data handled: employee and customer contact records; bank account and payment details.) Tj ET
+BT 59.53 509.36 Td (Key suppliers: Stratus Cloud \(hosting\); Mailwave \(transactional email\); Payrail Gateway) Tj ET
+BT 59.53 493.77 Td (\(payment file transfer\).) Tj ET
+BT 59.53 462.59 Td (Independent reports held: SOC 2 Type II; ISO/IEC 27001:2022.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 1 of ) Tj (9) Tj ET
+
+endstream
+endobj
+5 0 obj
+<<
+/Contents 6 0 R
+/Parent 1 0 R
+/Resources 24 0 R
+/Type /Page
+>>
+endobj
+6 0 obj
+<<
+/Length 954
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 1: Governance) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (The sections below follow the order in which customers usually ask their questions.) Tj ET
+BT 59.53 712.04 Td (A written security policy covers all staff, and management approval is renewed at each) Tj ET
+BT 59.53 696.45 Td (annual policy review.) Tj ET
+BT 59.53 665.27 Td (Security roles and responsibilities are documented, and a named security officer reports) Tj ET
+BT 59.53 649.68 Td (to the executive team.) Tj ET
+BT 59.53 618.50 Td (A risk assessment is performed every year and after major changes, and findings are) Tj ET
+BT 59.53 602.91 Td (tracked in a risk register with risk treatment plans.) Tj ET
+BT 59.53 571.72 Td (Regular company meetings give every employee a chance to raise questions with the) Tj ET
+BT 59.53 556.13 Td (leadership.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 2 of ) Tj (9) Tj ET
+
+endstream
+endobj
+7 0 obj
+<<
+/Contents 8 0 R
+/Parent 1 0 R
+/Resources 25 0 R
+/Type /Page
+>>
+endobj
+8 0 obj
+<<
+/Length 1073
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 2: Access) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (Accounts for new staff are created on their first day at the company.) Tj ET
+BT 59.53 712.04 Td (Access to systems and customer data follows an access control policy based on least) Tj ET
+BT 59.53 696.45 Td (privilege and role-based access.) Tj ET
+BT 59.53 665.27 Td (All workforce accounts use MFA through the company single sign-on provider, with strong) Tj ET
+BT 59.53 649.68 Td (authentication on administrative interfaces.) Tj ET
+BT 59.53 618.50 Td (Privileged access is limited to a small group of approved staff, and administrator) Tj ET
+BT 59.53 602.91 Td (accounts are separate, logged and reviewed.) Tj ET
+BT 59.53 571.72 Td (Quarterly review of access rights is enforced, with automated deprovisioning as part of) Tj ET
+BT 59.53 556.13 Td (staff offboarding.) Tj ET
+BT 59.53 524.95 Td (The helpdesk answers questions about laptops and accounts during office hours.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 3 of ) Tj (9) Tj ET
+
+endstream
+endobj
+9 0 obj
+<<
+/Contents 10 0 R
+/Parent 1 0 R
+/Resources 26 0 R
+/Type /Page
+>>
+endobj
+10 0 obj
+<<
+/Length 1172
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 3: Data handling) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (Customers can export their own data from the portal at any time.) Tj ET
+BT 59.53 712.04 Td (Disk encryption and KMS-managed keys protect all databases and file storage, in line) Tj ET
+BT 59.53 696.45 Td (with our encryption at rest standard.) Tj ET
+BT 59.53 665.27 Td (All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is) Tj ET
+BT 59.53 649.68 Td (enforced on every public endpoint.) Tj ET
+BT 59.53 618.50 Td (Data retention periods are defined in the contract, and customer data is deleted within) Tj ET
+BT 59.53 602.91 Td (30 days of termination using secure deletion.) Tj ET
+BT 59.53 571.72 Td (The privacy programme meets GDPR requirements, and PII is processed only under a data) Tj ET
+BT 59.53 556.13 Td (processing agreement.) Tj ET
+BT 59.53 524.95 Td (Backups are taken regularly and kept offsite, but restore tests are informal.) Tj ET
+BT 59.53 493.77 Td (Reports and dashboards are generated from the stored data on request.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 4 of ) Tj (9) Tj ET
+
+endstream
+endobj
+11 0 obj
+<<
+/Contents 12 0 R
+/Parent 1 0 R
+/Resources 27 0 R
+/Type /Page
+>>
+endobj
+12 0 obj
+<<
+/Length 861
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 4: Operations) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (New features are announced to customers in a monthly newsletter.) Tj ET
+BT 59.53 712.04 Td (Security-relevant events are sent to a central SIEM for logging, and audit logs are kept) Tj ET
+BT 59.53 696.45 Td (for twelve months under our log retention rule.) Tj ET
+BT 59.53 665.27 Td (Vulnerability scanning is run for most systems, and patching is handled ad hoc.) Tj ET
+BT 59.53 634.09 Td (Security groups restrict traffic between environments, and a web application firewall) Tj ET
+BT 59.53 618.50 Td (and intrusion detection protect public endpoints.) Tj ET
+BT 59.53 587.32 Td (Operational dashboards show how fast pages load for customers around the world.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 5 of ) Tj (9) Tj ET
+
+endstream
+endobj
+13 0 obj
+<<
+/Contents 14 0 R
+/Parent 1 0 R
+/Resources 28 0 R
+/Type /Page
+>>
+endobj
+14 0 obj
+<<
+/Length 897
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 5: Resilience) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (Customers can follow the service status on a public page.) Tj ET
+BT 59.53 712.04 Td (A documented incident response plan defines roles and severity levels, and a tabletop) Tj ET
+BT 59.53 696.45 Td (exercise tests it every year.) Tj ET
+BT 59.53 665.27 Td (The company will notify customers through an incident notification within 72 hours, and) Tj ET
+BT 59.53 649.68 Td (affected customers receive regular updates.) Tj ET
+BT 59.53 618.50 Td (Business continuity and disaster recovery plans set an RTO of four hours and an RPO of) Tj ET
+BT 59.53 602.91 Td (one hour, and are tested every year.) Tj ET
+BT 59.53 571.72 Td (Offices have fire exits, evacuation signs and first-aid kits on every floor.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 6 of ) Tj (9) Tj ET
+
+endstream
+endobj
+15 0 obj
+<<
+/Contents 16 0 R
+/Parent 1 0 R
+/Resources 29 0 R
+/Type /Page
+>>
+endobj
+16 0 obj
+<<
+/Length 691
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 6: Engineering) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (Engineers use modern programming languages and shared libraries.) Tj ET
+BT 59.53 712.04 Td (Software follows a secure development lifecycle in which every change gets a code review) Tj ET
+BT 59.53 696.45 Td (and SAST runs in the pipeline.) Tj ET
+BT 59.53 665.27 Td (A change advisory board approves releases, and peer-reviewed changes move through the) Tj ET
+BT 59.53 649.68 Td (deployment pipeline.) Tj ET
+BT 59.53 618.50 Td (The engineering group meets every Monday to discuss the week.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 7 of ) Tj (9) Tj ET
+
+endstream
+endobj
+17 0 obj
+<<
+/Contents 18 0 R
+/Parent 1 0 R
+/Resources 30 0 R
+/Type /Page
+>>
+endobj
+18 0 obj
+<<
+/Length 622
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 7: Suppliers and assurance) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (Customers receive support in several languages.) Tj ET
+BT 59.53 712.04 Td (A subprocessor list is kept, and vendor risk reviews are informal.) Tj ET
+BT 59.53 680.86 Td (A current independent audit confirms the in-scope services, and the attestation report) Tj ET
+BT 59.53 665.27 Td (is available to customers on request.) Tj ET
+BT 59.53 634.09 Td (Partner events are held twice a year to share product news.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 8 of ) Tj (9) Tj ET
+
+endstream
+endobj
+19 0 obj
+<<
+/Contents 20 0 R
+/Parent 1 0 R
+/Resources 31 0 R
+/Type /Page
+>>
+endobj
+20 0 obj
+<<
+/Length 656
+>>
+stream
+2 J
+0.57 w
+BT /F1 14.00 Tf ET
+BT 59.53 773.20 Td (Section 8: People) Tj ET
+BT /F2 10.00 Tf ET
+BT 59.53 743.22 Td (The company employs people in several countries and offers flexible working.) Tj ET
+BT 59.53 712.04 Td (Awareness training is given to new hires, and a phishing simulation is on the roadmap.) Tj ET
+BT 59.53 680.86 Td (Pre-employment screening includes reference checks and a criminal record check for roles) Tj ET
+BT 59.53 665.27 Td (with access to customer data.) Tj ET
+BT 59.53 634.09 Td (Employees can join interest groups such as running and chess clubs.) Tj ET
+BT /F2 8.00 Tf ET
+BT 247.18 33.03 Td (Nimbara HR - Page 9 of ) Tj (9) Tj ET
+
+endstream
+endobj
+21 0 obj
+<<
+/BaseFont /Helvetica-Bold
+/Encoding /WinAnsiEncoding
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+22 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+23 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+24 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+25 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+26 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+27 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+28 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+29 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+30 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+31 0 obj
+<<
+/Font <</F1 21 0 R
+/F2 22 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+32 0 obj
+<<
+/Author (Nimbara HR)
+/CreationDate (D:20250101000000Z)
+/Creator (VendorGuard sample generator)
+/Producer (VendorGuard sample generator)
+/Title (Nimbara HR - Security & Trust Overview)
+>>
+endobj
+xref
+0 33
+0000000000 65535 f 
+0000000015 00000 n 
+0000000155 00000 n 
+0000000258 00000 n 
+0000000339 00000 n 
+0000001494 00000 n 
+0000001575 00000 n 
+0000002580 00000 n 
+0000002661 00000 n 
+0000003786 00000 n 
+0000003868 00000 n 
+0000005093 00000 n 
+0000005176 00000 n 
+0000006089 00000 n 
+0000006172 00000 n 
+0000007121 00000 n 
+0000007204 00000 n 
+0000007947 00000 n 
+0000008030 00000 n 
+0000008704 00000 n 
+0000008787 00000 n 
+0000009495 00000 n 
+0000009598 00000 n 
+0000009696 00000 n 
+0000009796 00000 n 
+0000009896 00000 n 
+0000009996 00000 n 
+0000010096 00000 n 
+0000010196 00000 n 
+0000010296 00000 n 
+0000010396 00000 n 
+0000010496 00000 n 
+0000010596 00000 n 
+trailer
+<<
+/Size 33
+/Root 2 0 R
+/Info 32 0 R
+/ID [<a8a990bf36819faaadf79f57f557107f><a8a990bf36819faaadf79f57f557107f>]
+>>
+startxref
+10802
+%%EOF

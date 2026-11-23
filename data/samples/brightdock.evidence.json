@@ -1,0 +1,157 @@
+{
+  "controls": {
+    "DAT-01": {
+      "page": 4,
+      "sentence": "Databases use encryption at rest with AES-256, and disk encryption for file storage is on the roadmap.",
+      "state": "partial",
+      "variant": 0
+    },
+    "DAT-02": {
+      "page": 4,
+      "sentence": "All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.",
+      "state": "met",
+      "variant": 0
+    },
+    "DAT-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "DAT-04": {
+      "page": 4,
+      "sentence": "A privacy programme exists and GDPR compliance work is in progress, with a data processing agreement drafted for some customers.",
+      "state": "partial",
+      "variant": 0
+    },
+    "DAT-05": {
+      "page": 4,
+      "sentence": "Point-in-time recovery is available for production databases, and backup encryption is applied to every copy.",
+      "state": "met",
+      "variant": 1
+    },
+    "GOV-01": {
+      "page": 2,
+      "sentence": "A written security policy covers all staff, and management approval is renewed at each annual policy review.",
+      "state": "met",
+      "variant": 1
+    },
+    "GOV-02": {
+      "page": 2,
+      "sentence": "The Chief Information Security Officer is accountable for information security and leads a dedicated security team.",
+      "state": "met",
+      "variant": 0
+    },
+    "GOV-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "IAM-01": {
+      "page": 3,
+      "sentence": "Access to systems and customer data follows an access control policy based on least privilege and role-based access.",
+      "state": "met",
+      "variant": 0
+    },
+    "IAM-02": {
+      "page": 3,
+      "sentence": "Multi-factor authentication is not enforced for staff accounts, and two-factor sign-in is optional.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "IAM-03": {
+      "page": 3,
+      "sentence": "Administrator accounts are restricted for most systems, and privileged access management tooling is being rolled out.",
+      "state": "partial",
+      "variant": 0
+    },
+    "IAM-04": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "OPS-01": {
+      "page": 5,
+      "sentence": "Logging is centralised for production systems, and security monitoring is in progress for the rest.",
+      "state": "partial",
+      "variant": 0
+    },
+    "OPS-02": {
+      "page": 5,
+      "sentence": "Vulnerability scanning is not performed, and there is no formal patch management process.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "OPS-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "OPS-04": {
+      "page": 5,
+      "sentence": "Production runs in a dedicated VPC with network segmentation, and a firewall controls every inbound connection.",
+      "state": "met",
+      "variant": 0
+    },
+    "PEO-01": {
+      "page": 9,
+      "sentence": "Security awareness training is not performed, and no phishing simulation is run.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "PEO-02": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "RES-01": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "RES-02": {
+      "page": 6,
+      "sentence": "The company does not commit to notify customers of a data breach within a set time.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "RES-03": {
+      "page": 6,
+      "sentence": "A disaster recovery plan exists with an RTO target, and a business continuity test is planned.",
+      "state": "partial",
+      "variant": 0
+    },
+    "SDL-01": {
+      "page": 7,
+      "sentence": "A secure development lifecycle is not in place, and code review is not performed for most changes.",
+      "state": "not_met",
+      "variant": 0
+    },
+    "SDL-02": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "TPR-01": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "TPR-02": {
+      "page": 8,
+      "sentence": "The in-scope services hold a current certification, and an annual independent audit renews it.",
+      "state": "met",
+      "variant": 1
+    }
+  },
+  "doc": "brightdock.pdf",
+  "page_count": 9,
+  "vendor_id": "brightdock"
+}

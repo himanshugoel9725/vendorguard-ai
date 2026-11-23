@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import AwareDatetime, Field, SecretStr, model_validator
 
 from vendorguard.config_models.base import (
     DeciderProvider,
@@ -11,6 +11,7 @@ from vendorguard.config_models.base import (
     LlmProvider,
     NonNegFloat,
     NonNegInt,
+    PositiveFloat,
     PositiveInt,
     Probability,
     StrictModel,
@@ -129,6 +130,21 @@ class ApiSettings(StrictModel):
     rate_limit_per_minute: PositiveInt
 
 
+class SamplesSettings(StrictModel):
+    """Synthetic sample-vendor generator: input locations and PDF layout."""
+
+    specs_dir: Path
+    phrases_file: Path
+    creation_date: AwareDatetime
+    wrap_chars: PositiveInt
+    lines_per_page: PositiveInt
+    font_size_pt: PositiveFloat
+    title_font_size_pt: PositiveFloat
+    heading_font_size_pt: PositiveFloat
+    line_height_mm: PositiveFloat
+    margin_mm: PositiveFloat
+
+
 class EvalConfig(StrictModel):
     """One row of the evaluation matrix."""
 
@@ -159,4 +175,5 @@ __all__ = [
     "PromptsSettings",
     "ReportingSettings",
     "RetrievalSettings",
+    "SamplesSettings",
 ]

@@ -1,0 +1,157 @@
+{
+  "controls": {
+    "DAT-01": {
+      "page": 4,
+      "sentence": "Disk encryption and KMS-managed keys protect all databases and file storage, in line with our encryption at rest standard.",
+      "state": "met",
+      "variant": 1
+    },
+    "DAT-02": {
+      "page": 4,
+      "sentence": "All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.",
+      "state": "met",
+      "variant": 0
+    },
+    "DAT-03": {
+      "page": 4,
+      "sentence": "Data retention periods are defined in the contract, and customer data is deleted within 30 days of termination using secure deletion.",
+      "state": "met",
+      "variant": 0
+    },
+    "DAT-04": {
+      "page": 4,
+      "sentence": "The privacy programme meets GDPR requirements, and PII is processed only under a data processing agreement.",
+      "state": "met",
+      "variant": 1
+    },
+    "DAT-05": {
+      "page": 4,
+      "sentence": "Backups are taken regularly and kept offsite, but restore tests are informal.",
+      "state": "partial",
+      "variant": 0
+    },
+    "GOV-01": {
+      "page": 2,
+      "sentence": "A written security policy covers all staff, and management approval is renewed at each annual policy review.",
+      "state": "met",
+      "variant": 1
+    },
+    "GOV-02": {
+      "page": 2,
+      "sentence": "Security roles and responsibilities are documented, and a named security officer reports to the executive team.",
+      "state": "met",
+      "variant": 1
+    },
+    "GOV-03": {
+      "page": 2,
+      "sentence": "A risk assessment is performed every year and after major changes, and findings are tracked in a risk register with risk treatment plans.",
+      "state": "met",
+      "variant": 0
+    },
+    "IAM-01": {
+      "page": 3,
+      "sentence": "Access to systems and customer data follows an access control policy based on least privilege and role-based access.",
+      "state": "met",
+      "variant": 0
+    },
+    "IAM-02": {
+      "page": 3,
+      "sentence": "All workforce accounts use MFA through the company single sign-on provider, with strong authentication on administrative interfaces.",
+      "state": "met",
+      "variant": 1
+    },
+    "IAM-03": {
+      "page": 3,
+      "sentence": "Privileged access is limited to a small group of approved staff, and administrator accounts are separate, logged and reviewed.",
+      "state": "met",
+      "variant": 0
+    },
+    "IAM-04": {
+      "page": 3,
+      "sentence": "Quarterly review of access rights is enforced, with automated deprovisioning as part of staff offboarding.",
+      "state": "met",
+      "variant": 1
+    },
+    "OPS-01": {
+      "page": 5,
+      "sentence": "Security-relevant events are sent to a central SIEM for logging, and audit logs are kept for twelve months under our log retention rule.",
+      "state": "met",
+      "variant": 0
+    },
+    "OPS-02": {
+      "page": 5,
+      "sentence": "Vulnerability scanning is run for most systems, and patching is handled ad hoc.",
+      "state": "partial",
+      "variant": 0
+    },
+    "OPS-03": {
+      "page": null,
+      "sentence": null,
+      "state": "missing",
+      "variant": null
+    },
+    "OPS-04": {
+      "page": 5,
+      "sentence": "Security groups restrict traffic between environments, and a web application firewall and intrusion detection protect public endpoints.",
+      "state": "met",
+      "variant": 1
+    },
+    "PEO-01": {
+      "page": 9,
+      "sentence": "Awareness training is given to new hires, and a phishing simulation is on the roadmap.",
+      "state": "partial",
+      "variant": 0
+    },
+    "PEO-02": {
+      "page": 9,
+      "sentence": "Pre-employment screening includes reference checks and a criminal record check for roles with access to customer data.",
+      "state": "met",
+      "variant": 1
+    },
+    "RES-01": {
+      "page": 6,
+      "sentence": "A documented incident response plan defines roles and severity levels, and a tabletop exercise tests it every year.",
+      "state": "met",
+      "variant": 0
+    },
+    "RES-02": {
+      "page": 6,
+      "sentence": "The company will notify customers through an incident notification within 72 hours, and affected customers receive regular updates.",
+      "state": "met",
+      "variant": 1
+    },
+    "RES-03": {
+      "page": 6,
+      "sentence": "Business continuity and disaster recovery plans set an RTO of four hours and an RPO of one hour, and are tested every year.",
+      "state": "met",
+      "variant": 0
+    },
+    "SDL-01": {
+      "page": 7,
+      "sentence": "Software follows a secure development lifecycle in which every change gets a code review and SAST runs in the pipeline.",
+      "state": "met",
+      "variant": 0
+    },
+    "SDL-02": {
+      "page": 7,
+      "sentence": "A change advisory board approves releases, and peer-reviewed changes move through the deployment pipeline.",
+      "state": "met",
+      "variant": 1
+    },
+    "TPR-01": {
+      "page": 8,
+      "sentence": "A subprocessor list is kept, and vendor risk reviews are informal.",
+      "state": "partial",
+      "variant": 0
+    },
+    "TPR-02": {
+      "page": 8,
+      "sentence": "A current independent audit confirms the in-scope services, and the attestation report is available to customers on request.",
+      "state": "met",
+      "variant": 0
+    }
+  },
+  "doc": "nimbara-hr-y2.pdf",
+  "page_count": 9,
+  "vendor_id": "nimbara-hr"
+}

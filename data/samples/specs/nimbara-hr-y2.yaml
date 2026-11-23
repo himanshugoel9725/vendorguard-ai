@@ -7,7 +7,7 @@ based_on: nimbara-hr
 report_period: "2026"
 summary: >
   Nimbara HR provides a cloud payroll and human-resources platform for mid-sized employers.
-  It processes employee personal data and bank details on behalf of its customers.
+  It processes employee records and bank details on behalf of its customers.
 expected_inherent_tier: high
 services:
   - Cloud payroll processing

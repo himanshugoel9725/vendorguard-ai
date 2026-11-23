@@ -1,0 +1,81 @@
+Security & Trust Overview
+
+Brightdock Freight
+
+Reporting period: 2025.
+
+Brightdock Freight arranges freight forwarding and customs paperwork and offers a shipment tracking portal. It holds business contact details only.
+
+Services: Freight forwarding; Customs documentation; Shipment tracking portal.
+
+Hosting: Self-managed servers in a colocation facility.
+
+Data handled: business contact details only.
+
+Independent reports held: ISO/IEC 27001:2022.Section 1: Governance
+
+This overview describes how the company organises its work and what customers can expect from it.
+
+A written security policy covers all staff, and management approval is renewed at each annual policy review.
+
+The Chief Information Security Officer is accountable for information security and leads a dedicated security team.
+
+The company was founded to make routine work easier for its customers.Section 2: Access
+
+Customers sign in through a web portal, and staff use company laptops for daily work.
+
+Access to systems and customer data follows an access control policy based on least privilege and role-based access.
+
+Multi-factor authentication is not enforced for staff accounts, and two-factor sign-in is optional.
+
+Administrator accounts are restricted for most systems, and privileged access management tooling is being rolled out.
+
+Employees can reset forgotten passwords through the self-service page.Section 3: Data handling
+
+Customer data is stored in the region chosen by the customer at signup.
+
+Databases use encryption at rest with AES-256, and disk encryption for file storage is on the roadmap.
+
+All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.
+
+A privacy programme exists and GDPR compliance work is in progress, with a data processing agreement drafted for some customers.
+
+Point-in-time recovery is available for production databases, and backup encryption is applied to every copy.
+
+Reports and dashboards are generated from the stored data on request.Section 4: Operations
+
+New features are announced to customers in a monthly newsletter.
+
+Logging is centralised for production systems, and security monitoring is in progress for the rest.
+
+Vulnerability scanning is not performed, and there is no formal patch management process.
+
+Production runs in a dedicated VPC with network segmentation, and a firewall controls every inbound connection.
+
+Servers are located in modern facilities with reliable power and cooling.Section 5: Resilience
+
+The service aims to be available whenever customers need it.
+
+The company does not commit to notify customers of a data breach within a set time.
+
+A disaster recovery plan exists with an RTO target, and a business continuity test is planned.
+
+Staff are encouraged to keep their emergency contact details up to date.Section 6: Engineering
+
+New features are designed by small teams that work closely with customers.
+
+A secure development lifecycle is not in place, and code review is not performed for most changes.
+
+The engineering group meets every Monday to discuss the week.Section 7: Suppliers and assurance
+
+Customers receive support in several languages.
+
+The in-scope services hold a current certification, and an annual independent audit renews it.
+
+Purchasing of office supplies follows the company expense rules.Section 8: People
+
+The company employs people in several countries and offers flexible working.
+
+Security awareness training is not performed, and no phishing simulation is run.
+
+Employees can join interest groups such as running and chess clubs.

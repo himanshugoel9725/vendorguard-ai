@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 2: Domain models, controls, synthetic vendors |
-| Next task | 2.4 |
-| Last completed task | 2.3 |
+| Next task | 2.5 |
+| Last completed task | 2.4 |
 | Last updated | 2026-11-23 |
 | Blockers | none |
 
@@ -54,7 +54,7 @@
 - [x] 2.1 Pydantic data contracts
 - [x] 2.2 Control-set loader
 - [x] 2.3 Vendor specs (nimbara-hr, quillfield, brightdock, nimbara-hr-y2)
-- [ ] 2.4 Phrase bank + deterministic PDF/TXT generator + evidence maps
+- [x] 2.4 Phrase bank + deterministic PDF/TXT generator + evidence maps
 - [ ] 2.5 Golden labels
 - [ ] 2.6 Tests (test-writer)
 - [ ] 2.7 Checkpoint, tag phase-2-done
@@ -170,6 +170,7 @@ Half-finished work, uncommitted changes, or things the next session must know:
 - 1.8: CI = `.github/workflows/ci.yml` (frozen sync, no-HF guard, ruff, format check, mypy, pytest with coverage report). gitleaks and the Python 3.12/3.13 matrix arrive in 10.1. Actions pinned to full commit SHAs with the version in a comment (setup-uv publishes no floating major tag, so `@v10` failed on GitHub); Dependabot bumps them. CI has not run on GitHub yet (nothing pushed since the T0 commit).
 - 1.9 review (code-reviewer, verdict: ready, no blockers). Fixed: YAML secret guard now covers lists and blank strings; fingerprint uses `hash_obj` and drops `SecretStr` by type; more redaction patterns (Gemini AIza, Basic, URL credentials, key=value); canonical_json rejects str-key collisions. **Deferred (do before Phase 4/10):** (a) pin pre-commit revs to commit SHAs (Actions already pinned); (b) the redaction filter is attached to the handler from `setup_logging` only, so any new handler (file, server) must add `RedactingFilter` too, and `extra=` record attributes are not redacted; (c) `DEFAULT_CONFIG` and `env_file=".env"` are cwd/editable-install relative (fine locally; revisit for Docker in 8.6); (d) unknown top-level `VG_` env vars are silently ignored; (e) secrets shorter than 4 chars would mangle logs (real keys never are).
 - Tag `phase-1-done` is on GitHub at 9def0f5 (its CI run failed on the action pin); the green commit is 2841032. Moving it needs a force push, which `.claude/settings.json` denies; the user can run `git tag -f phase-1-done 2841032 && git push --force origin phase-1-done` themselves.
+- 2.4: `make sample` writes `data/samples/<stem>.{pdf,txt,evidence.json}` (12 files, committed, ADR-011). Code: `src/vendorguard/eval/sample_gen/`; settings: new `samples:` section. Specs' summaries were reworded to avoid the keyword `personal data`. The evidence JSON has 25 entries per vendor (`state`, `page`, `sentence`, `variant`; null when the control is missing). For 3.6: gold sentences come from `evidence.json`. For 4.4: use `utils/keywords.py` for matching and read `data_category_phrases` in `phrases.yaml` for the intake mock. Generator tests (determinism, drift, pypdf, y2 wording) are in `tests/unit/eval/sample_gen/`; 2.6 adds the rest.
 - ENVIRONMENT (macOS + iCloud Drive): the project is in ~/Documents, which iCloud syncs, and iCloud kept setting the `hidden` flag on files inside `.venv`; Python 3.12 ignores hidden `.pth` files, so `import vendorguard` failed. Fix applied: the environment is `.venv.nosync/` (iCloud ignores `.nosync`) with a `.venv` symlink to it. If it breaks after a rebuild, run `rm -rf .venv .venv.nosync && UV_PROJECT_ENVIRONMENT=.venv.nosync uv sync --all-groups && ln -s .venv.nosync .venv`. Moving the repo out of ~/Documents (for example to ~/code) is safer still, especially for `.git`.
 - 2.3: specs live in `data/samples/specs/*.yaml`, parsed by `vendorguard.eval.specs` (`load_spec`, `check_covers`, `SampleState.to_status()`; `missing` maps to `no_evidence`). The y2 spec keeps `vendor_id: nimbara-hr` (same vendor, new period) and declares `changes.fixed` / `changes.new_gaps` for the 7.2 diff test. Brightdock has data category `none`, so its inherent tier is low. Tests: `tests/unit/eval/test_specs.py` (16).
 - 2.2: `load_controls(path)` returns a `ControlSet` sorted by ID; `ControlSet.subset(ids)` returns only those controls (empty list gives an empty set, so the orchestrator must treat `pipeline.controls_subset: []` as all). Errors are `ConfigError` naming the control. Tests in 2.6.
@@ -180,4 +181,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.3 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.4 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

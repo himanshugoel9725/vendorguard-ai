@@ -216,6 +216,18 @@ api:
   max_upload_mb: 20
   rate_limit_per_minute: 30
 
+samples:
+  specs_dir: data/samples/specs
+  phrases_file: data/samples/phrases.yaml
+  creation_date: "2025-01-01T00:00:00Z"   # fixed, so generated PDFs are byte-identical on every run
+  wrap_chars: 88            # characters per line when the PDF text is wrapped (fits Helvetica 10 pt)
+  lines_per_page: 40        # line budget per page; a paragraph is never split across pages
+  font_size_pt: 10
+  title_font_size_pt: 20
+  heading_font_size_pt: 14
+  line_height_mm: 5.5
+  margin_mm: 20
+
 eval:
   results_dir: docs/evaluation
   determinism_repeats: 2

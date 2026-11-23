@@ -1,0 +1,95 @@
+Security & Trust Overview
+
+Nimbara HR
+
+Reporting period: 2025.
+
+Nimbara HR provides a cloud payroll and human-resources platform for mid-sized employers. It processes employee records and bank details on behalf of its customers.
+
+Services: Cloud payroll processing; Employee records and leave management; Payslip delivery portal.
+
+Hosting: Stratus Cloud, Frankfurt region.
+
+Data handled: employee and customer contact records; bank account and payment details.
+
+Key suppliers: Stratus Cloud (hosting); Mailwave (transactional email); Payrail Gateway (payment file transfer).
+
+Independent reports held: SOC 2 Type II; ISO/IEC 27001:2022.Section 1: Governance
+
+The sections below follow the order in which customers usually ask their questions.
+
+A written security policy covers all staff, and management approval is renewed at each annual policy review.
+
+Security roles and responsibilities are documented, and a named security officer reports to the executive team.
+
+A risk assessment is performed every year and after major changes, and findings are tracked in a risk register with risk treatment plans.
+
+Regular company meetings give every employee a chance to raise questions with the leadership.Section 2: Access
+
+Accounts for new staff are created on their first day at the company.
+
+Access to systems and customer data follows an access control policy based on least privilege and role-based access.
+
+All workforce accounts use MFA through the company single sign-on provider, with strong authentication on administrative interfaces.
+
+Privileged access is limited to a small group of approved staff, and administrator accounts are separate, logged and reviewed.
+
+An access review takes place once a year, and deprovisioning is handled manually for some systems.
+
+The helpdesk answers questions about laptops and accounts during office hours.Section 3: Data handling
+
+Customers can export their own data from the portal at any time.
+
+Disk encryption and KMS-managed keys protect all databases and file storage, in line with our encryption at rest standard.
+
+All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.
+
+Data retention periods are defined in the contract, and customer data is deleted within 30 days of termination using secure deletion.
+
+The privacy programme meets GDPR requirements, and PII is processed only under a data processing agreement.
+
+Backups are taken regularly and kept offsite, but restore tests are informal.
+
+Reports and dashboards are generated from the stored data on request.Section 4: Operations
+
+New features are announced to customers in a monthly newsletter.
+
+Security-relevant events are sent to a central SIEM for logging, and audit logs are kept for twelve months under our log retention rule.
+
+Vulnerability scanning runs weekly, and patching of critical vulnerabilities follows a remediation SLA of 14 days.
+
+Security groups restrict traffic between environments, and a web application firewall and intrusion detection protect public endpoints.
+
+Operational dashboards show how fast pages load for customers around the world.Section 5: Resilience
+
+Customers can follow the service status on a public page.
+
+A documented incident response plan defines roles and severity levels, and a tabletop exercise tests it every year.
+
+The company will notify customers through an incident notification within 72 hours, and affected customers receive regular updates.
+
+A formal business continuity and disaster recovery plan is not in place, and no RTO or RPO has been set.
+
+Offices have fire exits, evacuation signs and first-aid kits on every floor.Section 6: Engineering
+
+Engineers use modern programming languages and shared libraries.
+
+Software follows a secure development lifecycle in which every change gets a code review and SAST runs in the pipeline.
+
+A change advisory board approves releases, and peer-reviewed changes move through the deployment pipeline.
+
+The engineering group meets every Monday to discuss the week.Section 7: Suppliers and assurance
+
+Customers receive support in several languages.
+
+A subprocessor list is kept, and vendor risk reviews are informal.
+
+A current independent audit confirms the in-scope services, and the attestation report is available to customers on request.
+
+Partner events are held twice a year to share product news.Section 8: People
+
+The company employs people in several countries and offers flexible working.
+
+Awareness training is given to new hires, and a phishing simulation is on the roadmap.
+
+Employees can join interest groups such as running and chess clubs.

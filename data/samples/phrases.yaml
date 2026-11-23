@@ -1,0 +1,285 @@
+# Phrase bank for the synthetic sample vendors (ASCII only; every phrasing is ONE sentence).
+#
+# Rules, checked automatically by `make sample` (see vendorguard.eval.sample_gen.phrases):
+#   met      2-3 phrasings: >= 2 of the control's own keywords, no partial or negative signal phrase
+#   partial  1-2 phrasings: >= 2 own keywords, >= 1 partial signal phrase, no negative signal phrase
+#   not_met  exactly 1:     >= 2 own keywords, >= 1 negative signal phrase, no partial signal phrase
+# Filler and distractor sentences must contain no control keyword and no signal phrase.
+# Keywords come from config/controls/baseline_v1.yaml, signal phrases from decision.rule in
+# config/settings.yaml, and matching is whole-word and case-insensitive (utils/keywords.py).
+version: 1
+
+# Neutral headings, so a section title can never be mistaken for evidence.
+section_titles:
+  GOV: Governance
+  IAM: Access
+  DAT: Data handling
+  OPS: Operations
+  RES: Resilience
+  SDL: Engineering
+  TPR: Suppliers and assurance
+  PEO: People
+
+# How the cover page describes each data category (no control keywords). The mock intake agent
+# (task 4.4) recognises these phrases.
+data_category_phrases:
+  pii: employee and customer contact records
+  financial: bank account and payment details
+  health: health and benefits records
+  credentials: customer login details
+  customer_content: files and datasets uploaded by customers
+  none: business contact details only
+
+filler:
+  GOV:
+    - This overview describes how the company organises its work and what customers can expect from it.
+    - The sections below follow the order in which customers usually ask their questions.
+  IAM:
+    - Customers sign in through a web portal, and staff use company laptops for daily work.
+    - Accounts for new staff are created on their first day at the company.
+  DAT:
+    - Customer data is stored in the region chosen by the customer at signup.
+    - Customers can export their own data from the portal at any time.
+  OPS:
+    - The operations group looks after servers, databases and the tools that keep the service running.
+    - New features are announced to customers in a monthly newsletter.
+  RES:
+    - The service aims to be available whenever customers need it.
+    - Customers can follow the service status on a public page.
+  SDL:
+    - New features are designed by small teams that work closely with customers.
+    - Engineers use modern programming languages and shared libraries.
+  TPR:
+    - The company works with a small number of partners to deliver the service.
+    - Customers receive support in several languages.
+  PEO:
+    - The company employs people in several countries and offers flexible working.
+    - New employees receive a laptop and meet their team during the first week.
+
+distractors:
+  GOV:
+    - Regular company meetings give every employee a chance to raise questions with the leadership.
+    - The company was founded to make routine work easier for its customers.
+  IAM:
+    - Employees can reset forgotten passwords through the self-service page.
+    - The helpdesk answers questions about laptops and accounts during office hours.
+  DAT:
+    - Data volumes grow every month as new customers join the platform.
+    - Reports and dashboards are generated from the stored data on request.
+  OPS:
+    - Operational dashboards show how fast pages load for customers around the world.
+    - Servers are located in modern facilities with reliable power and cooling.
+  RES:
+    - Offices have fire exits, evacuation signs and first-aid kits on every floor.
+    - Staff are encouraged to keep their emergency contact details up to date.
+  SDL:
+    - Every engineer has a laptop and a seat in the team chat.
+    - The engineering group meets every Monday to discuss the week.
+  TPR:
+    - Partner events are held twice a year to share product news.
+    - Purchasing of office supplies follows the company expense rules.
+  PEO:
+    - Social events and team lunches are organised every quarter.
+    - Employees can join interest groups such as running and chess clubs.
+
+controls:
+  GOV-01:
+    met:
+      - The information security policy is approved by management and reviewed annually, and every employee must confirm they have read it.
+      - A written security policy covers all staff, and management approval is renewed at each annual policy review.
+    partial:
+      - A security policy exists, and its annual policy review is in progress for the current year.
+    not_met:
+      - There is no formal information security policy approved by management at this time.
+  GOV-02:
+    met:
+      - The Chief Information Security Officer is accountable for information security and leads a dedicated security team.
+      - Security roles and responsibilities are documented, and a named security officer reports to the executive team.
+    partial:
+      - A security officer has been named, and the wider security team roles and responsibilities are being rolled out.
+    not_met:
+      - The company does not have a security officer or a CISO, and nobody is accountable for information security.
+  GOV-03:
+    met:
+      - A risk assessment is performed every year and after major changes, and findings are tracked in a risk register with risk treatment plans.
+      - Annual risk assessment and threat assessment results feed a maintained risk register reviewed by management.
+    partial:
+      - Risk assessment is carried out ad hoc, and a risk register is being rolled out for risk management.
+    not_met:
+      - A formal risk assessment is not performed and no risk register is maintained.
+  IAM-01:
+    met:
+      - Access to systems and customer data follows an access control policy based on least privilege and role-based access.
+      - Every access request is approved by the data owner on a need to know basis, and RBAC groups define standard permissions.
+    partial:
+      - Role-based access is used for most systems, and least privilege is being rolled out to the remaining ones.
+    not_met:
+      - There is no documented access control policy, and least privilege is not enforced for staff accounts.
+  IAM-02:
+    met:
+      - Multi-factor authentication is mandatory for all staff, administrators and remote access, and single sign-on is required for production tools.
+      - All workforce accounts use MFA through the company single sign-on provider, with strong authentication on administrative interfaces.
+    partial:
+      - Multi-factor authentication is active for administrators, and two-factor sign-in is being rolled out to other staff.
+    not_met:
+      - Multi-factor authentication is not enforced for staff accounts, and two-factor sign-in is optional.
+  IAM-03:
+    met:
+      - Privileged access is limited to a small group of approved staff, and administrator accounts are separate, logged and reviewed.
+      - Admin access uses a break-glass procedure, and elevated privileges are granted only for the time needed.
+    partial:
+      - Administrator accounts are restricted for most systems, and privileged access management tooling is being rolled out.
+    not_met:
+      - There is no formal process for privileged access, and administrator accounts are shared by several engineers.
+  IAM-04:
+    met:
+      - A user access review is carried out every quarter, and access is revoked within 24 hours when staff leave.
+      - Quarterly review of access rights is enforced, with automated deprovisioning as part of staff offboarding.
+    partial:
+      - An access review takes place once a year, and deprovisioning is handled manually for some systems.
+    not_met:
+      - A user access review has not been performed, and offboarding does not trigger account removal.
+  DAT-01:
+    met:
+      - Customer data is encrypted at rest with AES-256, and encryption keys are handled through a managed key management service.
+      - Disk encryption and KMS-managed keys protect all databases and file storage, in line with our encryption at rest standard.
+    partial:
+      - Databases use encryption at rest with AES-256, and disk encryption for file storage is on the roadmap.
+    not_met:
+      - Encryption at rest is not implemented for customer data, and disk encryption is not enabled on servers.
+  DAT-02:
+    met:
+      - All customer traffic uses encryption in transit with TLS 1.2 or higher, and HTTPS is enforced on every public endpoint.
+      - TLS 1.3 is preferred for all connections and HSTS is enabled on customer-facing domains, so data is encrypted in transit.
+    partial:
+      - Public endpoints use HTTPS with TLS 1.2, and internal links are encrypted in transit for most systems.
+    not_met:
+      - HTTPS is not enforced on all endpoints, and encryption in transit is not implemented for internal traffic.
+  DAT-03:
+    met:
+      - Data retention periods are defined in the contract, and customer data is deleted within 30 days of termination using secure deletion.
+      - A retention period is set for each data type, and crypto-shredding is used for data disposal at contract end.
+    partial:
+      - A data retention schedule exists, and secure deletion is performed manually for some systems.
+    not_met:
+      - No formal data retention period is defined, and customer data is kept until a customer asks for secure deletion.
+  DAT-04:
+    met:
+      - A data protection officer oversees privacy, and a data processing agreement covering personal data is available to every customer.
+      - The privacy programme meets GDPR requirements, and PII is processed only under a data processing agreement.
+    partial:
+      - A privacy programme exists and GDPR compliance work is in progress, with a data processing agreement drafted for some customers.
+    not_met:
+      - No data protection officer has been appointed, and a data processing agreement is not in place.
+  DAT-05:
+    met:
+      - Backups are taken daily, encrypted and stored offsite, and a restore test is completed every year.
+      - Point-in-time recovery is available for production databases, and backup encryption is applied to every copy.
+    partial:
+      - Backups are taken regularly and kept offsite, but restore tests are informal.
+    not_met:
+      - Backup encryption is not implemented, and a restore test is not performed.
+  OPS-01:
+    met:
+      - Security-relevant events are sent to a central SIEM for logging, and audit logs are kept for twelve months under our log retention rule.
+      - Security monitoring runs around the clock, and alerting rules notify the duty engineer of suspicious activity.
+    partial:
+      - Logging is centralised for production systems, and security monitoring is in progress for the rest.
+    not_met:
+      - Central logging is not in place, and there is no alerting for suspicious activity.
+  OPS-02:
+    met:
+      - Vulnerability scanning runs weekly, and patching of critical vulnerabilities follows a remediation SLA of 14 days.
+      - A patch management process applies updates monthly, and every CVE rated critical is tracked until closed.
+    partial:
+      - Vulnerability scanning is run for most systems, and patching is handled ad hoc.
+    not_met:
+      - Vulnerability scanning is not performed, and there is no formal patch management process.
+  OPS-03:
+    met:
+      - An annual penetration test is performed by an independent firm, and ethical hacking findings are tracked to closure.
+      - Independent security testing includes a yearly pen test, and the results are shared with customers on request.
+    partial:
+      - A penetration test was carried out in the past, and an annual penetration test is planned.
+    not_met:
+      - A penetration test is not performed, and no independent security testing takes place.
+  OPS-04:
+    met:
+      - Production runs in a dedicated VPC with network segmentation, and a firewall controls every inbound connection.
+      - Security groups restrict traffic between environments, and a web application firewall and intrusion detection protect public endpoints.
+    partial:
+      - A firewall protects the production network, and network segmentation is being rolled out between environments.
+    not_met:
+      - Network segmentation is not implemented, and no firewall separates production from the office network.
+  RES-01:
+    met:
+      - A documented incident response plan defines roles and severity levels, and a tabletop exercise tests it every year.
+      - Each security incident follows a written playbook, and the incident response team is reviewed at least once a year.
+    partial:
+      - An incident response plan exists, and a tabletop exercise is planned for the coming year.
+    not_met:
+      - There is no formal incident response plan, and no playbook exists for a security incident.
+  RES-02:
+    met:
+      - Customers are notified of any breach affecting their data within 72 hours, as set out in our breach notification procedure.
+      - The company will notify customers through an incident notification within 72 hours, and affected customers receive regular updates.
+    partial:
+      - Breach notification is partially defined, and the company will notify customers without a fixed time limit.
+    not_met:
+      - The company does not commit to notify customers of a data breach within a set time.
+  RES-03:
+    met:
+      - Business continuity and disaster recovery plans set an RTO of four hours and an RPO of one hour, and are tested every year.
+      - Automatic failover protects production, and a disaster recovery test is completed each year.
+    partial:
+      - A disaster recovery plan exists with an RTO target, and a business continuity test is planned.
+    not_met:
+      - A formal business continuity and disaster recovery plan is not in place, and no RTO or RPO has been set.
+  SDL-01:
+    met:
+      - Software follows a secure development lifecycle in which every change gets a code review and SAST runs in the pipeline.
+      - Engineers complete secure coding training, and static analysis checks cover the OWASP top ten risks.
+    partial:
+      - Code review is required for most systems, and static analysis is being rolled out in the pipeline.
+    not_met:
+      - A secure development lifecycle is not in place, and code review is not performed for most changes.
+  SDL-02:
+    met:
+      - Production changes follow change management with change approval before release, and every release can use rollback.
+      - A change advisory board approves releases, and peer-reviewed changes move through the deployment pipeline.
+    partial:
+      - Change approval is required for major releases, and rollback is tested ad hoc.
+    not_met:
+      - Change management is not enforced, and releases go to production without change approval.
+  TPR-01:
+    met:
+      - Every subprocessor is listed, assessed through vendor risk reviews before onboarding, and customers are told about changes.
+      - Supplier security is reviewed each year for all third-party vendors, and a current subprocessor list is shared with customers.
+    partial:
+      - A subprocessor list is kept, and vendor risk reviews are informal.
+    not_met:
+      - The company does not keep a subprocessor list and has not assessed vendor risk for its suppliers.
+  TPR-02:
+    met:
+      - A current independent audit confirms the in-scope services, and the attestation report is available to customers on request.
+      - The in-scope services hold a current certification, and an annual independent audit renews it.
+    partial:
+      - A certification audit is in progress for the in-scope services, and an attestation is expected later.
+    not_met:
+      - The in-scope services do not hold a certification, and no independent audit is available.
+  PEO-01:
+    met:
+      - All staff complete onboarding training and annual training, including security awareness training with a phishing simulation.
+      - Security training is mandatory for new hires and repeated every year, and phishing simulation results are tracked.
+    partial:
+      - Awareness training is given to new hires, and a phishing simulation is on the roadmap.
+    not_met:
+      - Security awareness training is not performed, and no phishing simulation is run.
+  PEO-02:
+    met:
+      - A background check and employment verification are completed before any employee starts, in line with local law.
+      - Pre-employment screening includes reference checks and a criminal record check for roles with access to customer data.
+    partial:
+      - A background check is carried out for some roles, and reference checks are informal.
+    not_met:
+      - Background screening is not performed, and no employment verification takes place.

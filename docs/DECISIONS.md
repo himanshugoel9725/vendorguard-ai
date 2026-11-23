@@ -108,3 +108,24 @@
   (7) `ControlSet` also carries the optional `description` that `baseline_v1.yaml` has; controls must have
   at least one keyword, IDs must start with their domain code, and IDs must be unique.
 - **Consequences:** Prompt-facing schemas stay small; the diff and manifest shapes are fixed early.
+
+## ADR-011: Sample generator design (task 2.4)
+
+- **Status:** accepted
+- **Context:** The sample documents must be byte-reproducible, must make the keyword baseline able to reach
+  the golden labels, and must stay comparable between year 1 and year 2.
+- **Decision:** (1) The phrasing is chosen by SHA-256 of (base vendor, control, state), where the base vendor
+  is `based_on` or `vendor_id`; a control whose state is unchanged keeps its wording in year 2, a changed one
+  draws from another list. This refines the plan's "hash(vendor, control)". (2) Pages are composed in code
+  (line budget, one domain per page, paragraphs never split) and the PDF is drawn from that composition with
+  manual wrapping at spaces, so evidence sentences never straddle a page or a hyphen break; the text twin
+  has the same pages joined by form feeds. (3) The cover and section headings avoid every control keyword, so
+  only a control's own sentence decides its status; the cover states data categories through the neutral
+  wording in `phrases.yaml`. (4) One definition of a keyword match (`utils/keywords.py`: whole word,
+  case-insensitive) is shared with the future mock LLM and rule decider. (5) The generator refuses to write
+  anything unless the phrase bank lints clean, a keyword reading of each document equals its spec, and
+  pypdf finds every evidence sentence on its recorded page. (6) PDF layout and the creation date live in a
+  new `samples:` section of `config/settings.yaml`; PDFs use core fonts, no compression, a fixed file ID.
+  (7) The outputs (about 110 KB) are committed, and a test fails when they drift from a fresh generation.
+- **Consequences:** Upgrading fpdf2 can change PDF bytes; run `make sample`, review and commit. Documents are
+  short (9 pages): they test mapping and verification, not long-document performance.

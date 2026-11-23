@@ -6,7 +6,7 @@ vendor_name: Quillfield Analytics
 report_period: "2025"
 summary: >
   Quillfield Analytics turns files uploaded by its customers into interactive dashboards.
-  Uploads may contain customer records with personal data.
+  Uploads may contain customer records.
 expected_inherent_tier: medium
 services:
   - Dashboard builder for uploaded datasets
