@@ -1,3 +1,11 @@
-"""vendorguard.utils.timeutil module: stub, implemented in a later task of docs/PLAN.md."""
+"""The only clock in VendorGuard: no other module may read the current time directly."""
 
-__all__: list[str] = []
+from datetime import UTC, datetime
+
+
+def utcnow() -> datetime:
+    """Current time as a timezone-aware UTC datetime (patch this in tests to freeze time)."""
+    return datetime.now(UTC)
+
+
+__all__ = ["utcnow"]
