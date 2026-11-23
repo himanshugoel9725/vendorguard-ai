@@ -1,0 +1,47 @@
+# Brightdock Freight (fictional): freight forwarding and shipment tracking. Weak controls, but it
+# handles little sensitive data, so inherent risk is low (exercises the low multiplier and the
+# critical-control floor: MFA is not_met).
+# Targets (met/partial/not_met/missing): 7/5/5/8.
+vendor_id: brightdock
+vendor_name: Brightdock Freight
+report_period: "2025"
+summary: >
+  Brightdock Freight arranges freight forwarding and customs paperwork and offers a shipment
+  tracking portal. It holds business contact details only.
+expected_inherent_tier: low
+services:
+  - Freight forwarding
+  - Customs documentation
+  - Shipment tracking portal
+data_categories: [none]
+hosting:
+  - Self-managed servers in a colocation facility
+certifications:
+  - ISO/IEC 27001:2022
+subprocessors: []
+controls:
+  GOV-01: met
+  GOV-02: met
+  GOV-03: missing
+  IAM-01: met
+  IAM-02: not_met
+  IAM-03: partial
+  IAM-04: missing
+  DAT-01: partial
+  DAT-02: met
+  DAT-03: missing
+  DAT-04: partial
+  DAT-05: met
+  OPS-01: partial
+  OPS-02: not_met
+  OPS-03: missing
+  OPS-04: met
+  RES-01: missing
+  RES-02: not_met
+  RES-03: partial
+  SDL-01: not_met
+  SDL-02: missing
+  TPR-01: missing
+  TPR-02: met
+  PEO-01: not_met
+  PEO-02: missing

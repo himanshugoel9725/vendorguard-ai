@@ -1,0 +1,50 @@
+# Nimbara HR (fictional): cloud payroll and HR platform. Mature, but with a few honest gaps.
+# States: met | partial | not_met | missing (missing = the document does not mention the control).
+# Targets (met/partial/not_met/missing): 18/4/1/2. Payroll data, so inherent risk is high.
+vendor_id: nimbara-hr
+vendor_name: Nimbara HR
+report_period: "2025"
+summary: >
+  Nimbara HR provides a cloud payroll and human-resources platform for mid-sized employers.
+  It processes employee personal data and bank details on behalf of its customers.
+expected_inherent_tier: high
+services:
+  - Cloud payroll processing
+  - Employee records and leave management
+  - Payslip delivery portal
+data_categories: [pii, financial]
+hosting:
+  - Stratus Cloud, Frankfurt region
+certifications:
+  - SOC 2 Type II
+  - ISO/IEC 27001:2022
+subprocessors:
+  - Stratus Cloud (hosting)
+  - Mailwave (transactional email)
+  - Payrail Gateway (payment file transfer)
+controls:
+  GOV-01: met
+  GOV-02: met
+  GOV-03: met
+  IAM-01: met
+  IAM-02: met
+  IAM-03: met
+  IAM-04: partial
+  DAT-01: met
+  DAT-02: met
+  DAT-03: met
+  DAT-04: met
+  DAT-05: partial
+  OPS-01: met
+  OPS-02: met
+  OPS-03: missing
+  OPS-04: met
+  RES-01: met
+  RES-02: met
+  RES-03: not_met
+  SDL-01: met
+  SDL-02: met
+  TPR-01: partial
+  TPR-02: met
+  PEO-01: partial
+  PEO-02: missing
