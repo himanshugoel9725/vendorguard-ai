@@ -226,3 +226,37 @@ def test_runs_list_shows_bracket_ids_literally(
     mpath.write_text(json.dumps(data), encoding="utf-8")
     out = _ok("runs", "list")
     assert "[red]x[/red]" in out.replace("\n", "").replace(" ", "")
+
+
+# --- vg ask ---------------------------------------------------------------------------------------
+
+
+def test_ask_answers_with_run_and_control_ids(base: dict[str, Any]) -> None:
+    _ok("assess", "--sample", "nimbara-hr")
+    _ok("assess", "--sample", "nimbara-hr-y2")
+    out = _ok("ask", "nimbara-hr", "What changed for nimbara-hr?")
+    for cid in ("IAM-04", "PEO-02", "RES-03", "OPS-02"):
+        assert cid in out
+    assert "cited:" in out and "run_" in out
+
+
+def test_ask_unknown_vendor(base: dict[str, Any]) -> None:
+    out = _ok("ask", "no-such-vendor", "What changed?")
+    assert "No assessments are stored for this vendor." in out and "cited:" not in out
+
+
+def test_ask_empty_question_exits_2(base: dict[str, Any]) -> None:
+    result = runner.invoke(app, ["ask", "nimbara-hr", "   "])
+    assert result.exit_code == 2
+
+
+def test_ask_over_long_question_exits_2(
+    base: dict[str, Any], settings_override: Callable[..., Settings]
+) -> None:
+    limit = settings_override().memory.ask_max_question_chars
+    result = runner.invoke(app, ["ask", "nimbara-hr", "q" * (limit + 1)])
+    assert result.exit_code == 2
+
+
+def test_ask_is_listed_in_help() -> None:
+    assert "ask" in _ok("--help")

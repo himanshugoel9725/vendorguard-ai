@@ -217,6 +217,7 @@ memory:
   provider: sqlite
   sqlite_path: .vendorguard/memory.db
   ask_max_history_runs: 5
+  ask_max_question_chars: 500       # longer questions are refused
   letta:
     mode: self_hosted               # self_hosted ($0, Docker) | cloud (uses Letta credits)
     base_url: http://localhost:8283

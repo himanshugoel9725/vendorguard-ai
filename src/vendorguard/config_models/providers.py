@@ -119,6 +119,7 @@ class MemorySettings(StrictModel):
     provider: MemoryProvider
     sqlite_path: Path
     ask_max_history_runs: PositiveInt
+    ask_max_question_chars: PositiveInt
     letta: LettaSettings
 
 

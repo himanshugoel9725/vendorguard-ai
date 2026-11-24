@@ -271,3 +271,22 @@
   `decision.rule.*_signal_phrases` are now more important and must be reviewed in Phase 9. The judge, the intake
   and the reporter are unchanged. Schema change: prompts mapper v2 and reviewer v3 (v1/v2 files kept), no cassettes
   existed yet. The single-sentence rule in the prompts ("one sentence only") keeps quotes short and checkable.
+
+## ADR-018: The Ask agent answers from facts, and its guard checks IDs, not truth (task 7.3)
+
+- **Context.** `vg ask VENDOR "question"` must answer from a vendor's stored history and cite run and control IDs.
+  On the real qwen2.5:3b (two tries, "What changed for nimbara-hr?") one answer was rejected by the guard and one
+  was accepted although it was wrong (OPS-02 "partial to no_evidence" instead of met to partial; the three
+  resolved gaps were missing) and cited nothing.
+- **Decision.** (1) The prompt data holds only facts computed by Python: per run the ID, date, score, band,
+  inherent tier, every control's effective status and, for each run, the diff against the run before it
+  (`compute_diff`). No rationale, quote, vendor text or analyst text reaches the prompt; the question sits alone
+  in `<question>`. (2) `verification/answer_guard.check_answer`: every cited ID and every ID written in the text
+  must exist in the data, and every existing ID written in the text must be cited. (3) A guard failure or a model
+  failure gives the deterministic template `reporting/fallback_answer` (also the mock's answer) and an
+  `ask.fallback` audit event. (4) No stored runs: a fixed sentence, no model call. (5) Questions are capped by
+  `memory.ask_max_question_chars`; history by `memory.ask_max_history_runs`.
+- **Known limit.** The guard cannot check the truth of the sentence around a real ID. A small local model can
+  state a wrong change with valid IDs. For decisions that matter use a hosted model (measure in Phase 9) or read
+  the diff in the report; the template answer is always correct for change questions. A claim-level check
+  (parse "X changed from A to B" and compare with the diff) is a possible later hardening.
