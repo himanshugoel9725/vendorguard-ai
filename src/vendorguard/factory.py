@@ -34,6 +34,7 @@ from vendorguard.providers.llm.cached import CachedLLM
 from vendorguard.providers.llm.mock import MockLLM
 from vendorguard.providers.llm.ollama import OllamaLLM
 from vendorguard.providers.llm.openai_compat import OpenAICompatLLM
+from vendorguard.providers.memory.sqlite_store import SqliteMemoryStore
 from vendorguard.utils.prompt_loader import PromptLoader
 
 Builder = Callable[[Settings], Any]
@@ -101,7 +102,9 @@ DECIDERS: dict[str, Callable[[Settings, DeciderDeps | None], Decider]] = {
     "llm_judge": _llm_judge,
     "jev": _jev,
 }
-MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {}  # sqlite, letta: Phase 7
+MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {
+    "sqlite": lambda s: SqliteMemoryStore(s.memory.sqlite_path),  # letta: task 7.5
+}
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached
 UNBUDGETED_LLM_PROVIDERS = frozenset({"mock"})  # ... and never counted or capped (0 LLM calls)
@@ -166,7 +169,7 @@ def build_decider(settings: Settings, deps: DeciderDeps | None = None) -> Decide
 
 
 def build_memory_store(settings: Settings) -> MemoryStore:
-    """The configured memory store (sqlite, letta): added with Phase 7."""
+    """The configured memory store (sqlite now, letta in 7.5). Close it with ``.close()``."""
     return _lookup(MEMORY_STORES, settings.memory.provider, "memory")(settings)
 
 

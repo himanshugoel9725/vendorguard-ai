@@ -7,7 +7,7 @@ import typer
 from rich.markup import escape
 from rich.table import Table
 
-from vendorguard.cli.common import console, guarded, load
+from vendorguard.cli.common import console, guarded, load, open_memory
 from vendorguard.errors import ConfigError
 from vendorguard.eval.specs import load_spec
 from vendorguard.models.run import AssessmentResult
@@ -78,7 +78,8 @@ def assess(
         docs = [settings.paths.samples_dir / f"{sample}.pdf"]
     if not vendor or not docs:
         raise ConfigError("give --vendor and at least one --docs, or --sample")
-    result = run_assessment(settings, vendor, docs)
+    with open_memory(settings) as memory:
+        result = run_assessment(settings, vendor, docs, memory=memory)
     _summary(result, settings.paths.runs_dir / result.run_id)
 
 

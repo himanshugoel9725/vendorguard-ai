@@ -101,14 +101,17 @@ def test_a_hosted_provider_without_a_key_fails_early_naming_the_variable(
         factory.build_providers(settings_override(llm={"provider": "openai"}))
 
 
-def test_rule_decider_is_built_and_memory_is_not_implemented_yet(
+def test_rule_decider_is_built_and_only_sqlite_memory_exists_so_far(
     settings_override: Make,
 ) -> None:
     assert factory.build_decider(settings_override()).name == "rule"
     with pytest.raises(ConfigError, match="llm_judge"):
         factory.build_decider(settings_override(decision={"provider": "llm_judge"}))
-    with pytest.raises(ConfigError, match=r"memory provider 'sqlite' is not implemented yet"):
-        factory.build_memory_store(settings_override())
+    store = factory.build_memory_store(settings_override())
+    assert type(store).__name__ == "SqliteMemoryStore"
+    store.close()  # type: ignore[attr-defined]
+    with pytest.raises(ConfigError, match=r"memory provider 'letta' is not implemented yet"):
+        factory.build_memory_store(settings_override(memory={"provider": "letta"}))
 
 
 # --- nesting -------------------------------------------------------------------------------------

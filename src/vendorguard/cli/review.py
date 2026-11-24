@@ -4,7 +4,7 @@ from typing import Annotated
 
 import typer
 
-from vendorguard.cli.common import console, guarded, load
+from vendorguard.cli.common import console, guarded, load, open_memory
 from vendorguard.controls.loader import load_controls
 from vendorguard.models.finding import DraftStatus
 from vendorguard.pipeline.override import apply_override
@@ -24,7 +24,10 @@ def review(
     run_dir = run_path(settings.paths.runs_dir, run_id)
     before = read_result(run_dir)
     controls = load_controls(settings.paths.controls_file)
-    after = apply_override(settings, controls, run_dir, control, status, reason, analyst)
+    with open_memory(settings) as memory:
+        after = apply_override(
+            settings, controls, run_dir, control, status, reason, analyst, memory=memory
+        )
     old, new = before.score, after.score
     console.print(
         f"{control}: now {status.value} (analyst override). "

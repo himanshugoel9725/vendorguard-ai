@@ -1,7 +1,8 @@
 """Shared CLI helpers: settings, friendly errors, exit codes, consoles."""
 
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 import typer
@@ -10,6 +11,8 @@ from rich.markup import escape
 
 from vendorguard.config import Settings, load_settings
 from vendorguard.errors import ConfigError, IngestError, VendorGuardError
+from vendorguard.factory import build_memory_store
+from vendorguard.interfaces.memory import MemoryStore
 from vendorguard.logging_setup import collect_secrets, setup_logging
 
 console = Console()
@@ -24,6 +27,18 @@ def load(overrides: dict[str, Any] | None = None) -> Settings:
     settings = load_settings(overrides=overrides)
     setup_logging(settings.app, collect_secrets(settings))
     return settings
+
+
+@contextmanager
+def open_memory(settings: Settings) -> Iterator[MemoryStore]:
+    """The configured memory store, closed afterwards."""
+    store = build_memory_store(settings)
+    try:
+        yield store
+    finally:
+        close = getattr(store, "close", None)
+        if callable(close):
+            close()
 
 
 def exit_code(exc: VendorGuardError) -> int:
@@ -45,4 +60,13 @@ def guarded[**P, R](fn: Callable[P, R]) -> Callable[P, R]:
     return wrapper
 
 
-__all__ = ["EXIT_FAILED", "EXIT_USAGE", "console", "err_console", "exit_code", "guarded", "load"]
+__all__ = [
+    "EXIT_FAILED",
+    "EXIT_USAGE",
+    "console",
+    "err_console",
+    "exit_code",
+    "guarded",
+    "load",
+    "open_memory",
+]
