@@ -6,12 +6,12 @@ useDefault = true
 
 # tests/cassettes/*.jsonl hold {"key": "<64 hex chars>", "value": {...}} lines. The key is the
 # SHA-256 of the request (a cache key, not a credential) and trips the generic-api-key rule.
-# The exception needs all three: the cassette folder, the 64-hex "key" field, and that rule.
+# The exception needs all three: the cassette folder, a secret that is exactly 64 hex characters,
+# and that rule (the cassette VALUES are still scanned by it).
 # Real keys are never stored there (the cache never sees the Authorization header).
 [[allowlists]]
 description = "SHA-256 cache keys in replay cassettes"
 condition = "AND"
 targetRules = ["generic-api-key"]
 paths = ['''^tests/cassettes/.*\.jsonl$''']
-regexTarget = "line"
-regexes = ['''"key":"[0-9a-f]{64}"''']
+regexes = ['''^[0-9a-f]{64}$''']

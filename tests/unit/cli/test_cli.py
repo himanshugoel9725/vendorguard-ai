@@ -191,3 +191,38 @@ def test_run_index_orders_runs_and_handles_failed_and_foreign_folders(
     ]
     assert list_runs(tmp_path / "missing") == []
     assert read_result(run_path(s.paths.runs_dir, ok[0].run_id)).vendor_id == "quillfield"
+
+
+def test_error_text_with_markup_is_printed_literally(base: dict[str, Any]) -> None:
+    result = runner.invoke(app, ["assess", "--sample", "[bold]x[/]"])
+    assert result.exit_code == 2, result.output
+    assert "Traceback" not in result.output and "MarkupError" not in result.output
+    assert "[bold]x[/]" in result.output.replace("\n", "")
+
+
+def test_error_message_markup_from_a_monkeypatched_function(
+    base: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from vendorguard.errors import ConfigError
+
+    def boom(*_: Any, **__: Any) -> None:
+        raise ConfigError("bad [red]x[/red] and [/]")
+
+    monkeypatch.setattr("vendorguard.cli.assess.run_assessment", boom)
+    result = runner.invoke(app, ["assess", "--sample", "quillfield"])
+    assert result.exit_code == 2
+    assert "[red]x[/red]" in result.output and "[/]" in result.output
+
+
+def test_runs_list_shows_bracket_ids_literally(
+    base: dict[str, Any], settings_override: Callable[..., Settings]
+) -> None:
+    _ok("assess", "--sample", "quillfield")
+    s = settings_override()
+    (run_dir,) = [p for p in s.paths.runs_dir.iterdir() if p.is_dir()]
+    mpath = run_dir / "manifest.json"
+    data = json.loads(mpath.read_text(encoding="utf-8"))
+    data["run_id"] = "[red]x[/red]"
+    mpath.write_text(json.dumps(data), encoding="utf-8")
+    out = _ok("runs", "list")
+    assert "[red]x[/red]" in out.replace("\n", "").replace(" ", "")

@@ -9,6 +9,7 @@ from vendorguard.config_models.scoring import VerificationSettings
 from vendorguard.models._base import ContractModel
 from vendorguard.models.evidence import Chunk, Citation, DraftCitation
 from vendorguard.models.finding import DraftStatus
+from vendorguard.verification.keyword_reading import split_sentences
 from vendorguard.verification.text_normalize import normalize_text
 
 SIMILARITY_DIGITS = 4
@@ -91,7 +92,16 @@ class CitationChecker:
         data = citation.model_dump()
         data["chunk_id"] = chunk.chunk_id
         if score < 1.0 and window:
-            data["quote"] = window  # a fuzzy match keeps the source words, never the model's
+            # A fuzzy match keeps the SOURCE words, never the model's: the original sentence
+            # (with its case and punctuation) if the window lies inside one, else the window.
+            data["quote"] = next(
+                (
+                    sentence
+                    for sentence in split_sentences(chunk.text)
+                    if window in normalize_text(sentence)
+                ),
+                window,
+            )
         return Citation(
             **data,
             doc_id=chunk.doc_id,

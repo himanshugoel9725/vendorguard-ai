@@ -158,3 +158,32 @@ def test_relocation_is_deterministic(checker: CitationChecker) -> None:
     a = _check(checker, chunks, "d:p001:c000", SENTENCE, DraftStatus.MET)
     b = _check(checker, list(reversed(chunks)), "d:p001:c000", SENTENCE, DraftStatus.MET)
     assert a == b
+
+
+def test_fuzzy_match_stores_the_original_sentence_with_case_and_punctuation(
+    checker: CitationChecker,
+) -> None:
+    source = "Intro text here. Data is Encrypted at rest, using AES-256! Closing words."
+    chunks = [_chunk("d:p001:c000", source)]
+    r = _check(
+        checker, chunks, "d:p001:c000", "data is encrypted at rest using aes 256", DraftStatus.MET
+    )
+    c = r.citations[0]
+    assert c.valid and c.similarity < 1.0
+    assert c.quote == "Data is Encrypted at rest, using AES-256!"
+
+
+def test_fuzzy_match_spanning_sentences_stores_the_normalised_window(
+    checker: CitationChecker,
+) -> None:
+    source = "Data is encrypted at rest. Keys are rotated yearly."
+    chunks = [_chunk("d:p001:c000", source)]
+    r = _check(
+        checker,
+        chunks,
+        "d:p001:c000",
+        "data is encrypted at rest. keys are rotated yearlyy",
+        DraftStatus.MET,
+    )
+    c = r.citations[0]
+    assert c.valid and c.quote == c.quote.casefold() and "keys are rotated" in c.quote

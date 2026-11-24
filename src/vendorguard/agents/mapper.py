@@ -64,7 +64,7 @@ class MapperAgent(BaseAgent[ExtractedEvidence]):
             "max_quote_chars": self._max_quote_chars,
         }
         extracted = self.run(variables, hints=hints, control_id=control.id)
-        return derive_finding(control, extracted, self._rules)
+        return derive_finding(control, extracted, self._rules, chunks)
 
 
 __all__ = ["MapperAgent"]

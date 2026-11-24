@@ -1,5 +1,8 @@
 """Analyst override: replace one control's status, re-score, re-render and audit it."""
 
+import fcntl
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from vendorguard.config import Settings
@@ -26,6 +29,17 @@ def _check_text(name: str, value: str) -> str:
     return value
 
 
+@contextmanager
+def _run_lock(run_dir: Path) -> Iterator[None]:
+    """One writer per run folder at a time (two overrides must not lose each other)."""
+    with (run_dir / ".lock").open("a") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 def apply_override(
     settings: Settings,
     controls: ControlSet,
@@ -45,6 +59,20 @@ def apply_override(
     ``analyst_override`` audit event is added. A second override of the same control replaces
     the first one in the result; the audit log keeps both events.
     """
+    with _run_lock(run_dir):
+        return _apply(settings, controls, run_dir, control_id, new_status, reason, analyst, memory)
+
+
+def _apply(
+    settings: Settings,
+    controls: ControlSet,
+    run_dir: Path,
+    control_id: str,
+    new_status: DraftStatus,
+    reason: str,
+    analyst: str,
+    memory: MemoryStore | None,
+) -> AssessmentResult:
     result = read_result(run_dir)
     manifest = read_manifest(run_dir / MANIFEST_FILE)
     if manifest.status is not RunStatus.DONE:
@@ -69,6 +97,10 @@ def apply_override(
     updated = result.model_copy(
         update={"findings": findings, "score": score, "summary": fallback_summary(facts)}
     )
+    persist_result(run_dir, updated)
+    write_manifest(
+        run_dir / MANIFEST_FILE, manifest.model_copy(update={"result_hash": result_hash(updated)})
+    )
     audit = AuditLog(run_dir / AUDIT_FILE, result.run_id)
     audit.record(
         stage="analyst_override",
@@ -81,10 +113,6 @@ def apply_override(
         usd=0.0,
         latency_ms=0.0,
         cached=False,
-    )
-    persist_result(run_dir, updated)
-    write_manifest(
-        run_dir / MANIFEST_FILE, manifest.model_copy(update={"result_hash": result_hash(updated)})
     )
     render_reports(run_dir, controls, settings.reporting)
     if memory is not None:

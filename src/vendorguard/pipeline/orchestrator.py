@@ -53,6 +53,7 @@ from vendorguard.pipeline.run_folder import (
     persist_result,
     prepare_run_dir,
 )
+from vendorguard.pipeline.run_index import RUN_ID_PATTERN, VENDOR_ID_PATTERN
 from vendorguard.reporting.facts import build_facts
 from vendorguard.reporting.render import render_reports
 from vendorguard.scoring.inherent_risk import inherent_risk
@@ -170,21 +171,31 @@ def _execute(
     return result
 
 
-def _fail(ctx_audit: AuditLog, manifest: RunManifest, run_dir: Path, exc: Exception) -> None:
+def _record_failure(audit: AuditLog, stage: str, run_id: str, exc: BaseException) -> None:
+    """One audit event with the error class only. Never raises (it must not mask the error)."""
+    try:
+        audit.record(
+            stage=stage,
+            actor="python",
+            input_hash=hash_obj(run_id),
+            output_hash=hash_obj(type(exc).__name__),
+            tokens_in=0,
+            tokens_out=0,
+            usd=0.0,
+            latency_ms=0.0,
+            cached=False,
+        )
+    except Exception:
+        log.warning("could not write the %s audit event", stage)
+
+
+def _fail(ctx_audit: AuditLog, manifest: RunManifest, run_dir: Path, exc: BaseException) -> None:
     """Record the failure (error class only) and write the manifest with status ``failed``."""
-    name = type(exc).__name__
-    ctx_audit.record(
-        stage="run.failed",
-        actor="python",
-        input_hash=hash_obj(manifest.run_id),
-        output_hash=hash_obj(name),
-        tokens_in=0,
-        tokens_out=0,
-        usd=0.0,
-        latency_ms=0.0,
-        cached=False,
-    )
-    write_manifest(run_dir / MANIFEST_FILE, finish_manifest(manifest, RunStatus.FAILED))
+    _record_failure(ctx_audit, "run.failed", manifest.run_id, exc)
+    try:
+        write_manifest(run_dir / MANIFEST_FILE, finish_manifest(manifest, RunStatus.FAILED))
+    except Exception:
+        log.warning("could not write the failed manifest of run %s", manifest.run_id)
 
 
 def run_assessment(
@@ -206,8 +217,12 @@ def run_assessment(
     folder exists (bad input, unreadable file) raise without leaving a run behind; later errors
     also write a manifest with ``status: failed`` and an audit event, then re-raise.
     """
-    if not vendor_id.strip():
-        raise ConfigError("vendor_id must not be empty")
+    if not VENDOR_ID_PATTERN.match(vendor_id):
+        raise ConfigError(
+            "vendor_id: 1-64 letters, digits, '.', '_' or '-', starting with a letter or digit"
+        )
+    if run_id is not None and not RUN_ID_PATTERN.match(run_id):
+        raise ConfigError(f"'{run_id}' is not a valid run id")
     if not doc_paths:
         raise ConfigError("at least one document is required")
     chosen = _select_controls(settings, controls)
@@ -243,31 +258,49 @@ def run_assessment(
     prov: Providers | None = providers
     decider: Decider | None = None
     try:
-        prov = prov or build_providers(settings)
-        decider = build_decider(settings, DeciderDeps(prov.llm, prompts, audit, prov.tracker))
-        ctx = _context(settings, rid, run_dir, audit, prov, prompts, decider)
-        result = _execute(ctx, vendor_id, chunks, chosen, memory, differ)
-        done = finish_manifest(manifest, RunStatus.DONE, result_hash(result))
-        write_manifest(run_dir / MANIFEST_FILE, done)
-        # Reports and memory come after the final manifest, so a report shows it as it is.
-        (render or _default_renderer(chosen, settings))(result, run_dir)
-        if memory is not None:
-            memory.save_assessment(result)
+        try:
+            prov = prov or build_providers(settings)
+            decider = build_decider(settings, DeciderDeps(prov.llm, prompts, audit, prov.tracker))
+            ctx = _context(settings, rid, run_dir, audit, prov, prompts, decider)
+            result = _execute(ctx, vendor_id, chunks, chosen, memory, differ)
+            done = finish_manifest(manifest, RunStatus.DONE, result_hash(result))
+            write_manifest(run_dir / MANIFEST_FILE, done)
+        except BaseException as exc:  # includes KeyboardInterrupt: never leave 'running' behind
+            log.error("run %s failed: %s", rid, type(exc).__name__)
+            _fail(audit, manifest, run_dir, exc)
+            if metrics:
+                metrics.run_finished("failed")
+            raise
         if metrics:
             metrics.run_finished("done")
+        _publish(result, run_dir, audit, render or _default_renderer(chosen, settings), memory)
         return result
-    except Exception as exc:
-        log.error("run %s failed: %s", rid, type(exc).__name__)
-        _fail(audit, manifest, run_dir, exc)
-        if metrics:
-            metrics.run_finished("failed")
-        raise
     finally:
         close = getattr(decider, "close", None)
         if callable(close):
             close()
         if built and prov is not None:
             prov.close()
+
+
+def _publish(
+    result: AssessmentResult,
+    run_dir: Path,
+    audit: AuditLog,
+    render: Renderer,
+    memory: MemoryStore | None,
+) -> None:
+    """Reports and memory come after the final manifest. The result is valid even if they fail
+    (the manifest stays ``done``; ``vg report`` can render again), so a failure here is recorded
+    as a ``post.failed`` event and re-raised, never as a failed run."""
+    try:
+        render(result, run_dir)
+        if memory is not None:
+            memory.save_assessment(result)
+    except Exception as exc:
+        log.error("run %s: reports or memory failed: %s", result.run_id, type(exc).__name__)
+        _record_failure(audit, "post.failed", result.run_id, exc)
+        raise
 
 
 def _default_renderer(controls: ControlSet, settings: Settings) -> Renderer:

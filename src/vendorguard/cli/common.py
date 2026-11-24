@@ -6,6 +6,7 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 from vendorguard.config import Settings, load_settings
 from vendorguard.errors import ConfigError, IngestError, VendorGuardError
@@ -38,7 +39,7 @@ def guarded[**P, R](fn: Callable[P, R]) -> Callable[P, R]:
         try:
             return fn(*args, **kwargs)
         except VendorGuardError as exc:
-            err_console.print(f"[red]error:[/red] {exc}", markup=True, highlight=False)
+            err_console.print(f"[red]error:[/red] {escape(str(exc))}", highlight=False)
             raise typer.Exit(exit_code(exc)) from exc
 
     return wrapper

@@ -31,7 +31,7 @@ def test_split_sentences_keeps_decimals_and_standard_names_together() -> None:
 def test_signals_returns_partial_and_negative_hits(rules: RuleDeciderSettings) -> None:
     assert signals("MFA is being rolled out and is not enforced.", rules) == (
         ["being rolled out"],
-        ["is not enforced", "not enforced"],  # both phrases are in the settings list
+        ["is not enforced", "not enforced", "is not"],  # all three are in the settings list
     )
     assert signals("MFA is enforced everywhere.", rules) == ([], [])
 

@@ -53,3 +53,9 @@ def test_repeated_calls_are_identical() -> None:
     text = "Backups and KMS-managed keys"
     phrases = ["backups", "kms", "nope"]
     assert [matching_phrases(text, phrases) for _ in range(3)] == [["backups", "kms"]] * 3
+
+
+def test_curly_apostrophe_in_text_matches_straight_phrase() -> None:
+    assert phrase_in("We don’t log it", "don't")
+    assert phrase_in("WE DON’T LOG IT", "don't")
+    assert not phrase_in("We donut log it", "don't")

@@ -160,6 +160,20 @@ decision:
       - have not
       - not implemented
       - no documented
+      - is not                      # ADR-017: status comes from these words, so common negations matter
+      - are not
+      - was not
+      - were not
+      - don't
+      - doesn't
+      - didn't
+      - cannot
+      - can't
+      - lacks
+      - unable to
+      - no policy
+      - no plan
+      - no process
   jev:
     base_url: https://openrouter.ai/api/alpha   # OpenRouter Decisions API (alpha; POST {base_url}/decisions)
     model: typesafe/jev-1.13        # read from OpenRouter's docs 2026-11-23; "~typesafe/jev-latest" is the alias

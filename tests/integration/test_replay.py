@@ -20,9 +20,9 @@ ROOT = Path(__file__).resolve().parents[2]
 CASSETTES = ROOT / "tests" / "cassettes"
 STEMS = ["brightdock", "nimbara-hr", "nimbara-hr-y2", "quillfield"]
 MAX_CASSETTE_BYTES = 2_000_000  # PLAN 6.7: cassettes stay under 2 MB
-# Measured on the recorded run (qwen2.5:3b): 11, 18, 14 and 16 of 25. A floor, not a target:
+# Measured on the recorded run (qwen2.5:3b): 16, 18, 17 and 19 of 25. A floor, not a target:
 # Phase 9 measures the models; this test only guards the pipeline against regressions.
-MIN_ACCURACY = 0.40
+MIN_ACCURACY = 0.60
 Make = Callable[..., Settings]
 
 

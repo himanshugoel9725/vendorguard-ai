@@ -44,11 +44,11 @@ def test_prepare_creates_nested_folder(tmp_path: Path) -> None:
 
 def test_prepare_removes_old_files_only(tmp_path: Path) -> None:
     d = prepare_run_dir(tmp_path, "r")
-    for n in (AUDIT_FILE, MANIFEST_FILE, RESULT_FILE, "report.md"):
+    for n in (AUDIT_FILE, MANIFEST_FILE, RESULT_FILE, "report.md", "report.html", "notes.txt"):
         (d / n).write_text("old")
     again = prepare_run_dir(tmp_path, "r")
     assert again == d
-    assert [p.name for p in d.iterdir()] == ["report.md"]
+    assert [p.name for p in d.iterdir()] == ["notes.txt"]  # stale reports go, other files stay
 
 
 def test_persist_writes_result_json_without_tmp(tmp_path: Path) -> None:

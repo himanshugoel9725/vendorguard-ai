@@ -13,7 +13,7 @@ def _pattern(phrase: str) -> re.Pattern[str]:
 
 def phrase_in(text: str, phrase: str) -> bool:
     """True if ``phrase`` occurs in ``text`` as a whole word or phrase, ignoring case."""
-    return _pattern(phrase).search(text) is not None
+    return _pattern(phrase).search(text.replace("\u2019", "'")) is not None  # curly apostrophe
 
 
 def matching_phrases(text: str, phrases: Iterable[str]) -> list[str]:

@@ -4,6 +4,7 @@ import webbrowser
 from typing import Annotated
 
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 from vendorguard.cli.common import console, guarded, load
@@ -26,8 +27,8 @@ def runs_list(
     for r in list_runs(settings.paths.runs_dir, vendor):
         score = "-" if r.overall is None else f"{r.overall:g}"
         table.add_row(
-            r.run_id,
-            r.vendor_id or "-",
+            escape(r.run_id),
+            escape(r.vendor_id or "-"),
             r.status.value,
             score,
             r.band or "-",

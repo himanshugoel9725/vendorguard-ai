@@ -12,6 +12,7 @@ from vendorguard.pipeline.run_folder import MANIFEST_FILE, RESULT_FILE
 from vendorguard.utils.jsonio import read_json
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+VENDOR_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
 
 @dataclass(frozen=True)
@@ -77,4 +78,4 @@ def list_runs(runs_dir: Path, vendor_id: str | None = None) -> list[RunInfo]:
     return sorted(found, key=lambda r: (-r.started_at.timestamp(), r.run_id))
 
 
-__all__ = ["RUN_ID_PATTERN", "RunInfo", "list_runs", "read_result", "run_path"]
+__all__ = ["RUN_ID_PATTERN", "VENDOR_ID_PATTERN", "RunInfo", "list_runs", "read_result", "run_path"]
