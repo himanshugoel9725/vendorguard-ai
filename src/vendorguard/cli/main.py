@@ -4,6 +4,7 @@ import typer
 
 from vendorguard.cli.assess import assess
 from vendorguard.cli.doctor import doctor
+from vendorguard.cli.review import review
 from vendorguard.cli.runs import report, runs_app
 from vendorguard.cli.samples import samples
 from vendorguard.cli.vendors import vendors_app
@@ -18,6 +19,7 @@ app.command()(doctor)
 app.command()(samples)
 app.command()(assess)
 app.command()(report)
+app.command()(review)
 app.add_typer(runs_app, name="runs")
 app.add_typer(vendors_app, name="vendors")
 
