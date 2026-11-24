@@ -75,7 +75,11 @@ def _llm_judge(s: Settings, deps: DeciderDeps | None) -> Decider:
         raise ConfigError(
             "the llm_judge decider needs an LLM, prompts, an audit sink and a cost tracker"
         )
-    return LlmJudgeDecider(deps.llm, deps.prompts, deps.audit, deps.cost, s.decision.rule)
+    judge = LlmJudgeDecider(deps.llm, deps.prompts, deps.audit, deps.cost, s.decision.rule)
+    # A failing judge (model or schema error) must never stop a run: the rules take over.
+    return FallbackDecider(
+        judge, RuleDecider(s.decision.rule), deps.audit, primary_name="llm_judge"
+    )
 
 
 def _jev(s: Settings, deps: DeciderDeps | None) -> Decider:

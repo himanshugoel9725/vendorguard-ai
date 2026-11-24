@@ -67,6 +67,12 @@ class FallbackDecider:
             update={"fallback_used": True}
         )
 
+    def close(self) -> None:
+        """Close the primary decider if it holds a client."""
+        close = getattr(self._primary, "close", None)
+        if callable(close):
+            close()
+
     def _warn(self, why: str) -> None:
         if not self._warned:
             self._warned = True

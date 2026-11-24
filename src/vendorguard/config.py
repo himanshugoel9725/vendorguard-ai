@@ -84,8 +84,14 @@ class Settings(BaseSettings):
     eval: EvalSettings
 
     def fingerprint(self) -> str:
-        """SHA-256 of the canonical non-secret configuration (stored in every run manifest)."""
-        return hash_obj(_strip_secrets(self.model_dump()))
+        """SHA-256 of the canonical non-secret configuration (stored in every run manifest).
+
+        ``pipeline.max_concurrency`` is left out on purpose.
+        """
+        data = _strip_secrets(self.model_dump())
+        # Concurrency only changes speed, never results: runs must share an ID across it.
+        data["pipeline"] = {k: v for k, v in data["pipeline"].items() if k != "max_concurrency"}
+        return hash_obj(data)
 
 
 class _DictSource(PydanticBaseSettingsSource):

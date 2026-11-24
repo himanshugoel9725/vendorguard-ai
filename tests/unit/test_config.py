@@ -317,3 +317,27 @@ def test_fingerprint_drops_secretstr_fields_whatever_they_are_called(
     )
     assert cleaned == {"nested": [{"c": 1}]}
     assert len(settings_override().fingerprint()) == 64
+
+
+def test_fingerprint_ignores_pipeline_max_concurrency(
+    settings_override: Callable[..., Settings],
+) -> None:
+    a = settings_override(pipeline={"max_concurrency": 1})
+    b = settings_override(pipeline={"max_concurrency": 8})
+    assert a.pipeline.max_concurrency != b.pipeline.max_concurrency
+    assert a.fingerprint() == b.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"triage_enabled": False},
+        {"max_review_rounds": 3},
+        {"review_extra_chunks": 5},
+    ],
+)
+def test_fingerprint_changes_with_other_pipeline_fields(
+    settings_override: Callable[..., Settings], change: dict[str, Any]
+) -> None:
+    base = settings_override().fingerprint()
+    assert settings_override(pipeline=change).fingerprint() != base

@@ -102,6 +102,10 @@ class JevDecider:
         )
         return answers[key]
 
+    def close(self) -> None:
+        """Close the HTTP client."""
+        self._client.close()
+
 
 def _sorted(evidence: Sequence[ScoredChunk]) -> list[ScoredChunk]:
     return sorted(evidence, key=lambda e: e.chunk.chunk_id)
