@@ -60,11 +60,11 @@ api: ## Start the REST API (host and port come from config/settings.yaml)
 demo-memory: ## Offline demo: nimbara-hr year 1, year 2, the diff, and a question
 	bash scripts/memory_demo.sh
 
-letta-up: ## Start self-hosted Letta in Docker
-	docker compose --profile letta up -d
+letta-up: ## (not built: Letta is deferred, ADR-019)
+	@echo 'Letta is not built yet (ADR-019); SQLite is the only memory store.'; exit 1
 
-letta-down: ## Stop self-hosted Letta
-	docker compose --profile letta down
+letta-down: ## (not built: Letta is deferred, ADR-019)
+	@echo 'Letta is not built yet (ADR-019); SQLite is the only memory store.'; exit 1
 
 docs: ## Build the MkDocs site (warnings are errors)
 	uv run mkdocs build --strict

@@ -4,6 +4,12 @@
 set -euo pipefail
 
 DEMO_DIR="${DEMO_DIR:-.vendorguard/demo}"
+# The script deletes DEMO_DIR first: only accept a relative folder inside .vendorguard/.
+case "$DEMO_DIR" in
+  *..*|/*|.vendorguard|.vendorguard/) echo "refused: DEMO_DIR must be a folder inside .vendorguard/" >&2; exit 2 ;;
+  .vendorguard/?*) ;;
+  *) echo "refused: DEMO_DIR must be a folder inside .vendorguard/" >&2; exit 2 ;;
+esac
 rm -rf "$DEMO_DIR"
 export VG_LLM__PROVIDER=mock
 export VG_EMBEDDINGS__PROVIDER=none

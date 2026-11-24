@@ -29,7 +29,7 @@ def result(settings_override: Make) -> AssessmentResult:
 
 @pytest.fixture
 def store(tmp_path: Path) -> Iterator[SqliteMemoryStore]:
-    s = SqliteMemoryStore(tmp_path / "state" / "memory.db")
+    s = SqliteMemoryStore(tmp_path / "state" / "memory.db", 5.0)
     yield s
     s.close()
 
@@ -145,14 +145,82 @@ def test_an_unusable_path_is_a_memory_store_error(tmp_path: Path) -> None:
     blocker = tmp_path / "file"
     blocker.write_text("x")
     with pytest.raises(MemoryStoreError, match="cannot open"):
-        SqliteMemoryStore(blocker / "memory.db")
+        SqliteMemoryStore(blocker / "memory.db", 5.0)
 
 
 def test_the_store_survives_a_reopen(tmp_path: Path, result: AssessmentResult) -> None:
     path = tmp_path / "memory.db"
-    first = SqliteMemoryStore(path)
+    first = SqliteMemoryStore(path, 5.0)
     first.save_assessment(result)
     first.close()
-    second = SqliteMemoryStore(path)
+    second = SqliteMemoryStore(path, 5.0)
     assert second.get_assessment(result.run_id) == result
     second.close()
+
+
+def test_user_version_is_set_and_reopen_works(tmp_path: Path) -> None:
+    path = tmp_path / "v.db"
+    SqliteMemoryStore(path, 5.0).close()
+    db = sqlite3.connect(path)
+    assert db.execute("PRAGMA user_version").fetchone() == (1,)
+    db.close()
+    SqliteMemoryStore(path, 5.0).close()
+
+
+def test_a_newer_schema_version_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "v.db"
+    SqliteMemoryStore(path, 5.0).close()
+    db = sqlite3.connect(path)
+    db.execute("PRAGMA user_version = 2")
+    db.commit()
+    db.close()
+    with pytest.raises(MemoryStoreError, match="version 2"):
+        SqliteMemoryStore(path, 5.0)
+
+
+def test_a_version_zero_database_opens_and_is_stamped(
+    tmp_path: Path, result: AssessmentResult
+) -> None:
+    path = tmp_path / "v.db"
+    db = sqlite3.connect(path)  # an old database: no pragma was ever set
+    db.commit()
+    db.close()
+    s = SqliteMemoryStore(path, 5.0)
+    s.save_assessment(result)
+    assert s.get_assessment(result.run_id) == result
+    s.close()
+    db = sqlite3.connect(path)
+    assert db.execute("PRAGMA user_version").fetchone() == (1,)
+    db.close()
+
+
+def test_resaving_a_run_keeps_its_original_created_at(
+    store: SqliteMemoryStore, result: AssessmentResult, tmp_path: Path
+) -> None:
+    store.save_assessment(result)
+    moved = result.model_copy(update={"created_at": result.created_at + timedelta(days=5)})
+    store.save_assessment(moved)
+    db = sqlite3.connect(tmp_path / "state" / "memory.db")
+    (stored,) = db.execute(
+        "SELECT created_at FROM assessments WHERE run_id = ?", (result.run_id,)
+    ).fetchone()
+    db.close()
+    assert stored == result.created_at.isoformat()
+
+
+def test_resaving_an_old_run_does_not_make_it_the_newest(
+    store: SqliteMemoryStore, result: AssessmentResult
+) -> None:
+    old, new = _later(result, "run_old", -60), _later(result, "run_new", 60)
+    store.save_assessment(old)
+    store.save_assessment(new)
+    store.save_assessment(_later(result, "run_old", 120))  # saved again, with a later clock
+    assert [a.run_id for a in store.list_assessments("quillfield")] == ["run_new", "run_old"]
+    latest = store.latest_assessment("quillfield")
+    assert latest is not None and latest.run_id == "run_new"
+    (vendor,) = store.list_vendors()
+    assert vendor.runs == 2
+
+
+def test_busy_timeout_setting_exists(settings_override: Make) -> None:
+    assert settings_override(memory={"busy_timeout_s": 1.5}).memory.busy_timeout_s == 1.5

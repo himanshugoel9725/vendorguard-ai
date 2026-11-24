@@ -123,6 +123,9 @@ def test_post_processing_failure_keeps_the_run_done(settings_override: Make, tar
         raise RuntimeError("secret detail")
 
     class Memory:
+        def list_assessments(self, *_: Any, **__: Any) -> list[Any]:
+            return []
+
         def latest_assessment(self, *_: Any, **__: Any) -> None:
             return None
 

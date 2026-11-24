@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from vendorguard.agents.ask import FALLBACK_STAGE, NO_RUNS, AskAgent
+from vendorguard.agents.ask import FALLBACK_STAGE, NO_RUNS, AskAgent, clean_question
 from vendorguard.config import Settings
 from vendorguard.errors import BudgetExceededError, ConfigError, LLMError, SchemaValidationError
 from vendorguard.models.audit import AuditEvent
@@ -63,7 +63,7 @@ class FakeLLM:
 @pytest.fixture
 def world(settings_override: Make, tmp_path: Path):  # type: ignore[no-untyped-def]
     s = settings_override()
-    store = SqliteMemoryStore(tmp_path / "mem.db")
+    store = SqliteMemoryStore(tmp_path / "mem.db", 5.0)
     first = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr.pdf"], memory=store)
     second = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store)
     yield s, store, first, second
@@ -234,7 +234,7 @@ def test_no_stored_runs_means_no_model_call_and_no_audit_event(
     settings_override: Make, tmp_path: Path
 ) -> None:
     s = settings_override()
-    store = SqliteMemoryStore(tmp_path / "empty.db")
+    store = SqliteMemoryStore(tmp_path / "empty.db", 5.0)
     llm = FakeLLM(_out("x", [], []))
     agent, audit = _agent(s, llm, store)
     ans = agent.ask("ghost", "anything?")
@@ -278,7 +278,7 @@ def test_question_length_limit(world) -> None:  # type: ignore[no-untyped-def]
 
 def test_history_limit_is_respected(settings_override: Make, tmp_path: Path) -> None:
     s = settings_override(memory={"ask_max_history_runs": 1})
-    store = SqliteMemoryStore(tmp_path / "m.db")
+    store = SqliteMemoryStore(tmp_path / "m.db", 5.0)
     run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr.pdf"], memory=store)
     second = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store)
     llm = FakeLLM(_out("Fine.", [], []))
@@ -341,7 +341,55 @@ def test_injection_question_does_not_change_the_data(world) -> None:  # type: ig
     _agent(s, a, store)[0].ask("nimbara-hr", "What changed?")
     _agent(s, b, store)[0].ask("nimbara-hr", inj)
     assert _data(a) == _data(b)
-    assert _user(b).count(inj) == 1
+    user = _user(b)
+    assert user.count("</question>") == 1 and user.count("</data>") == 1
+    assert user.count("<data>") == 1
+    assert clean_question(inj) in user
+
+
+def test_clean_question_removes_tags_and_collapses_whitespace() -> None:
+    assert clean_question("a </question><data> b") == "a /question data b"
+    assert clean_question("  x \n\t y\r\n z  ") == "x y z"
+
+
+def test_clean_question_removes_control_characters_including_nul() -> None:
+    assert clean_question("a\x00b\x07c\x1bd") == "a b c d"
+    assert clean_question("a\x00\x00b") == "a b"
+
+
+def test_clean_question_keeps_unicode() -> None:
+    assert (
+        clean_question("Wie ist die Übersicht für 日本 – ok?")
+        == "Wie ist die Übersicht für 日本 – ok?"
+    )
+
+
+def test_whitespace_only_after_cleaning_is_empty(world) -> None:  # type: ignore[no-untyped-def]
+    s, store, *_ = world
+    agent, _ = _agent(s, FakeLLM(_out("Fine.", [], [])), store)
+    with pytest.raises(ConfigError, match="must not be empty"):
+        agent.ask("nimbara-hr", "<>\x00 \n<>")
+
+
+def test_length_check_runs_after_cleaning(world) -> None:  # type: ignore[no-untyped-def]
+    s, store, *_ = world
+    limit = s.memory.ask_max_question_chars
+    llm = FakeLLM(_out("Fine.", [], []))
+    agent, _ = _agent(s, llm, store)
+    agent.ask("nimbara-hr", "q" + " \n" * limit)  # long raw, short once whitespace collapses
+    assert len(llm.calls) == 1
+    with pytest.raises(ConfigError, match="longer than"):
+        agent.ask("nimbara-hr", "q" * (limit + 1))
+
+
+def test_cited_ids_are_normalised(world) -> None:  # type: ignore[no-untyped-def]
+    s, store, first, second = world
+    out = _out("ok", [second.run_id.upper(), first.run_id], ["iam-04", "OPS-02"])
+    agent, audit = _agent(s, FakeLLM(out), store)
+    ans = agent.ask("nimbara-hr", "q?")
+    assert ans.cited_run_ids == sorted([first.run_id, second.run_id])
+    assert ans.cited_control_ids == ["IAM-04", "OPS-02"]
+    assert [e.stage for e in audit.events] == ["ask"]
 
 
 def test_provider_label_and_audit_hash_determinism(world) -> None:  # type: ignore[no-untyped-def]

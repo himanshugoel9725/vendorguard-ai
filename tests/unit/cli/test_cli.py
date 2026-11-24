@@ -1,6 +1,7 @@
 """Tests for the ``vg`` command (offline: mock LLM, settings built without .env)."""
 
 import json
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from vendorguard.cli.doctor import secret_status
 from vendorguard.cli.main import app
 from vendorguard.config import Settings
 from vendorguard.models.run import RunStatus
+from vendorguard.observability.audit_log import read_audit_log
 from vendorguard.pipeline.run_index import list_runs, read_result, run_path
 
 runner = CliRunner()
@@ -256,6 +258,24 @@ def test_ask_over_long_question_exits_2(
     limit = settings_override().memory.ask_max_question_chars
     result = runner.invoke(app, ["ask", "nimbara-hr", "q" * (limit + 1)])
     assert result.exit_code == 2
+
+
+def test_each_ask_writes_its_own_audit_file(
+    base: dict[str, Any], settings_override: Callable[..., Settings]
+) -> None:
+    state = settings_override().paths.state_dir
+    state.mkdir(parents=True, exist_ok=True)
+    (state / "ask.audit.jsonl").write_text("not json\n{broken", encoding="utf-8")  # old/corrupt
+    _ok("assess", "--sample", "nimbara-hr")
+    _ok("ask", "nimbara-hr", "What changed?")
+    _ok("ask", "nimbara-hr", "What changed?")
+    files = sorted((state / "ask").glob("ask_*.jsonl"))
+    assert len(files) == 2
+    for f in files:
+        assert re.fullmatch(r"ask_[0-9a-f]{12}", f.stem)
+        events = read_audit_log(f)
+        assert events and {e.run_id for e in events} == {f.stem}
+    assert (state / "ask.audit.jsonl").read_text(encoding="utf-8").startswith("not json")
 
 
 def test_ask_is_listed_in_help() -> None:

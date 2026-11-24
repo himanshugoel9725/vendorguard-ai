@@ -16,7 +16,7 @@ from vendorguard.agents.reporter import ReporterAgent
 from vendorguard.agents.reviewer import ReviewerAgent
 from vendorguard.config import Settings
 from vendorguard.controls.loader import load_controls
-from vendorguard.diff.reassessment import compute_diff
+from vendorguard.diff.reassessment import compute_diff, find_previous
 from vendorguard.errors import ConfigError
 from vendorguard.factory import DeciderDeps, Providers, build_decider, build_providers
 from vendorguard.ingest.chunker import chunk_document
@@ -152,7 +152,7 @@ def _execute(
     inherent = inherent_risk(profile, s.scoring.inherent_risk)
     findings = _assess_controls(ctx, controls, evidence)
     score = score_findings(findings, controls, inherent.tier, s.scoring)
-    previous = memory.latest_assessment(vendor_id, exclude_run_id=ctx.run_id) if memory else None
+    previous = find_previous(memory, vendor_id, ctx.run_id) if memory else None
     diff = (differ or compute_diff)(findings, score, previous) if previous else None
     facts = build_facts(profile.vendor_name, inherent, score, findings, diff)
     result = AssessmentResult(

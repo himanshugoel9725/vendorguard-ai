@@ -2,6 +2,7 @@
 
 import json
 import logging
+import unicodedata
 from collections.abc import Sequence
 from typing import Any
 
@@ -24,6 +25,15 @@ from vendorguard.verification.answer_guard import check_answer
 log = logging.getLogger(__name__)
 FALLBACK_STAGE = "ask.fallback"
 NO_RUNS = "No assessments are stored for this vendor."
+
+
+def clean_question(question: str) -> str:
+    """The question as the prompt may carry it: no control characters and no ``<`` or ``>`` (so it
+    cannot close the ``<question>`` tag or open another one), whitespace collapsed."""
+    plain = "".join(
+        " " if unicodedata.category(ch).startswith("C") or ch in "<>" else ch for ch in question
+    )
+    return " ".join(plain.split())
 
 
 def _run_data(results: Sequence[AssessmentResult]) -> list[dict[str, Any]]:
@@ -75,10 +85,11 @@ class AskAgent(BaseAgent[AskOutput]):
         self._max_chars = settings.ask_max_question_chars
         self._max_words = reporting.summary_max_words
         self._provider = f"local/{llm.provider}"
+        self._run_ids: dict[str, str] = {}
 
     def ask(self, vendor_id: str, question: str) -> Answer:
         """Answer ``question`` from the vendor's last ``memory.ask_max_history_runs`` results."""
-        question = question.strip()
+        question = clean_question(question)
         if not question:
             raise ConfigError("the question must not be empty")
         if len(question) > self._max_chars:
@@ -101,6 +112,7 @@ class AskAgent(BaseAgent[AskOutput]):
             "runs": [{k: d[k] for k in ("run_id", "overall", "band", "findings")} for d in data],
         }
         run_ids = [d["run_id"] for d in data]
+        self._run_ids = {r.casefold(): r for r in run_ids}
         control_ids = sorted({c for d in data for c in d["findings"]})
         try:
             out = self.run(variables, hints=hints)
@@ -109,11 +121,15 @@ class AskAgent(BaseAgent[AskOutput]):
         problems = check_answer(out, run_ids, control_ids)
         return self._fallback(question, hints, problems) if problems else self._answer(out)
 
+    def _canonical_run(self, run_id: str) -> str:
+        """The run ID as stored (the model may change its case; the guard compares ignoring it)."""
+        return self._run_ids.get(run_id.casefold(), run_id)
+
     def _answer(self, out: AskOutput) -> Answer:
         return Answer(
             text=out.text,
-            cited_run_ids=sorted(set(out.cited_run_ids)),
-            cited_control_ids=sorted(set(out.cited_control_ids)),
+            cited_run_ids=sorted({self._canonical_run(r) for r in out.cited_run_ids}),
+            cited_control_ids=sorted({c.upper() for c in out.cited_control_ids}),
             provider=self._provider,
         )
 

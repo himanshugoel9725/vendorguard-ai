@@ -4,35 +4,41 @@ import re
 from collections.abc import Collection
 
 from vendorguard.models.outputs import AskOutput
+from vendorguard.verification.text_normalize import normalize_text
 
-CONTROL_ID = re.compile(r"\b[A-Z]{2,5}-\d{2,3}\b", re.IGNORECASE)
-RUN_ID = re.compile(r"\brun_[A-Za-z0-9_-]+")
+# After ``normalize_text`` (NFKC, casefold, dashes to ASCII): no word-boundary requirement on the
+# left, so a made-up ID glued to letters ("xdat-01") is matched whole and then rejected as unknown.
+CONTROL_ID = re.compile(r"[a-z]{2,5}-\d{2,3}(?!\d)")
+RUN_ID = re.compile(r"run_[a-z0-9_-]+")
 
 
 def check_answer(
     answer: AskOutput, run_ids: Collection[str], control_ids: Collection[str]
 ) -> list[str]:
     """The problems found in ``answer`` (empty list = acceptable). Messages hold only the
-    offending ID, never other text.
+    offending ID (lower-case), never other text.
 
-    Every cited ID and every ID written in the text must exist in the data the model was shown,
-    and every ID written in the text must also be cited (the prompt demands both, and a reader
-    relies on the cited lists). The guard checks IDs, not the truth of the sentences around
-    them: that part is only as good as the model (known limit, see ADR-018).
+    Every cited ID and every ID written in the text must exist in the data the model was shown
+    (compared case-insensitively), and every existing ID written in the text must be cited (the
+    prompt demands both, and a reader relies on the cited lists). The guard checks IDs, not the
+    truth of the sentences around them: that part is only as good as the model (ADR-018).
     """
-    known_runs, known_controls = set(run_ids), {c.upper() for c in control_ids}
+    text = normalize_text(answer.text)
+    known_runs = {r.casefold() for r in run_ids}
+    known_controls = {c.casefold() for c in control_ids}
+    mentioned_runs = {r.rstrip("_-") for r in RUN_ID.findall(text)}
+    cited_runs = {r.casefold() for r in answer.cited_run_ids}
+    mentioned_controls = set(CONTROL_ID.findall(RUN_ID.sub(" ", text)))  # run IDs are not controls
+    cited_controls = {c.casefold() for c in answer.cited_control_ids}
     problems: list[str] = []
-    mentioned_runs = {r.rstrip("_-") for r in RUN_ID.findall(answer.text)}
-    for run in sorted(set(answer.cited_run_ids) | mentioned_runs):
+    for run in sorted(cited_runs | mentioned_runs):
         if run not in known_runs:
             problems.append(f"run {run} is not in the data")
     problems += [
         f"run {run} is written in the text but not cited"
-        for run in sorted(mentioned_runs - set(answer.cited_run_ids))
+        for run in sorted(mentioned_runs - cited_runs)
         if run in known_runs
     ]
-    mentioned_controls = {c.upper() for c in CONTROL_ID.findall(answer.text)}
-    cited_controls = {c.upper() for c in answer.cited_control_ids}
     for control in sorted(cited_controls | mentioned_controls):
         if control not in known_controls:
             problems.append(f"control {control} is not in the data")

@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from vendorguard.diff.reassessment import compute_diff
+from vendorguard.diff.reassessment import compute_diff, find_previous
 from vendorguard.models.finding import ControlFinding, ControlStatus, DraftStatus, Override
-from vendorguard.models.run import AssessmentResult, CostSummary
+from vendorguard.models.run import AssessmentResult, AssessmentSummary, CostSummary
 from vendorguard.models.score import InherentRisk, InherentTier, RiskBand, RiskScore
 from vendorguard.models.vendor import DataCategory, VendorProfile
 
@@ -106,3 +106,53 @@ def test_deterministic_for_any_finding_order() -> None:
     prev = _prev([_f("A-01", S.MET), _f("B-02", S.MET)])
     a = [_f("A-01", S.PARTIAL), _f("B-02", S.NOT_MET)]
     assert compute_diff(a, _score(30.0), prev) == compute_diff(a[::-1], _score(30.0), prev)
+
+
+class _FakeMemory:
+    def __init__(self, entries: list[tuple[str, int]]) -> None:
+        self.entries = entries  # (run_id, day)
+
+    def list_assessments(self, vendor_id: str) -> list[AssessmentSummary]:
+        rows = [
+            AssessmentSummary(
+                run_id=r, vendor_id=vendor_id, created_at=datetime(2026, 1, d, tzinfo=UTC),
+                overall=10.0, band=RiskBand.LOW,
+            )
+            for r, d in self.entries
+        ]  # fmt: skip
+        return sorted(rows, key=lambda a: (a.created_at, a.run_id), reverse=True)
+
+    def get_assessment(self, run_id: str) -> AssessmentResult | None:
+        if run_id not in {r for r, _ in self.entries}:
+            return None
+        return _prev([_f("A-01", S.MET)]).model_copy(update={"run_id": run_id})
+
+
+def _prev_id(mem: _FakeMemory, run_id: str) -> str | None:
+    got = find_previous(mem, "v", run_id)  # type: ignore[arg-type]
+    return got.run_id if got else None
+
+
+def test_find_previous_new_run_comes_after_everything() -> None:
+    mem = _FakeMemory([("r1", 1), ("r2", 2)])
+    assert _prev_id(mem, "r_new") == "r2"
+
+
+def test_find_previous_stored_run_keeps_its_place() -> None:
+    mem = _FakeMemory([("r1", 1), ("r2", 2), ("r3", 3)])
+    assert _prev_id(mem, "r2") == "r1"
+    assert _prev_id(mem, "r3") == "r2"
+
+
+def test_find_previous_none_when_nothing_is_earlier() -> None:
+    mem = _FakeMemory([("r1", 1), ("r2", 2)])
+    assert _prev_id(mem, "r1") is None
+    assert _prev_id(_FakeMemory([]), "x") is None
+    assert _prev_id(_FakeMemory([("only", 1)]), "only") is None
+
+
+def test_find_previous_ties_by_run_id() -> None:
+    mem = _FakeMemory([("ra", 1), ("rb", 1), ("rc", 1)])
+    assert _prev_id(mem, "rc") == "rb"
+    assert _prev_id(mem, "rb") == "ra"
+    assert _prev_id(mem, "ra") is None

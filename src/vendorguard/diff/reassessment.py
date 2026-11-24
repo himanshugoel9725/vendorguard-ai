@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 from decimal import Decimal
 
+from vendorguard.interfaces.memory import MemoryStore
 from vendorguard.models.finding import ControlFinding, ControlStatus
 from vendorguard.models.run import AssessmentResult, ReassessmentDiff, StatusChange
 from vendorguard.models.score import RiskScore
@@ -12,6 +13,23 @@ SCORE_DIGITS = Decimal("0.1")
 
 def _statuses(findings: Sequence[ControlFinding]) -> dict[str, ControlStatus]:
     return {f.control_id: f.effective_status for f in findings}
+
+
+def find_previous(memory: MemoryStore, vendor_id: str, run_id: str) -> AssessmentResult | None:
+    """The run to diff against: the newest stored run of the vendor that comes BEFORE ``run_id``.
+
+    A new run comes after everything stored. A run that is stored already (a re-run with the
+    same deterministic ID) keeps its original place, so re-running year 1 after year 2 is still
+    compared with the run before year 1, never with year 2.
+    """
+    history = memory.list_assessments(vendor_id)  # newest first
+    own = next((a for a in history if a.run_id == run_id), None)
+    for entry in history:
+        if entry.run_id == run_id:
+            continue
+        if own is None or (entry.created_at, entry.run_id) < (own.created_at, own.run_id):
+            return memory.get_assessment(entry.run_id)
+    return None
 
 
 def compute_diff(
@@ -45,4 +63,4 @@ def compute_diff(
     )
 
 
-__all__ = ["compute_diff"]
+__all__ = ["compute_diff", "find_previous"]

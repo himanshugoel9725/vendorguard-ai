@@ -13,6 +13,7 @@ from vendorguard.observability.run_manifest import result_hash
 from vendorguard.utils.jsonio import canonical_json
 
 SCHEMA = Path(__file__).with_name("schema.sql")
+SCHEMA_VERSION = 1  # bump with every schema change and add a migration here
 
 
 class SqliteMemoryStore:
@@ -22,13 +23,21 @@ class SqliteMemoryStore:
     result hash is identical after a save and a load.
     """
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, busy_timeout_s: float) -> None:
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            self._db = sqlite3.connect(path, check_same_thread=False)
+            self._db = sqlite3.connect(path, timeout=busy_timeout_s, check_same_thread=False)
             self._db.execute("PRAGMA journal_mode=WAL")
             self._db.execute("PRAGMA foreign_keys=ON")
+            version = self._db.execute("PRAGMA user_version").fetchone()[0]
+            if version > SCHEMA_VERSION:
+                self._db.close()
+                raise MemoryStoreError(
+                    f"the memory database has schema version {version}; this program knows "
+                    f"{SCHEMA_VERSION}: use a newer VendorGuard or another database file"
+                )
             self._db.executescript(SCHEMA.read_text(encoding="utf-8"))
+            self._db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         except (OSError, sqlite3.Error) as exc:
             raise MemoryStoreError(
                 f"cannot open the memory database: {type(exc).__name__}"
@@ -39,6 +48,12 @@ class SqliteMemoryStore:
         """Store (or replace) the result of one run, with its findings and overrides."""
         body = canonical_json(result.model_dump(mode="json"))
         with self._lock, self._db:
+            # A repeated run keeps its ORIGINAL position in the vendor's history: a re-run of an
+            # old document must not become the "newest" run.
+            row = self._db.execute(
+                "SELECT created_at FROM assessments WHERE run_id = ?", (result.run_id,)
+            ).fetchone()
+            created_at = row[0] if row else result.created_at.isoformat()
             self._db.execute(
                 "INSERT INTO vendors(vendor_id, name) VALUES (?, ?) "
                 "ON CONFLICT(vendor_id) DO UPDATE SET name = excluded.name",
@@ -51,7 +66,7 @@ class SqliteMemoryStore:
                 (
                     result.run_id,
                     result.vendor_id,
-                    result.created_at.isoformat(),
+                    created_at,
                     result.score.overall,
                     result.score.band.value,
                     result_hash(result),

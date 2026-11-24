@@ -103,7 +103,9 @@ DECIDERS: dict[str, Callable[[Settings, DeciderDeps | None], Decider]] = {
     "jev": _jev,
 }
 MEMORY_STORES: dict[str, Callable[[Settings], MemoryStore]] = {
-    "sqlite": lambda s: SqliteMemoryStore(s.memory.sqlite_path),  # letta: task 7.5
+    "sqlite": lambda s: SqliteMemoryStore(
+        s.memory.sqlite_path, s.memory.busy_timeout_s
+    ),  # letta: task 7.5
 }
 
 UNCACHED_LLM_PROVIDERS = frozenset({"mock"})  # the mock is free and deterministic: never cached

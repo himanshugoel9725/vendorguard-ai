@@ -18,7 +18,7 @@ Make = Callable[..., Settings]
 @pytest.fixture
 def two_runs(settings_override: Make, tmp_path: Path):  # type: ignore[no-untyped-def]
     s = settings_override()
-    store = SqliteMemoryStore(tmp_path / "mem.db")
+    store = SqliteMemoryStore(tmp_path / "mem.db", 5.0)
     first = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr.pdf"], memory=store)
     second = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store)
     yield s, store, first, second
@@ -60,3 +60,13 @@ def test_memory_holds_both_runs_and_a_rerun_does_not_diff_against_itself(two_run
     again = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store)
     assert again.run_id == second.run_id and again.diff is not None
     assert again.diff.previous_run_id == first.run_id  # the run being replaced is excluded
+
+
+def test_rerunning_year_one_after_year_two_has_nothing_before_it(two_runs) -> None:  # type: ignore[no-untyped-def]
+    s, store, first, second = two_runs
+    again1 = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr.pdf"], memory=store)
+    assert again1.run_id == first.run_id and again1.diff is None
+    again2 = run_assessment(s, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store)
+    assert again2.diff is not None and again2.diff.previous_run_id == first.run_id
+    history = [a.run_id for a in store.list_assessments("nimbara-hr")]
+    assert history == [second.run_id, first.run_id]  # order unchanged by the re-runs

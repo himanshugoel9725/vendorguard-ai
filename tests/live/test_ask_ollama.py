@@ -24,7 +24,7 @@ def test_what_changed_cites_only_existing_ids(
     settings_override: Callable[..., Settings], tmp_path: Path
 ) -> None:
     mock_settings = settings_override()  # the two runs come from the mock pipeline
-    store = SqliteMemoryStore(tmp_path / "mem.db")
+    store = SqliteMemoryStore(tmp_path / "mem.db", 5.0)
     first = run_assessment(mock_settings, "nimbara-hr", [SAMPLES / "nimbara-hr.pdf"], memory=store)
     second = run_assessment(
         mock_settings, "nimbara-hr", [SAMPLES / "nimbara-hr-y2.pdf"], memory=store

@@ -140,6 +140,9 @@ def test_hooks_and_memory_are_used_when_given(settings_override: Make) -> None:
     saved: list[str] = []
 
     class Memory:
+        def list_assessments(self, vendor_id: str):  # type: ignore[no-untyped-def]
+            return []
+
         def latest_assessment(self, vendor_id: str, *, exclude_run_id: str | None = None):  # type: ignore[no-untyped-def]
             return None
 
