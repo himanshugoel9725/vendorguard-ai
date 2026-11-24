@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendor risk assessment: {{ v.vendor_name }}</title>
+<style>
+:root { --fg:#1c2330; --muted:#5b6577; --line:#d9dee7; --bg:#fff; --card:#f6f8fb;
+  --met:#1b7f4b; --partial:#a15c00; --notmet:#b3261e; --none:#5b6577; --review:#5b3fb5; }
+@media (prefers-color-scheme: dark) { :root { --fg:#e6e9ef; --muted:#9aa4b5; --line:#2e3646;
+  --bg:#12161d; --card:#1a2030; --met:#58c68a; --partial:#e0a24a; --notmet:#f2857d;
+  --none:#9aa4b5; --review:#a99af0; } }
+* { box-sizing: border-box; }
+body { font: 15px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg);
+  max-width: 980px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 24px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 32px 0 8px; }
+h3 { font-size: 15px; margin: 0; }
+.muted { color: var(--muted); font-size: 13px; }
+.score { display: flex; gap: 24px; align-items: baseline; background: var(--card);
+  border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin: 16px 0; }
+.score .n { font-size: 40px; font-weight: 700; }
+.band { text-transform: uppercase; font-weight: 700; letter-spacing: .05em; }
+table { border-collapse: collapse; width: 100%; } th, td { text-align: left;
+  padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  font-weight: 600; border: 1px solid currentColor; white-space: nowrap; }
+.s-met { color: var(--met); } .s-partial { color: var(--partial); }
+.s-not_met { color: var(--notmet); } .s-no_evidence { color: var(--none); }
+.s-needs_human_review { color: var(--review); }
+.bar { background: var(--line); border-radius: 4px; height: 10px; }
+.bar > span { display: block; height: 10px; border-radius: 4px; background: var(--partial); }
+.finding { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0;
+  break-inside: avoid; }
+blockquote { margin: 8px 0 0; padding-left: 12px; border-left: 3px solid var(--line); }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px; margin: 0; }
+dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+@media print { body { max-width: none; padding: 0; } .finding { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+<h1>Vendor risk assessment: {{ v.vendor_name }}</h1>
+<p class="muted">Run {{ v.run_id }} · {{ v.created_at }} · vendor {{ v.vendor_id }}</p>
+
+<div class="score">
+  <div><span class="n">{{ "%g"|format(v.overall) }}</span> / 100 risk score</div>
+  <div class="band">{{ v.band }}</div>
+  <div class="muted">Inherent risk: {{ v.inherent_tier }} ({{ v.inherent_reasons|join(", ") }})</div>
+</div>
+<p>{{ v.summary }}</p>
+{% if v.triggered_rules %}
+<ul>
+{% for r in v.triggered_rules %}
+  <li>{{ r }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+<h2>Domain risk scores</h2>
+<table>
+<tr><th>Domain</th><th>Risk score</th><th style="width:40%">Bar</th></tr>
+{% for d in v.domains %}
+<tr><td>{{ d.name }}</td><td>{{ "%g"|format(d.score) }}</td>
+<td><div class="bar"><span style="width: {{ [[d.score, 0]|max, 100]|min }}%"></span></div></td></tr>
+{% endfor %}
+</table>
+
+<h2>Status counts</h2>
+<p>
+{% for c in v.counts %}
+<span class="chip s-{{ c.key }}">{{ c.label }}: {{ c.n }}</span>
+{% endfor %}
+</p>
+
+<h2>Findings</h2>
+<table>
+<tr><th>Control</th><th>Title</th><th>Status</th></tr>
+{% for f in v.findings %}
+<tr><td><a href="#{{ f.id }}">{{ f.id }}</a></td><td>{{ f.title }}</td>
+<td><span class="chip s-{{ f.status }}">{{ f.status_label }}</span></td></tr>
+{% endfor %}
+</table>
+{% for f in v.findings %}
+<div class="finding" id="{{ f.id }}">
+  <h3>{{ f.id }}: {{ f.title }} <span class="chip s-{{ f.status }}">{{ f.status_label }}</span></h3>
+  {% if f.override %}
+  <p class="muted">Analyst override by {{ f.override.analyst }} ({{ f.override.reason }});
+  the system said {{ f.system_label }}.</p>
+  {% endif %}
+  <p>{{ f.rationale }}</p>
+  {% for c in f.citations %}
+  <blockquote>{{ c.quote }}<br><span class="muted">{{ c.document }}{% if c.page %}, page {{ c.page }}{% endif %}</span></blockquote>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if v.diff %}
+<h2>Changes since the previous assessment</h2>
+<p>Previous run {{ v.diff.previous_run_id }}; score change {{ "%+g"|format(v.diff.score_delta) }}.</p>
+<ul>
+  <li>New gaps: {{ v.diff.new_gaps|join(", ") or "none" }}</li>
+  <li>Resolved gaps: {{ v.diff.resolved_gaps|join(", ") or "none" }}</li>
+{% for c in v.diff.changed %}
+  <li>{{ c.control_id }}: {{ c.from_status }} to {{ c.to_status }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if v.overrides %}
+<h2>Analyst overrides</h2>
+<ul>
+{% for f in v.overrides %}
+  <li>{{ f.id }}: {{ f.status_label }} by {{ f.override.analyst }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if v.audit %}
+<h2>Audit summary</h2>
+<p>{{ v.audit.events }} recorded steps, {{ v.audit.cached }} replayed from cache,
+{{ v.audit.tokens_in }} tokens in, {{ v.audit.tokens_out }} out, ${{ "%g"|format(v.audit.usd) }},
+{{ v.audit.fallbacks }} fallbacks.</p>
+{% endif %}
+
+{% if v.manifest %}
+<h2>Run manifest</h2>
+<dl>
+{% for k in ["status", "app_version", "git_sha", "config_fingerprint", "controls_version", "result_hash"] %}
+  <dt>{{ k }}</dt><dd>{{ v.manifest[k] }}</dd>
+{% endfor %}
+{% for i in v.manifest.inputs %}
+  <dt>input</dt><dd>{{ i.filename }} (sha256 {{ i.sha256 }}, {{ i.pages }} pages)</dd>
+{% endfor %}
+</dl>
+{% endif %}
+</body>
+</html>

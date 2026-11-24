@@ -54,6 +54,7 @@ from vendorguard.pipeline.run_folder import (
     prepare_run_dir,
 )
 from vendorguard.reporting.facts import build_facts
+from vendorguard.reporting.render import render_reports
 from vendorguard.scoring.inherent_risk import inherent_risk
 from vendorguard.scoring.rules_engine import score_findings
 from vendorguard.utils.hashing import hash_obj
@@ -64,7 +65,7 @@ from vendorguard.verification.citation_check import CitationChecker
 
 log = logging.getLogger(__name__)
 
-# Hooks filled in by later tasks: 6.3 renders reports, 7.2 computes the diff.
+# Hooks: ``render`` replaces the default report writer, ``differ`` is filled in by 7.2.
 Differ = Callable[[list[ControlFinding], RiskScore, AssessmentResult], ReassessmentDiff]
 Renderer = Callable[[AssessmentResult, Path], None]
 PROMPT_AGENTS = ("intake", "mapper", "reviewer", "reporter")
@@ -142,7 +143,6 @@ def _execute(
     controls: ControlSet,
     memory: MemoryStore | None,
     differ: Differ | None,
-    render: Renderer | None,
 ) -> AssessmentResult:
     s = ctx.settings
     evidence = plan_evidence(chunks, controls, ctx.embedder, s, ctx.audit)
@@ -167,10 +167,6 @@ def _execute(
         manifest_path=ctx.run_dir / MANIFEST_FILE,
     )
     persist_result(ctx.run_dir, result)
-    if render is not None:
-        render(result, ctx.run_dir)
-    if memory is not None:
-        memory.save_assessment(result)
     return result
 
 
@@ -250,9 +246,13 @@ def run_assessment(
         prov = prov or build_providers(settings)
         decider = build_decider(settings, DeciderDeps(prov.llm, prompts, audit, prov.tracker))
         ctx = _context(settings, rid, run_dir, audit, prov, prompts, decider)
-        result = _execute(ctx, vendor_id, chunks, chosen, memory, differ, render)
+        result = _execute(ctx, vendor_id, chunks, chosen, memory, differ)
         done = finish_manifest(manifest, RunStatus.DONE, result_hash(result))
         write_manifest(run_dir / MANIFEST_FILE, done)
+        # Reports and memory come after the final manifest, so a report shows it as it is.
+        (render or _default_renderer(chosen, settings))(result, run_dir)
+        if memory is not None:
+            memory.save_assessment(result)
         if metrics:
             metrics.run_finished("done")
         return result
@@ -268,6 +268,15 @@ def run_assessment(
             close()
         if built and prov is not None:
             prov.close()
+
+
+def _default_renderer(controls: ControlSet, settings: Settings) -> Renderer:
+    """Write the formats listed in ``reporting.formats`` into the run folder."""
+
+    def render(_result: AssessmentResult, run_dir: Path) -> None:
+        render_reports(run_dir, controls, settings.reporting)
+
+    return render
 
 
 def _decider_names(settings: Settings) -> set[str]:
