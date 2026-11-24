@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request, UploadFile
 from starlette.datastructures import FormData
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.formparsers import MultiPartException
 
 from vendorguard.config import Settings
@@ -48,8 +49,9 @@ async def read_form(request: Request, settings: Settings) -> FormData:
         return await request.form(
             max_files=api.max_files_per_request, max_fields=api.max_form_fields
         )
-    except (MultiPartException, HTTPException) as exc:
-        # Inside a real app Starlette has already turned MultiPartException into HTTPException(400).
+    except (MultiPartException, StarletteHTTPException) as exc:
+        # Inside a real app Starlette has already turned MultiPartException into ITS OWN
+        # HTTPException(400), the base class of FastAPI's (so catch the base).
         message = exc.message if isinstance(exc, MultiPartException) else str(exc.detail)
         too_many = "too many" in message.lower()
         raise HTTPException(

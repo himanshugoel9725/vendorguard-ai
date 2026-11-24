@@ -148,6 +148,8 @@ class ApiSettings(StrictModel):
     max_files_per_request: PositiveInt
     max_form_fields: PositiveInt
     max_json_body_kb: PositiveInt
+    max_queued_jobs: PositiveInt
+    max_finished_jobs_kept: PositiveInt
     rate_limit_per_minute: PositiveInt
     rate_limit_max_principals: PositiveInt
 

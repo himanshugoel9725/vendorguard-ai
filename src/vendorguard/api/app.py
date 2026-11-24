@@ -1,6 +1,7 @@
 """The FastAPI application: an app factory whose lifespan builds the shared objects once."""
 
 import logging
+import shutil
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -11,13 +12,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from vendorguard import __version__
-from vendorguard.api.routes import system
+from vendorguard.api.jobs import Job, JobRegistry
+from vendorguard.api.routes import assessments, system, vendors
 from vendorguard.api.security import AccessGate, RateLimiter, check_startup
 from vendorguard.config import Settings, get_settings
-from vendorguard.errors import VendorGuardError
+from vendorguard.controls.loader import load_controls
+from vendorguard.errors import (
+    BudgetExceededError,
+    ConfigError,
+    IngestError,
+    MemoryStoreError,
+    ProviderError,
+    VendorGuardError,
+)
 from vendorguard.factory import build_memory_store
 from vendorguard.logging_setup import collect_secrets, setup_logging
 from vendorguard.observability.metrics import Metrics
+from vendorguard.pipeline.orchestrator import run_assessment
 
 log = logging.getLogger(__name__)
 
@@ -37,9 +48,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = settings
         app.state.metrics = Metrics(settings.observability)
         app.state.memory = build_memory_store(settings)
+        app.state.controls = load_controls(settings.paths.controls_file)
+
+        def work(job: Job) -> None:
+            """Run one queued assessment (own providers: the budget is per run), then delete
+            the uploaded files."""
+            try:
+                run_assessment(
+                    settings,
+                    job.vendor_id,
+                    job.files,
+                    memory=app.state.memory,
+                    metrics=app.state.metrics,
+                    run_id=job.run_id,
+                )
+            finally:
+                shutil.rmtree(job.folder, ignore_errors=True)
+
+        app.state.jobs = JobRegistry(
+            work, settings.api.max_queued_jobs, settings.api.max_finished_jobs_kept
+        )
         try:
             yield
         finally:
+            app.state.jobs.close()
             close = getattr(app.state.memory, "close", None)
             if callable(close):
                 close()
@@ -78,7 +110,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     app.include_router(system.public_router)
     app.include_router(system.protected_router)
+    app.include_router(assessments.router)
+    app.include_router(vendors.router)
+    _map_errors(app)
     return app
+
+
+# Fixed messages: the text of a provider, ingest or storage error is never sent to a client.
+ERROR_RESPONSES: list[tuple[type[VendorGuardError], int, str]] = [
+    (IngestError, 422, "a document could not be read"),
+    (BudgetExceededError, 429, "the cost budget of this request is used up"),
+    (MemoryStoreError, 500, "the memory store failed"),  # before ProviderError: it is a subclass
+    (ProviderError, 502, "a model provider failed"),
+]
+
+
+def _map_errors(app: FastAPI) -> None:
+    """Turn the program's errors into JSON answers without leaking internals."""
+
+    @app.exception_handler(ConfigError)
+    async def config_error(_request: Request, exc: ConfigError) -> JSONResponse:
+        """Our own messages about the request (an unknown ID, a refused override): safe to show."""
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(VendorGuardError)
+    async def program_error(_request: Request, exc: VendorGuardError) -> JSONResponse:
+        """Everything else: a fixed message by class, never ``str(exc)``."""
+        for kind, status, detail in ERROR_RESPONSES:
+            if isinstance(exc, kind):
+                return JSONResponse(status_code=status, content={"detail": detail})
+        return JSONResponse(status_code=500, content={"detail": "internal error"})
 
 
 def main() -> None:

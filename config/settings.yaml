@@ -271,6 +271,8 @@ api:
   max_files_per_request: 5
   max_form_fields: 20               # non-file form fields per request
   max_json_body_kb: 64              # body limit of every route that is not an upload
+  max_queued_jobs: 5                # assessments waiting for the single worker; more = 503
+  max_finished_jobs_kept: 200       # finished jobs remembered in memory (their results stay on disk)
   rate_limit_per_minute: 30
   rate_limit_max_principals: 10000  # clients tracked at once; the least recently seen are dropped
 
