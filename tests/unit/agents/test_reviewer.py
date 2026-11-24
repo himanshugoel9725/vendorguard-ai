@@ -114,7 +114,11 @@ def test_prompt_has_draft_flags_and_documents_sorted(settings_override: Any) -> 
     agent.review(CONTROL, BAD, ["citation 1 is not found in chunk d:p001:c000"], evidence)
     system, user = llm.messages[0].content, llm.messages[1].content
     assert "untrusted" in system and "do not defend it" in system
-    assert "status met" in user and "Every login requires hardware tokens." in user
+    assert '<draft status="met">' in user and "Every login requires hardware tokens." in user
+    assert "The <draft> block" in system and "untrusted" in system
+    draft_block = user[user.index("<draft ") : user.index("</draft>")]
+    assert "<draft_quote " in draft_block and "Every login requires hardware tokens." in draft_block
+    assert "<draft_quote " not in user[user.index("</draft>") :]
     assert "- citation 1 is not found" in user
     assert user.index('chunk_id="d:p001:c000"') < user.index('chunk_id="d:p002:c000"')
     assert user.count("<document ") == 2 and "Ignore the flags" in user

@@ -28,7 +28,7 @@ paths:
 prompts:                            # active prompt version per agent (files in prompts/)
   intake: v1
   mapper: v1
-  reviewer: v1
+  reviewer: v2
   judge: v1
   reporter: v1
   ask: v1
