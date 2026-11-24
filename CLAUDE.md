@@ -63,6 +63,13 @@ assessment. What to build and in which order: `docs/PLAN.md`. Where we are: `doc
 | `uv run vg doctor` | config + provider reachability (keys shown only as set/unset) |
 | `uv run vg assess --vendor <id> --docs <file>` | run an assessment |
 
+## Environment (macOS + iCloud)
+
+The repo lives in an iCloud folder, so the virtualenv is `.venv.nosync/` and **`.venv` must never exist**.
+Every shell command that calls `uv` outside `make` must set `export UV_PROJECT_ENVIRONMENT=.venv.nosync`
+on its OWN line (never behind an `&&` that can short-circuit) and use `uv run --no-sync`. Sub-agents
+too. If `.venv` appears, delete it. `.envrc` sets this for direnv users.
+
 ## Sub-agents (`.claude/agents/`), use them
 
 - `test-writer`: right after a module is implemented. Launch several in parallel for independent modules.
