@@ -1,0 +1,35 @@
+# VendorGuard AI. Start the API:   docker compose --profile api up --build
+# Needs .env with VG_API__AUTH_KEY (>= 16 random characters). Swagger UI: http://127.0.0.1:8000/docs
+# (Letta is not built, see ADR-019: there is no letta service.)
+
+services:
+  api:
+    profiles: ["api"]
+    build: .
+    image: vendorguard-ai:local
+    # Keys and overrides come from .env at run time; nothing secret is in the image.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Ollama runs on the host (CPU-only is fine): the container reaches it through the gateway.
+      VG_LLM__BASE_URL: ${VG_LLM__BASE_URL:-http://host.docker.internal:11434}
+      VG_EMBEDDINGS__BASE_URL: ${VG_EMBEDDINGS__BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Published on the loopback only. Put a reverse proxy with TLS in front before exposing it.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - vendorguard-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  vendorguard-data:

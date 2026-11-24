@@ -7,7 +7,7 @@
 export UV_PROJECT_ENVIRONMENT ?= .venv.nosync
 
 .PHONY: help setup fmt lint type test check hf test-live test-hosted sample record eval api \
-        demo-memory letta-up letta-down docs docs-config doctor clean
+        docker-build docker-up docker-down demo-memory letta-up letta-down docs docs-config doctor clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -56,6 +56,15 @@ eval: ## Run the evaluation matrix
 
 api: ## Start the REST API (host and port come from config/settings.yaml)
 	uv run python -m vendorguard.api.app
+
+docker-build: ## Build the API image (needs Docker)
+	docker build -t vendorguard-ai:local .
+
+docker-up: ## Start the API in Docker (needs Docker and VG_API__AUTH_KEY in .env)
+	docker compose --profile api up --build -d
+
+docker-down: ## Stop the API container
+	docker compose --profile api down
 
 demo-memory: ## Offline demo: nimbara-hr year 1, year 2, the diff, and a question
 	bash scripts/memory_demo.sh
