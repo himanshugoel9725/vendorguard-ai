@@ -350,10 +350,68 @@ def test_fuzzy_citation_is_verified_with_the_source_text(s: Settings, tmp_path: 
     assert f.citations[0].similarity < 1.0
 
 
-def test_no_evidence_draft_needs_no_citation(s: Settings, tmp_path: Path) -> None:
-    draft = DraftFinding(status=DraftStatus.NO_EVIDENCE, citations=[], rationale="nothing")
-    f, *_ = _run(s, tmp_path, mapper=StubMapper(draft))
+NO_QUOTE = DraftFinding(status=DraftStatus.NO_EVIDENCE, citations=[], rationale="nothing")
+
+
+def test_no_evidence_draft_needs_no_citation_when_triage_did_not_see_the_control(
+    s: Settings, tmp_path: Path
+) -> None:
+    near_miss = StubDecider(triage=_dec(DecisionLabel.NOT_ADDRESSED, 0.5))  # below the threshold
+    f, _, _, _, r = _run(s, tmp_path, decider=near_miss, mapper=StubMapper(NO_QUOTE))
+    assert f.status is ControlStatus.NO_EVIDENCE and f.citations == [] and r.calls == []
+
+
+def test_no_quote_for_an_addressed_control_gets_one_reviewer_look(
+    s: Settings, tmp_path: Path
+) -> None:
+    f, audit, _, _, r = _run(
+        s, tmp_path, mapper=StubMapper(NO_QUOTE), reviewer=StubReviewer(_draft())
+    )
+    assert f.status is ControlStatus.MET and f.review_rounds == 1
+    ((flags, evidence),) = r.calls
+    assert flags == ["no quote was given, but the triage gate found the control mentioned"]
+    assert [e.chunk.chunk_id for e in evidence] == [h.chunk.chunk_id for h in EV.wide]
+    assert [t.gate for t in f.trace].count(Gate.REVIEW) == 1
+    _check_audit_invariants(f, audit)
+
+
+def test_the_retry_flag_names_matched_control_keywords_but_no_document_text(
+    s: Settings, tmp_path: Path
+) -> None:
+    ev = ControlEvidence(top=[_chunk(0, "Our MFA rollout is complete.")], wide=[_chunk(0, "x")])
+    _, _, _, _, r = _run(
+        s, tmp_path, mapper=StubMapper(NO_QUOTE), reviewer=StubReviewer(NO_QUOTE), ev=ev
+    )
+    assert r.calls[0][0] == [
+        "no quote was given, but the triage gate found the control mentioned (it mentions: MFA)"
+    ]
+    assert "rollout" not in r.calls[0][0][0]
+
+
+def test_if_the_reviewer_also_quotes_nothing_no_evidence_stands(
+    s: Settings, tmp_path: Path
+) -> None:
+    f, audit, _, _, r = _run(
+        s, tmp_path, mapper=StubMapper(NO_QUOTE), reviewer=StubReviewer(NO_QUOTE)
+    )
     assert f.status is ControlStatus.NO_EVIDENCE and f.citations == []
+    assert len(r.calls) == 1 and f.review_rounds == 1  # one retry, never a second
+    _check_audit_invariants(f, audit)
+
+
+@pytest.mark.parametrize("why", ["triage_off", "no_rounds"])
+def test_no_retry_without_triage_or_review_rounds(s: Settings, tmp_path: Path, why: str) -> None:
+    settings = s.model_copy(
+        update={
+            "pipeline": s.pipeline.model_copy(
+                update={"triage_enabled": False}
+                if why == "triage_off"
+                else {"max_review_rounds": 0}
+            )
+        }
+    )
+    f, _, _, _, r = _run(settings, tmp_path, mapper=StubMapper(NO_QUOTE))
+    assert f.status is ControlStatus.NO_EVIDENCE and r.calls == []
 
 
 # --- errors ---------------------------------------------------------------------------------

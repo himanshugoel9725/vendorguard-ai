@@ -4,10 +4,17 @@ from vendorguard.errors import DeciderError, LLMError, SchemaValidationError
 from vendorguard.models.control import Control
 from vendorguard.models.decision import Decision, DecisionLabel, Gate, GateTrace
 from vendorguard.models.evidence import Citation, DraftCitation
-from vendorguard.models.finding import MAX_CITATIONS, ControlFinding, ControlStatus, DraftFinding
+from vendorguard.models.finding import (
+    MAX_CITATIONS,
+    ControlFinding,
+    ControlStatus,
+    DraftFinding,
+    DraftStatus,
+)
 from vendorguard.pipeline.context import RunContext
 from vendorguard.pipeline.retrieval_plan import ControlEvidence
 from vendorguard.utils.hashing import hash_obj
+from vendorguard.utils.keywords import matching_phrases
 
 NO_EVIDENCE_RATIONALE = "The triage gate found no text about this control in the documents."
 HUMAN_PREFIX = "Needs human review: "
@@ -74,11 +81,19 @@ def _human(
     )
 
 
+def _missing_quote_flag(control: Control, ev: ControlEvidence) -> str:
+    """A reason (control keywords only, never document text) for the no-quote retry."""
+    found = matching_phrases(" ".join(h.chunk.text for h in ev.top), control.keywords)
+    seen = f" (it mentions: {', '.join(found)})" if found else ""
+    return f"no quote was given, but the triage gate found the control mentioned{seen}"
+
+
 def _cascade(
     ctx: RunContext, control: Control, ev: ControlEvidence, trace: list[GateTrace]
 ) -> ControlFinding:
     s = ctx.settings
     ids_top = [h.chunk.chunk_id for h in ev.top]
+    addressed = False  # the triage gate saw the control mentioned (needed for the retry below)
     if s.pipeline.triage_enabled:
         d = ctx.decider.triage(control, ev.top)
         _gate(ctx, control, trace, Gate.TRIAGE, d, 0, ids_top)
@@ -91,7 +106,9 @@ def _cascade(
                 trace=trace,
                 review_rounds=0,
             )
+        addressed = d.label is DecisionLabel.ADDRESSED
     draft = ctx.mapper.map(control, ev.top)
+    retried = False
     flags: list[str] = []
     checked: list[Citation] = []
     for rnd in range(s.pipeline.max_review_rounds + 1):
@@ -115,7 +132,20 @@ def _cascade(
             )
             v = ctx.decider.verify(control, verified, seen)
             _gate(ctx, control, trace, Gate.VERIFY, v, rnd, [c.chunk_id for c in chunks])
-            if v.label is DecisionLabel.SUPPORTED and v.confidence >= s.decision.verify_threshold:
+            accepted = (
+                v.label is DecisionLabel.SUPPORTED and v.confidence >= s.decision.verify_threshold
+            )
+            # A model that quotes nothing for a control the triage gate saw mentioned gets ONE
+            # more look (the Reviewer, wider evidence); if it still quotes nothing, no_evidence
+            # stands. Never turns into human review on its own.
+            retry = (
+                accepted
+                and draft.status is DraftStatus.NO_EVIDENCE
+                and addressed
+                and not retried
+                and rnd < s.pipeline.max_review_rounds
+            )
+            if accepted and not retry:
                 return ControlFinding(
                     control_id=control.id,
                     status=ControlStatus(draft.status.value),
@@ -124,8 +154,12 @@ def _cascade(
                     trace=trace,
                     review_rounds=rnd,
                 )
-            why = v.reason or "no reason given"
-            flags = [f"verify gate did not support status {draft.status.value}: {why}"]
+            if retry:
+                retried = True
+                flags = [_missing_quote_flag(control, ev)]
+            else:
+                why = v.reason or "no reason given"
+                flags = [f"verify gate did not support status {draft.status.value}: {why}"]
         else:
             flags = [f"citation gate: {p}" for p in report.problems]
         if rnd < s.pipeline.max_review_rounds:
