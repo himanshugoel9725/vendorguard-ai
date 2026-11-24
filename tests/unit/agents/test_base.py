@@ -92,7 +92,7 @@ def parts(
 ) -> Callable[..., tuple[MapperAgent, FakeLLM, FakeAudit, CostTracker]]:
     def build(llm: FakeLLM | None = None) -> tuple[MapperAgent, FakeLLM, FakeAudit, CostTracker]:
         (tmp_path / "mapper.v1.md").write_text(PROMPT, encoding="utf-8")
-        s = settings_override()
+        s = settings_override(prompts={"mapper": "v1"})  # the file written above
         client, audit, tracker = llm or FakeLLM(), FakeAudit(), CostTracker(s.cost)
         agent = MapperAgent(client, PromptLoader(tmp_path, s.prompts), audit, tracker)
         return agent, client, audit, tracker

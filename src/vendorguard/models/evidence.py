@@ -53,6 +53,7 @@ class Citation(DraftCitation):
     page: Annotated[int, Field(ge=1)] | None = None
     valid: bool | None = None
     similarity: Probability | None = None
+    relocated: bool = False  # the quote was not in the named chunk but verbatim in this one
 
 
 __all__ = ["Chunk", "Citation", "DraftCitation", "ScoredChunk"]

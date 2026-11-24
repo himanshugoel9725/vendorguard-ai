@@ -50,6 +50,15 @@ class DraftFinding(ContractModel):
     _rationale_length = field_validator("rationale")(_check_rationale)
 
 
+class ExtractedEvidence(ContractModel):
+    """LLM output schema of the Mapper and Reviewer (ADR-017): the quotes that bear on one
+    control and a short rationale. The model does NOT choose the status; Python derives it."""
+
+    citations: Annotated[list[DraftCitation], Field(max_length=MAX_CITATIONS)]
+    rationale: NonEmptyStr
+    _rationale_length = field_validator("rationale")(_check_rationale)
+
+
 class Override(ContractModel):
     """An analyst's decision that replaces the system's status."""
 
@@ -76,4 +85,11 @@ class ControlFinding(ContractModel):
         return ControlStatus(self.override.new_status.value) if self.override else self.status
 
 
-__all__ = ["ControlFinding", "ControlStatus", "DraftFinding", "DraftStatus", "Override"]
+__all__ = [
+    "ControlFinding",
+    "ControlStatus",
+    "DraftFinding",
+    "DraftStatus",
+    "ExtractedEvidence",
+    "Override",
+]

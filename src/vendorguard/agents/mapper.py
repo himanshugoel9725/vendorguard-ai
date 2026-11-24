@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 
 from vendorguard.agents.base import BaseAgent
+from vendorguard.agents.derive import derive_finding
 from vendorguard.config_models.providers import RuleDeciderSettings
 from vendorguard.config_models.scoring import VerificationSettings
 from vendorguard.interfaces.audit import AuditSink
@@ -14,6 +15,7 @@ from vendorguard.models.finding import (
     MAX_RATIONALE_WORDS,
     DraftFinding,
     DraftStatus,
+    ExtractedEvidence,
 )
 from vendorguard.observability.cost_tracker import CostTracker
 from vendorguard.utils.prompt_loader import PromptLoader
@@ -21,11 +23,11 @@ from vendorguard.utils.prompt_loader import PromptLoader
 NO_CHUNKS_RATIONALE = "No document text was retrieved for this control."
 
 
-class MapperAgent(BaseAgent[DraftFinding]):
+class MapperAgent(BaseAgent[ExtractedEvidence]):
     """At most one model call per control; citations are checked later by the citation checker."""
 
     name = "mapper"
-    output_model = DraftFinding
+    output_model = ExtractedEvidence
 
     def __init__(
         self,
@@ -61,7 +63,8 @@ class MapperAgent(BaseAgent[DraftFinding]):
             "chunks": [{"chunk_id": c.chunk_id, "text": c.text} for c in chunks],
             "max_quote_chars": self._max_quote_chars,
         }
-        return self.run(variables, hints=hints, control_id=control.id)
+        extracted = self.run(variables, hints=hints, control_id=control.id)
+        return derive_finding(control, extracted, self._rules)
 
 
 __all__ = ["MapperAgent"]

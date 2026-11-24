@@ -49,7 +49,7 @@ class Capture:
         hints: Mapping[str, Any] | None = None,
     ) -> LLMResult[Any]:  # fmt: skip
         self.messages = list(messages)
-        parsed = output_model(status="no_evidence", citations=[], rationale="n/a")
+        parsed = output_model(citations=[], rationale="n/a")
         return LLMResult(
             parsed=parsed, usage=Usage(tokens_in=1, tokens_out=1), provider="ollama", model="fake"
         )

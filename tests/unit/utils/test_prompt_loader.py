@@ -40,7 +40,9 @@ def make(settings_override: Callable[..., Settings], tmp_path: Path) -> Callable
     def build(files: dict[str, str] | None = None, **prompts: str) -> PromptLoader:
         for name, text in (files if files is not None else {"mapper.v1.md": MAPPER}).items():
             (tmp_path / name).write_text(text, encoding="utf-8")
-        return PromptLoader(tmp_path, settings_override(prompts=prompts).prompts)
+        return PromptLoader(
+            tmp_path, settings_override(prompts={"mapper": "v1", **prompts}).prompts
+        )
 
     return build
 
@@ -127,7 +129,7 @@ def test_crlf_files_hash_like_lf_files(
     settings_override: Callable[..., Settings], tmp_path: Path
 ) -> None:
     (tmp_path / "mapper.v1.md").write_bytes(MAPPER.replace("\n", "\r\n").encode())
-    loader = PromptLoader(tmp_path, settings_override().prompts)
+    loader = PromptLoader(tmp_path, settings_override(prompts={"mapper": "v1"}).prompts)
     assert loader.load("mapper").prompt_hash == sha256_text(MAPPER)
 
 

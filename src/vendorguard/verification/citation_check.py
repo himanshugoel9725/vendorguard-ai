@@ -57,30 +57,57 @@ class CitationChecker:
         self._required = set(settings.require_citation_for)
 
     def check_one(self, citation: DraftCitation, chunks: Mapping[str, Chunk]) -> Citation:
-        """Check one quote; an unknown chunk id or an over-long quote is invalid."""
-        chunk = chunks.get(citation.chunk_id)
-        if chunk is None:
-            return Citation(**citation.model_dump(), valid=False, similarity=0.0)
+        """Check one quote against the chunk it names.
+
+        A model often attaches a correct quote to the wrong chunk ID. If the quote is not in the
+        named chunk but is verbatim (or fuzzily, see ``citation_min_similarity``) in another
+        retrieved chunk, the citation is moved there (``relocated=True``): the quote is still
+        verified against real source text. A fuzzy match keeps the SOURCE words, never the model's.
+        """
+        named = chunks.get(citation.chunk_id)
         if len(citation.quote) > self._max_quote_chars:
-            return Citation(
-                **citation.model_dump(),
-                doc_id=chunk.doc_id,
-                page=chunk.page,
-                valid=False,
-                similarity=0.0,
-            )
-        normalized_quote = normalize_text(citation.quote)
-        score, window = best_window(normalize_text(chunk.text), normalized_quote)
+            return self._invalid(citation, named, 0.0)
+        quote = normalize_text(citation.quote)
+        named_score = 0.0
+        if named is not None:
+            named_score, window = best_window(normalize_text(named.text), quote)
+            if named_score >= self._min_similarity:
+                return self._valid(citation, named, named_score, window, relocated=False)
+        found: tuple[float, str, Chunk] | None = None
+        for chunk in sorted(chunks.values(), key=lambda c: c.chunk_id):
+            if chunk is named:
+                continue
+            score, window = best_window(normalize_text(chunk.text), quote)
+            if score >= self._min_similarity and (found is None or score > found[0]):
+                found = (score, window, chunk)
+        if found is None:
+            return self._invalid(citation, named, named_score)
+        return self._valid(citation, found[2], found[0], found[1], relocated=True)
+
+    @staticmethod
+    def _valid(
+        citation: DraftCitation, chunk: Chunk, score: float, window: str, *, relocated: bool
+    ) -> Citation:
         data = citation.model_dump()
+        data["chunk_id"] = chunk.chunk_id
         if score < 1.0 and window:
-            # A fuzzy match keeps the SOURCE words, never the model's: later checks and the
-            # reports must not read a doctored quote (for example one without "not").
-            data["quote"] = window
+            data["quote"] = window  # a fuzzy match keeps the source words, never the model's
         return Citation(
             **data,
             doc_id=chunk.doc_id,
             page=chunk.page,
-            valid=score >= self._min_similarity,
+            valid=True,
+            similarity=round(score, SIMILARITY_DIGITS),
+            relocated=relocated,
+        )
+
+    @staticmethod
+    def _invalid(citation: DraftCitation, chunk: Chunk | None, score: float) -> Citation:
+        return Citation(
+            **citation.model_dump(),
+            doc_id=chunk.doc_id if chunk else None,
+            page=chunk.page if chunk else None,
+            valid=False,
             similarity=round(score, SIMILARITY_DIGITS),
         )
 

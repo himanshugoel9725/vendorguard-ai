@@ -28,8 +28,8 @@ paths:
 
 prompts:                            # active prompt version per agent (files in prompts/)
   intake: v1
-  mapper: v1
-  reviewer: v2
+  mapper: v2                        # v2: the model only extracts quotes, Python derives the status (ADR-017)
+  reviewer: v3
   judge: v1
   reporter: v1
   ask: v1

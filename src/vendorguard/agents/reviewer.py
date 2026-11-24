@@ -3,22 +3,28 @@
 from collections.abc import Sequence
 
 from vendorguard.agents.base import BaseAgent
+from vendorguard.agents.derive import derive_finding
 from vendorguard.config_models.providers import RuleDeciderSettings
 from vendorguard.config_models.scoring import VerificationSettings
 from vendorguard.interfaces.audit import AuditSink
 from vendorguard.interfaces.llm import LLMClient
 from vendorguard.models.control import Control
 from vendorguard.models.evidence import ScoredChunk
-from vendorguard.models.finding import MAX_CITATIONS, MAX_RATIONALE_WORDS, DraftFinding
+from vendorguard.models.finding import (
+    MAX_CITATIONS,
+    MAX_RATIONALE_WORDS,
+    DraftFinding,
+    ExtractedEvidence,
+)
 from vendorguard.observability.cost_tracker import CostTracker
 from vendorguard.utils.prompt_loader import PromptLoader
 
 
-class ReviewerAgent(BaseAgent[DraftFinding]):
+class ReviewerAgent(BaseAgent[ExtractedEvidence]):
     """One model call per review round; the cascade checks the new citations again."""
 
     name = "reviewer"
-    output_model = DraftFinding
+    output_model = ExtractedEvidence
 
     def __init__(
         self,
@@ -61,7 +67,8 @@ class ReviewerAgent(BaseAgent[DraftFinding]):
             "chunks": [{"chunk_id": c.chunk_id, "text": c.text} for c in chunks],
             "max_quote_chars": self._max_quote_chars,
         }
-        return self.run(variables, hints=hints, control_id=control.id)
+        extracted = self.run(variables, hints=hints, control_id=control.id)
+        return derive_finding(control, extracted, self._rules)
 
 
 __all__ = ["ReviewerAgent"]

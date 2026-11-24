@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from vendorguard.agents.derive import derive_finding
 from vendorguard.config import Settings
 from vendorguard.controls.loader import load_controls
 from vendorguard.errors import LLMError, SchemaValidationError
@@ -15,8 +16,9 @@ from vendorguard.eval.specs import load_spec
 from vendorguard.ingest.chunker import chunk_document
 from vendorguard.ingest.loader import load_document
 from vendorguard.ingest.text_cleaner import clean_document
+from vendorguard.models.control import Control
 from vendorguard.models.decision import DecisionLabel
-from vendorguard.models.finding import DraftFinding, DraftStatus
+from vendorguard.models.finding import DraftFinding, DraftStatus, ExtractedEvidence
 from vendorguard.models.outputs import AskOutput, JudgeOutput, SummaryOutput
 from vendorguard.models.vendor import VendorProfile
 from vendorguard.providers.llm.mock import MockLLM
@@ -32,15 +34,42 @@ def mock(settings_override: Callable[..., Settings]) -> MockLLM:
     return MockLLM(settings_override().decision.rule)
 
 
-def _map(
+def _control(keywords: list[str]) -> Control:
+    return Control(
+        id="IAM-02", title="MFA", domain="IAM", criticality="high", iso27001=["8.5"],
+        nist_csf=["PR.AA"], requirement="MFA is enforced.", met_criteria="MFA for all.",
+        keywords=keywords or ["unused"],
+    )  # fmt: skip
+
+
+def _extract(
     mock: MockLLM, *chunks: tuple[str, str], keywords: list[str] = KEYWORDS, **extra: Any
-) -> DraftFinding:
+) -> ExtractedEvidence:
     hints = {
         "keywords": keywords,
         "chunks": [{"chunk_id": c, "text": t} for c, t in chunks],
         **extra,
     }
-    return mock.complete_json([], DraftFinding, purpose="mapper", hints=hints).parsed
+    return mock.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints).parsed
+
+
+def _raw(mock: MockLLM, *chunks: tuple[str, str]) -> dict[str, Any]:
+    hints = {"keywords": KEYWORDS, "chunks": [{"chunk_id": c, "text": t} for c, t in chunks]}
+    return mock.complete_json(
+        [], ExtractedEvidence, purpose="mapper", hints=hints
+    ).parsed.model_dump()
+
+
+def _map(
+    mock: MockLLM,
+    settings: Settings,
+    *chunks: tuple[str, str],
+    keywords: list[str] = KEYWORDS,
+    **extra: Any,
+) -> DraftFinding:
+    """Mock answer, then the status derived by Python (ADR-017)."""
+    extracted = _extract(mock, *chunks, keywords=keywords, **extra)
+    return derive_finding(_control(keywords), extracted, settings.decision.rule)
 
 
 # --- every purpose gives valid output (task 4.4 done-when) ---------------------------------------
@@ -60,7 +89,8 @@ def test_every_purpose_returns_a_valid_model_with_zero_usage(mock: MockLLM) -> N
     }
     calls: list[tuple[type, str, dict[str, Any]]] = [
         (VendorProfile, "intake", intake),
-        (DraftFinding, "mapper", {"keywords": KEYWORDS, "chunks": []}),
+        (ExtractedEvidence, "mapper", {"keywords": KEYWORDS, "chunks": []}),
+        (ExtractedEvidence, "reviewer", {"keywords": KEYWORDS, "chunks": []}),
         (JudgeOutput, "judge", triage),
         (JudgeOutput, "judge", verify),
         (SummaryOutput, "reporter", report),
@@ -75,10 +105,10 @@ def test_every_purpose_returns_a_valid_model_with_zero_usage(mock: MockLLM) -> N
 
 def test_unknown_purpose_and_missing_hints_are_llm_errors(mock: MockLLM) -> None:
     with pytest.raises(LLMError, match="does not know the purpose 'poem'"):
-        mock.complete_json([], DraftFinding, purpose="poem")
+        mock.complete_json([], ExtractedEvidence, purpose="poem")
     for purpose, model in [
         ("intake", VendorProfile),
-        ("mapper", DraftFinding),
+        ("mapper", ExtractedEvidence),
         ("judge", JudgeOutput),
     ]:
         with pytest.raises(LLMError, match="needs the hint"):
@@ -97,8 +127,8 @@ def test_the_messages_are_ignored_and_answers_are_deterministic(mock: MockLLM) -
         "keywords": KEYWORDS,
         "chunks": [{"chunk_id": "a:p001:c000", "text": "MFA is enforced."}],
     }
-    a = mock.complete_json([], DraftFinding, purpose="mapper", hints=hints)
-    b = mock.complete_json([], DraftFinding, purpose="mapper", hints=hints)
+    a = mock.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints)
+    b = mock.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints)
     assert a.parsed == b.parsed
 
 
@@ -114,25 +144,32 @@ def test_the_messages_are_ignored_and_answers_are_deterministic(mock: MockLLM) -
     ],
 )
 def test_mapper_reads_the_status_of_the_first_keyword_sentence(
-    mock: MockLLM, text: str, status: DraftStatus
+    mock: MockLLM, settings_override: Callable[..., Settings], text: str, status: DraftStatus
 ) -> None:
-    finding = _map(mock, ("d:p001:c000", f"Intro sentence. {text} Later MFA is fine."))
+    chunk = ("d:p001:c000", f"Intro sentence. {text} Later MFA is fine.")
+    assert "status" not in _raw(mock, chunk)  # the model answer carries no status (ADR-017)
+    finding = _map(mock, settings_override(), chunk)
     assert finding.status is status
     assert [c.quote for c in finding.citations] == [text]
     assert finding.citations[0].chunk_id == "d:p001:c000"
     assert finding.rationale.startswith("Keyword baseline")
 
 
-def test_mapper_without_a_keyword_sentence_reports_no_evidence(mock: MockLLM) -> None:
-    finding = _map(mock, ("d:p001:c000", "Nothing relevant here."))
+def test_mapper_without_a_keyword_sentence_reports_no_evidence(
+    mock: MockLLM, settings_override: Callable[..., Settings]
+) -> None:
+    s = settings_override()
+    finding = _map(mock, s, ("d:p001:c000", "Nothing relevant here."))
     assert finding.status is DraftStatus.NO_EVIDENCE and finding.citations == []
-    assert _map(mock).status is DraftStatus.NO_EVIDENCE
+    assert _map(mock, s).status is DraftStatus.NO_EVIDENCE
 
 
-def test_mapper_scans_chunks_in_document_order_not_the_order_given(mock: MockLLM) -> None:
+def test_mapper_scans_chunks_in_document_order_not_the_order_given(
+    mock: MockLLM, settings_override: Callable[..., Settings]
+) -> None:
     late = ("d:p005:c000", "MFA is not enforced.")
     early = ("d:p002:c000", "MFA is enforced for all.")
-    finding = _map(mock, late, early)  # retrieval order: late chunk first
+    finding = _map(mock, settings_override(), late, early)  # retrieval order: late chunk first
     assert finding.status is DraftStatus.MET and finding.citations[0].chunk_id == "d:p002:c000"
 
 
@@ -141,16 +178,14 @@ def test_the_quote_is_verbatim_and_can_be_cut_to_a_limit(mock: MockLLM) -> None:
         "MFA is enforced for every employee, contractor and administrator across all systems."
     )
     chunk = ("d:p001:c000", f"Before. {sentence} After.")
-    assert _map(mock, chunk).citations[0].quote == sentence
-    cut = _map(mock, chunk, max_quote_chars=20).citations[0].quote
+    assert _extract(mock, chunk).citations[0].quote == sentence
+    cut = _extract(mock, chunk, max_quote_chars=20).citations[0].quote
     assert sentence.startswith(cut) and len(cut) <= 20 and cut == cut.rstrip()
 
 
 def test_mapper_matches_whole_words_only(mock: MockLLM) -> None:
-    assert (
-        _map(mock, ("d:p001:c000", "We keep backups."), keywords=["backup"]).status
-        is DraftStatus.NO_EVIDENCE
-    )
+    out = _extract(mock, ("d:p001:c000", "We keep backups."), keywords=["backup"])
+    assert out.citations == []
 
 
 # --- judge ---------------------------------------------------------------------------------------
@@ -305,7 +340,8 @@ def test_the_keyword_baseline_reaches_the_golden_labels(
             "chunks": [{"chunk_id": h.chunk.chunk_id, "text": h.chunk.text} for h in hits],
             "max_quote_chars": s.verification.max_quote_chars,
         }
-        got = mock.complete_json([], DraftFinding, purpose="mapper", hints=hints).parsed
+        extracted = mock.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints).parsed
+        got = derive_finding(control, extracted, s.decision.rule)
         right += got.status is gold.controls[control.id]
         for citation in got.citations:  # every quote is verbatim text of the cited chunk
             assert citation.quote in next(
@@ -322,7 +358,7 @@ def test_the_mock_needs_no_network(mock: MockLLM) -> None:
     socket.socket = lambda *a, **k: (_ for _ in ()).throw(AssertionError("network used"))  # type: ignore[assignment]
     try:
         mock.complete_json(
-            [], DraftFinding, purpose="mapper", hints={"keywords": ["x"], "chunks": []}
+            [], ExtractedEvidence, purpose="mapper", hints={"keywords": ["x"], "chunks": []}
         )
     finally:
         socket.socket = real  # type: ignore[misc]

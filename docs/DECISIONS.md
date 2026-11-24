@@ -246,3 +246,28 @@
   (`tests/fixtures/jev/`), because the API is alpha and no key exists. `tests/live/test_jev.py` (`-m jev`)
   checks the real shape once a key is set. Cost: `jev/*` price in settings is 0.042 per million input tokens
   (OpenRouter's `usage.cost` unit is unclear in its docs, so the settings price is used).
+
+## ADR-017: The model extracts quotes, Python derives the status (task 6.7)
+
+- **Context.** The first real run (qwen2.5:3b, quillfield, 2026-11-24) scored 3 of 25 controls against the golden
+  labels. The mapper returned `no_evidence` for 25 of 25 controls although 53 of its 61 quotes were valid
+  verbatim sentences: a 3B model cannot follow a four-way decision procedure, and it also attached about 13 % of
+  its quotes to the wrong chunk ID. The reviewer then repeated the same mistake. Prompt tuning for a 3B model was
+  rejected (see the 5.2 note); the user chose to change the design instead of measuring a hosted model first.
+- **Decision.** (1) New LLM output model `ExtractedEvidence(citations, rationale)` for the Mapper
+  (`mapper.v2.md`) and the Reviewer (`reviewer.v3.md`): the model only chooses WHICH sentences bear on the
+  control and says what they state; it must not give a verdict and must keep weak or negative wording.
+  (2) `agents/derive.py` derives the status in Python: no quote, or quotes with none of the control's keywords,
+  give `no_evidence` (no citations); otherwise the whole quoted text is read with `read_status` and the
+  `decision.rule` signal phrases (negative = `not_met`, partial = `partial`, else `met`). The verify gate still
+  checks keyword coverage and the reading, so a `met` is not accepted on thin quotes. (3) The citation checker
+  moves a quote to the retrieved chunk that really contains it (`Citation.relocated`), instead of failing it for
+  a wrong chunk ID; the quote is still verified against real source text and a fuzzy match keeps the source words.
+  (4) A needs_human_review rationale now names the gate and the draft status.
+- **Consequences.** More deterministic and auditable (the status follows from words in the document, using the same
+  phrase lists as the rule decider) and it works with a free 3B model. The mock and the real pipeline now share the
+  derivation, so the mock's 100 % golden agreement stays meaningful. Cost: a status that depends on implicit
+  meaning (a negation the phrase lists do not know) is missed unless the verify gate or a human catches it, so
+  `decision.rule.*_signal_phrases` are now more important and must be reviewed in Phase 9. The judge, the intake
+  and the reporter are unchanged. Schema change: prompts mapper v2 and reviewer v3 (v1/v2 files kept), no cassettes
+  existed yet. The single-sentence rule in the prompts ("one sentence only") keeps quotes short and checkable.

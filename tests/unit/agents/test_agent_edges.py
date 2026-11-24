@@ -74,7 +74,7 @@ class Scripted:
         if purpose == "reporter":
             parsed = output_model(summary=self.text)
         else:
-            parsed = output_model(status="no_evidence", citations=[], rationale="n/a")
+            parsed = output_model(citations=[], rationale="n/a")
         return LLMResult(
             parsed=parsed, usage=Usage(tokens_in=1, tokens_out=1), provider="ollama", model="fake"
         )

@@ -5,8 +5,9 @@ this provider) and ignores the chat messages. Hints per purpose:
 
 * ``intake``:   ``{"text": str}`` (the text of the intake chunks)
 * ``mapper``:   ``{"keywords": [str], "chunks": [{"chunk_id": str, "text": str}],``
-  ``"max_quote_chars": int (optional)}``
-* ``reviewer``: the same hints as ``mapper`` (it ignores the draft and the flags)
+  ``"max_quote_chars": int (optional)}``; answers ``ExtractedEvidence`` (quotes + rationale, no
+  status: the agent derives it, ADR-017)
+* ``reviewer``: the same hints and answer as ``mapper`` (it ignores the draft and the flags)
 * ``judge``:    triage ``{"task": "triage", "keywords": [str], "evidence": [str]}``; verify
   ``{"task": "verify", "keywords": [str], "status": str, "quotes": [str]}``; triage also takes an
   optional ``"top_score"`` (best raw BM25 score, default 0). Both use ``verification/rule_logic``
@@ -28,7 +29,7 @@ from vendorguard.models.finding import DraftStatus
 from vendorguard.models.llm import ChatMessage, LLMResult, Usage
 from vendorguard.providers.llm import mock_reports
 from vendorguard.providers.llm.mock_intake import extract_profile
-from vendorguard.verification.keyword_reading import first_sentence_with, read_status
+from vendorguard.verification.keyword_reading import first_sentence_with
 from vendorguard.verification.rule_logic import triage_verdict, verify_verdict
 
 T = TypeVar("T", bound=BaseModel)
@@ -92,16 +93,13 @@ class MockLLM:
             found = first_sentence_with([chunk["text"]], keywords)
             if found:
                 sentence, hits = found
-                status = read_status(sentence, self._rules)
                 quote = sentence[:limit].rstrip() if limit else sentence
                 return {
-                    "status": status.value,
                     "citations": [{"chunk_id": chunk["chunk_id"], "quote": quote}],
                     "rationale": f"Keyword baseline: the first matching sentence mentions "
-                    f"{', '.join(hits[:3])} and reads as {status.value}.",
+                    f"{', '.join(hits[:3])}.",
                 }
         return {
-            "status": DraftStatus.NO_EVIDENCE.value,
             "citations": [],
             "rationale": "No retrieved sentence mentions the control's keywords.",
         }

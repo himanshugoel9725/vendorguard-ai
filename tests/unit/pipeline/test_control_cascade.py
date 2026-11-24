@@ -243,7 +243,7 @@ def test_verify_below_threshold_triggers_review_then_accepts(s: Settings, tmp_pa
     d = StubDecider(verify=[low, _dec(DecisionLabel.SUPPORTED, 1.0)])
     revised = _draft(WIDE_TEXT[:40], chunk=5, status=DraftStatus.PARTIAL)
     f, audit, _, m, r = _run(s, tmp_path, decider=d, reviewer=StubReviewer(revised))
-    assert r.calls == [(["weak support"], EV.wide)]
+    assert r.calls == [(["verify gate did not support status met: weak support"], EV.wide)]
     assert m.seen == [EV.top]
     review = [t for t in f.trace if t.gate is Gate.REVIEW]
     assert len(review) == 1 and review[0].round == 1
@@ -271,7 +271,7 @@ def test_still_unsupported_after_the_last_round_needs_human_review(
     d = StubDecider(verify=[_dec(DecisionLabel.UNSUPPORTED, 1.0, "nope")])
     f, audit, *_ = _run(s, tmp_path, decider=d)
     assert f.status is ControlStatus.NEEDS_HUMAN_REVIEW
-    assert f.rationale == HUMAN_PREFIX + "nope"
+    assert f.rationale == HUMAN_PREFIX + "verify gate did not support status met: nope"
     assert f.review_rounds == s.pipeline.max_review_rounds
     _check_audit_invariants(f, audit)
 
@@ -437,3 +437,36 @@ def test_same_input_same_finding_and_audit_hashes(s: Settings, tmp_path: Path) -
     assert a[0].model_dump() == b[0].model_dump()
     hashes = lambda au: [(e.stage, e.input_hash, e.output_hash) for e in au.events]  # noqa: E731
     assert hashes(a[1]) == hashes(b[1])
+
+
+# --- relocated citations and the human-review rationale -------------------------------------
+
+
+def test_a_relocated_citation_is_verified_and_keeps_the_corrected_chunk(
+    s: Settings, tmp_path: Path
+) -> None:
+    wrong = _draft("Multi-factor authentication is enforced", chunk=1)  # quote is in chunk 0
+    d = StubDecider()
+    f, audit, _, _, r = _run(s, tmp_path, decider=d, mapper=StubMapper(wrong))
+    assert r.calls == [] and f.status is ControlStatus.MET and f.review_rounds == 0
+    assert [(c.chunk_id, c.relocated, c.valid) for c in f.citations] == [
+        ("d:p001:c000", True, True)
+    ]
+    verified = d.verify_calls[0][0]
+    assert [c.chunk_id for c in verified.citations] == ["d:p001:c000"]
+    _check_audit_invariants(f, audit)
+
+
+def test_human_review_rationale_names_the_gate_and_status_without_quote_text(
+    s: Settings, tmp_path: Path
+) -> None:
+    d = StubDecider(verify=[_dec(DecisionLabel.UNSUPPORTED, 1.0, "does not say so")])
+    f, audit, *_ = _run(s, tmp_path, decider=d)
+    assert f.rationale.startswith(HUMAN_PREFIX)
+    assert "verify gate did not support status met" in f.rationale
+    assert "Multi-factor authentication is enforced" not in f.rationale
+
+    bad = _draft(BAD_QUOTE)
+    f2, _, *_ = _run(s, tmp_path, mapper=StubMapper(bad), reviewer=StubReviewer(bad))
+    assert f2.rationale.startswith(HUMAN_PREFIX + "citation gate: ")
+    assert "ZEBRA" not in f2.rationale

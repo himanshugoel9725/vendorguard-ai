@@ -124,9 +124,10 @@ def _cascade(
                     trace=trace,
                     review_rounds=rnd,
                 )
-            flags = [v.reason or "the verify gate did not support the status"]
+            why = v.reason or "no reason given"
+            flags = [f"verify gate did not support status {draft.status.value}: {why}"]
         else:
-            flags = list(report.problems)
+            flags = [f"citation gate: {p}" for p in report.problems]
         if rnd < s.pipeline.max_review_rounds:
             draft = ctx.reviewer.review(control, draft, flags, ev.wide)
             note = Decision(

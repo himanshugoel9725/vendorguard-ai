@@ -7,7 +7,7 @@ import pytest
 
 from vendorguard.config import Settings
 from vendorguard.models.decision import DecisionLabel
-from vendorguard.models.finding import DraftFinding, DraftStatus
+from vendorguard.models.finding import ExtractedEvidence
 from vendorguard.models.outputs import JudgeOutput
 from vendorguard.models.vendor import MAX_ITEMS, MAX_TEXT_CHARS, VendorProfile
 from vendorguard.providers.llm.mock import MockLLM
@@ -113,7 +113,7 @@ def test_credentials_cue_is_narrow() -> None:
 
 def _map(mock: MockLLM, chunks: list[dict[str, Any]], keywords: list[str], **extra: Any) -> Any:
     hints = {"keywords": keywords, "chunks": chunks, **extra}
-    return mock.complete_json([], DraftFinding, purpose="mapper", hints=hints).parsed
+    return mock.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints).parsed
 
 
 def test_mapper_empty_inputs_give_no_evidence(mock: MockLLM) -> None:
@@ -123,7 +123,7 @@ def test_mapper_empty_inputs_give_no_evidence(mock: MockLLM) -> None:
         ([{"chunk_id": "a", "text": "MFA is on."}], []),
     ]:
         out = _map(mock, chunks, keywords)
-        assert out.status is DraftStatus.NO_EVIDENCE and out.citations == []
+        assert out.citations == []
 
 
 def test_mapper_match_only_in_second_chunk(mock: MockLLM) -> None:

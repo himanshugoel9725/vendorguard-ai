@@ -61,8 +61,16 @@ def test_fabricated_quote_rejected(checker: CitationChecker, chunks: list[Chunk]
 
 
 def test_unknown_chunk_invalid(checker: CitationChecker, chunks: list[Chunk]) -> None:
+    r = _run(checker, chunks, "ZEBRA quote that is nowhere at all", cid="nope")
+    assert not r.ok and r.citations[0].doc_id is None and not r.citations[0].relocated
+
+
+def test_unknown_chunk_id_with_a_real_quote_is_relocated(
+    checker: CitationChecker, chunks: list[Chunk]
+) -> None:
     r = _run(checker, chunks, "All data is encrypted", cid="nope")
-    assert not r.ok and r.citations[0].doc_id is None
+    c = r.citations[0]
+    assert r.ok and c.relocated and c.chunk_id == "d:p001:c000" and c.page == 3
 
 
 def test_small_typo_passes_large_edit_fails() -> None:

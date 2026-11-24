@@ -13,7 +13,7 @@ from vendorguard import factory
 from vendorguard.config import Settings
 from vendorguard.config_models import base
 from vendorguard.errors import CacheMissError, ConfigError
-from vendorguard.models.finding import DraftFinding
+from vendorguard.models.finding import ExtractedEvidence
 from vendorguard.models.llm import ChatMessage
 from vendorguard.providers.cache.jsonl_cache import JsonlCache
 from vendorguard.providers.cache.sqlite_cache import SqliteCache
@@ -275,8 +275,8 @@ def test_embeddings_honour_the_cache_mode(settings_override: Make, tmp_path: Pat
 def test_mock_runs_are_free_and_not_counted_as_llm_calls(settings_override: Make) -> None:
     p = factory.build_providers(settings_override())
     hints = {"keywords": ["mfa"], "chunks": [{"chunk_id": "a:p001:c000", "text": "MFA is on."}]}
-    result = p.llm.complete_json([], DraftFinding, purpose="mapper", hints=hints)
-    assert result.parsed.status.value == "met" and result.cached is False
+    result = p.llm.complete_json([], ExtractedEvidence, purpose="mapper", hints=hints)
+    assert result.parsed.citations[0].quote == "MFA is on." and result.cached is False
     s = p.tracker.summary()
     assert (s.llm_calls, s.cache_hits, s.tokens_in, s.tokens_out, s.usd) == (0, 0, 0, 0, 0.0)
 
