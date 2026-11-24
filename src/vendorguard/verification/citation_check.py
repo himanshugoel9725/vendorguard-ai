@@ -22,23 +22,30 @@ class CitationReport(ContractModel):
     problems: list[str] = Field(default_factory=list)
 
 
-def best_window_similarity(source: str, quote: str) -> float:
-    """1.0 for a substring, else the difflib ratio against the best-aligned source window."""
+def best_window(source: str, quote: str) -> tuple[float, str]:
+    """(score, source window): 1.0 and the quote for a substring, else the difflib ratio
+    against the best-aligned source window and that window's text."""
     if not quote:
-        return 0.0
+        return 0.0, ""
     if quote in source:
-        return 1.0
+        return 1.0, quote
     blocks = [
         b
         for b in SequenceMatcher(None, source, quote, autojunk=False).get_matching_blocks()
         if b.size
     ]
     if not blocks:
-        return 0.0
+        return 0.0, ""
     first, last = blocks[0], blocks[-1]
     start = max(0, first.a - first.b)
     end = min(len(source), last.a + last.size + (len(quote) - last.b - last.size))
-    return SequenceMatcher(None, source[start:end], quote, autojunk=False).ratio()
+    window = source[start:end]
+    return SequenceMatcher(None, window, quote, autojunk=False).ratio(), window
+
+
+def best_window_similarity(source: str, quote: str) -> float:
+    """1.0 for a substring, else the difflib ratio against the best-aligned source window."""
+    return best_window(source, quote)[0]
 
 
 class CitationChecker:
@@ -62,9 +69,15 @@ class CitationChecker:
                 valid=False,
                 similarity=0.0,
             )
-        score = best_window_similarity(normalize_text(chunk.text), normalize_text(citation.quote))
+        normalized_quote = normalize_text(citation.quote)
+        score, window = best_window(normalize_text(chunk.text), normalized_quote)
+        data = citation.model_dump()
+        if score < 1.0 and window:
+            # A fuzzy match keeps the SOURCE words, never the model's: later checks and the
+            # reports must not read a doctored quote (for example one without "not").
+            data["quote"] = window
         return Citation(
-            **citation.model_dump(),
+            **data,
             doc_id=chunk.doc_id,
             page=chunk.page,
             valid=score >= self._min_similarity,
@@ -91,4 +104,4 @@ class CitationChecker:
         return CitationReport(citations=checked, ok=not problems, problems=problems)
 
 
-__all__ = ["CitationChecker", "CitationReport", "best_window_similarity"]
+__all__ = ["CitationChecker", "CitationReport", "best_window", "best_window_similarity"]

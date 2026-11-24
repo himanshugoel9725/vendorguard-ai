@@ -487,3 +487,12 @@ def test_registry_builders_return_matching_names(settings_override: Any) -> None
     for name in ("rule", "mock", "llm_judge"):
         s2 = settings_override(decision={"provider": name})
         assert factory.build_decider(s2, deps).name == name
+
+
+def test_fallback_catches_schema_validation_error_from_the_primary(settings: Settings) -> None:
+    judge, audit = _judge(settings, FixedLLM(error=SchemaValidationError("bad")))
+    fb = FallbackDecider(
+        judge, RuleDecider(settings.decision.rule), audit, primary_name="llm_judge"
+    )
+    d = fb.triage(CONTROL, [_chunk("d:p001:c000", "MFA is enforced.")])
+    assert d.fallback_used

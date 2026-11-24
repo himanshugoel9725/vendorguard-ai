@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 5: Agents and the decision layer |
-| Next task | 5.12 |
-| Last completed task | 5.11 |
+| Next task | 6.1 |
+| Last completed task | 5.12 |
 | Last updated | 2026-11-24 |
 | Blockers | none |
 
@@ -93,7 +93,7 @@
 - [x] 5.9 Rules engine + bands
 - [x] 5.10 Reporter Agent + summary guard + fallback summary
 - [x] 5.11 Tests (parallel test-writers)
-- [ ] 5.12 Code review + checkpoint, tag phase-5-done
+- [x] 5.12 Code review + checkpoint, tag phase-5-done
 
 ### Phase 6: Orchestrator, CLI, reports, first real run (180 min)
 - [ ] 6.1 Audit log, run manifest, metrics
@@ -163,6 +163,7 @@
 
 Half-finished work, uncommitted changes, or things the next session must know:
 
+- 5.12 review (code-reviewer, verdict: fix blockers first; blocker and quick fixes DONE). FIXED: (1) `CitationChecker` now replaces the model's quote with the matched (normalised) source window on any fuzzy match, so negation can no longer be doctored past `verify_verdict`/`read_status`; `best_window()` added; (2) `FallbackDecider` also catches `SchemaValidationError` (an LLM-judge failure no longer aborts a run); (3) summary guard: negative facts also allow their absolute value, control IDs are case-insensitive, decimal-comma fragments are read as one number (digits glued to letters such as `AES256` stay ignored on purpose); (13) `Criticality.CRITICAL` enum instead of a string. **OPEN follow-ups (do before 6.7 / as noted):** (5) tunables in code, a hard-rule breach: `rule_logic.UNSURE_CONFIDENCE=0.5`, `jev.YES_THRESHOLD=0.5` -> settings (`decision.rule`, `decision.jev`) with comments; (6) `prompts/reviewer.v1.md` puts the draft's quotes/rationale outside `<document>` tags: make `reviewer.v2.md` (draft inside a tag, declared untrusted) BEFORE 6.7 records cassettes; (7) `vendor_name` comes from untrusted text: cap its length via a setting in `build_facts` and escape it in the 6.3 HTML/Markdown reports; the guard blanks it, so digits in it are not checked; (8/11) Jev and failure audit events have `latency_ms=0.0`; (9) comment that failed Jev calls count toward `max_calls_per_run`; (10) dead `isinstance` branch in `llm_judge.py` verify; (12) `factory.py` is 218 lines: split registries from builders before 7.x; build `llm_judge` behind a FallbackDecider in the factory (6.2 decision); (14) ADR line that `needs_human_review` on a critical control does not trigger the floor (intentional).
 - 5.11: 1925 tests, 98.6 % coverage. Three test-writers added ~180 edge tests (`tests/unit/agents/test_agent_edges.py`, `tests/unit/providers/decide/test_decide_edge.py`, `tests/unit/scoring/test_rules_engine_edge.py`, `tests/unit/verification/*_edge.py`, `test_rule_logic.py`, `test_summary_guard.py`). No source bugs found; no src changes. `scoring/` and `verification/` are at 100 %. `Chunk` rejects blank text, so a whitespace-only chunk cannot reach the citation checker. The decide test-writer ran `ruff format` on its folder.
 - 1.4: `setup_logging(app, secrets)` is called by cli/ and api/ with `collect_secrets(settings)`. Redaction also pattern-matches `Bearer`, `sk-` and `gsk_` tokens; secrets stored under non-`VG_` names are only caught by those patterns.
 - 1.5: `canonical_json` refuses SecretStr, NaN/inf and unknown types on purpose. `make_run_id(vendor_id, input_hashes, config_fingerprint, deterministic=...)`; pass `pipeline.deterministic_run_ids`. In 1.6, consider a ruff banned-api rule so only `utils/timeutil.py` reads the clock (`datetime.now`, `time.time`).
@@ -213,4 +214,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.11 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

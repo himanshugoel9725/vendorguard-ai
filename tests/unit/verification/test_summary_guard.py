@@ -106,3 +106,15 @@ def test_problem_order_is_sorted_and_deterministic() -> None:
 def test_unicode_text_and_empty_summary() -> None:
     assert check_summary("", FACTS, MAX) == []
     assert check_summary("Résumé – 数据 is fine.", FACTS, MAX) == []
+
+
+def test_negative_fact_may_be_written_as_a_positive_amount() -> None:
+    assert check_summary("The score fell by 5 points.", {"diff": {"score_delta": -5.0}}, 50) == []
+
+
+def test_lowercase_invented_control_id_is_rejected() -> None:
+    assert check_summary("Control gov-09 failed.", {"gaps": ["IAM-02"]}, 50)
+
+
+def test_decimal_comma_is_read_as_one_number() -> None:
+    assert check_summary("It holds 1,7 items.", {"overall": 7.0}, 50)

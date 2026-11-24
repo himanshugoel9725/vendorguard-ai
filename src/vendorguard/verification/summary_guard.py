@@ -4,8 +4,8 @@ import re
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-CONTROL_ID = re.compile(r"\b[A-Z]{2,5}-\d{2,3}\b")
-NUMBER = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
+CONTROL_ID = re.compile(r"\b[A-Z]{2,5}-\d{2,3}\b", re.IGNORECASE)
+NUMBER = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)*")
 
 
 def _walk(value: Any) -> Iterable[Any]:
@@ -27,14 +27,21 @@ def _facts_numbers_and_ids(facts: Mapping[str, Any]) -> tuple[set[float], set[st
         if isinstance(leaf, bool):
             continue
         if isinstance(leaf, int | float):
-            numbers.add(float(leaf))
+            numbers.update((float(leaf), abs(float(leaf))))
         elif isinstance(leaf, str):
-            ids.update(CONTROL_ID.findall(leaf))
+            ids.update(i.upper() for i in CONTROL_ID.findall(leaf))
             numbers.update(float(n) for n in NUMBER.findall(CONTROL_ID.sub(" ", leaf)))
     counts = facts.get("counts")
     if isinstance(counts, Mapping):
         numbers.add(float(sum(v for v in counts.values() if isinstance(v, int | float))))
     return numbers, ids
+
+
+def _to_float(raw: str) -> float | None:
+    try:
+        return float(raw.replace(",", "."))
+    except ValueError:
+        return None  # e.g. '1.2.3': never equals a fact
 
 
 def check_summary(summary: str, facts: Mapping[str, Any], max_words: int) -> list[str]:
@@ -56,11 +63,11 @@ def check_summary(summary: str, facts: Mapping[str, Any], max_words: int) -> lis
         if facts.get("vendor_name")
         else summary
     )
-    for control_id in sorted(set(CONTROL_ID.findall(text)) - allowed_ids):
+    for control_id in sorted({i.upper() for i in CONTROL_ID.findall(text)} - allowed_ids):
         problems.append(f"control {control_id} is not in the result")
     bare = CONTROL_ID.sub(" ", text)
     for raw in sorted(set(NUMBER.findall(bare))):
-        if float(raw) not in allowed_numbers:
+        if _to_float(raw) not in allowed_numbers:
             problems.append(f"the number {raw} is not in the result")
     return problems
 

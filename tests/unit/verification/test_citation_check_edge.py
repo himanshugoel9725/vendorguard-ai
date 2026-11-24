@@ -142,3 +142,17 @@ def test_deterministic_report() -> None:
     a = _checker().check(DraftStatus.PARTIAL, cit, [_chunk(SRC)])
     b = _checker().check(DraftStatus.PARTIAL, cit, [_chunk(SRC)])
     assert a == b and a.model_dump_json() == b.model_dump_json()
+
+
+def test_fuzzy_match_keeps_source_words_not_the_doctored_quote() -> None:
+    """A quote with 'not' deleted still passes similarity but is replaced by the source text."""
+    source = (
+        "The vendor does not enforce multi factor authentication for any administrator account."
+    )
+    chunk = _chunk(source)
+    doctored = "The vendor does enforce multi factor authentication for any administrator account."
+    report = _checker().check(
+        DraftStatus.MET, [DraftCitation(chunk_id=chunk.chunk_id, quote=doctored)], [chunk]
+    )
+    assert report.citations[0].valid
+    assert "not enforce" in report.citations[0].quote

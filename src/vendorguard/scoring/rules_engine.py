@@ -12,7 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from vendorguard.config_models.scoring import ScoringSettings
 from vendorguard.errors import ConfigError
-from vendorguard.models.control import ControlSet
+from vendorguard.models.control import ControlSet, Criticality
 from vendorguard.models.finding import ControlFinding, ControlStatus
 from vendorguard.models.score import InherentTier, RiskBand, RiskScore
 from vendorguard.scoring.bands import at_least, band_for
@@ -53,7 +53,7 @@ def score_findings(
         risk = _d(getattr(points, status.value)) * weight
         risk_by_domain[control.domain] = risk_by_domain.get(control.domain, Decimal(0)) + risk
         weight_by_domain[control.domain] = weight_by_domain.get(control.domain, Decimal(0)) + weight
-        if control.criticality.value == "critical" and status in FLOOR_STATUSES:
+        if control.criticality is Criticality.CRITICAL and status in FLOOR_STATUSES:
             triggered.append(
                 f"critical_control_floor: {control.id} is {status.value}, "
                 f"so the band is at least {floor.value}"

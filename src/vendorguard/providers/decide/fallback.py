@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Sequence
 
-from vendorguard.errors import ProviderError
+from vendorguard.errors import ProviderError, SchemaValidationError
 from vendorguard.interfaces.audit import AuditSink
 from vendorguard.interfaces.decider import Decider
 from vendorguard.models.control import Control
@@ -46,7 +46,7 @@ class FallbackDecider:
         if self._primary is not None:
             try:
                 return self._primary.triage(control, evidence)
-            except ProviderError as exc:
+            except (ProviderError, SchemaValidationError) as exc:
                 self._switch("triage", control.id, type(exc).__name__)
         else:
             self._switch("triage", control.id, "Unavailable")
@@ -59,7 +59,7 @@ class FallbackDecider:
         if self._primary is not None:
             try:
                 return self._primary.verify(control, draft, evidence)
-            except ProviderError as exc:
+            except (ProviderError, SchemaValidationError) as exc:
                 self._switch("verify", control.id, type(exc).__name__)
         else:
             self._switch("verify", control.id, "Unavailable")
