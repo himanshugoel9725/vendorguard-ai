@@ -290,3 +290,19 @@
   state a wrong change with valid IDs. For decisions that matter use a hosted model (measure in Phase 9) or read
   the diff in the report; the template answer is always correct for change questions. A claim-level check
   (parse "X changed from A to B" and compare with the diff) is a possible later hardening.
+
+## ADR-019: Letta is deferred; SQLite is the only memory store for now (tasks 7.4-7.6, 7.8)
+
+- **Context.** Letta (stateful memory agents) is optional in the plan. It needs Docker Desktop (not installed;
+  task 0.8 is open), a pinned server image and a Letta SDK to read first, and its answers add little over the
+  SQLite store plus the Ask agent (ADR-018) for this project's questions. The user chose to skip optional parts.
+- **Decision.** Tasks 7.4 (start Letta), 7.5 (Letta store and assistant), 7.6 (Letta Cloud credit guard) and the
+  Letta half of 7.7 and 7.8 are NOT built. `memory.provider: letta` and the `memory.letta.*` settings stay in
+  the config and the Literal, but `build_memory_store` raises ConfigError "memory provider 'letta' is not
+  implemented yet" (the registry holds only `sqlite`, so the registry-vs-Literal test stays a subset test for
+  memory). `letta_usage` already exists in the SQLite schema for the day it is built. `make letta-up/down`,
+  the `letta` pytest marker and the doctor's Letta check remain as inert hooks.
+- **Consequences.** The memory demo (`make demo-memory`, `scripts/memory_demo.sh`) runs on SQLite only. README
+  and docs that mention Letta must say it is optional and not implemented (task 10.7). To add it later: follow
+  PLAN 7.5/7.6, implement `MemoryStore` by composing `SqliteMemoryStore`, reuse `verification/answer_guard`,
+  register it in `MEMORY_STORES`, then turn the registry test into an equality test.

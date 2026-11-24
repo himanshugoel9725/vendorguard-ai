@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 7: Memory, re-assessment, Letta |
-| Next task | 7.4 |
-| Last completed task | 7.3 |
+| Next task | 7.9 |
+| Last completed task | 7.8 |
 | Last updated | 2026-11-24 |
 | Blockers | none |
 
@@ -109,11 +109,11 @@
 - [x] 7.1 SQLite memory store
 - [x] 7.2 Re-assessment diff + vendor history
 - [x] 7.3 Ask Agent + `vg ask`
-- [ ] 7.4 👤 Start self-hosted Letta
-- [ ] 7.5 Letta memory store + assistant
-- [ ] 7.6 Letta Cloud credit guard
-- [ ] 7.7 Tests
-- [ ] 7.8 Memory demo (y1 → y2 → diff → ask)
+- [~] 7.4 👤 Start self-hosted Letta (skipped, ADR-019)
+- [~] 7.5 Letta memory store + assistant (skipped, ADR-019)
+- [~] 7.6 Letta Cloud credit guard (skipped, ADR-019)
+- [x] 7.7 Tests (SQLite store, diff, ask done; Letta tests skipped)
+- [x] 7.8 Memory demo (y1 → y2 → diff → ask; SQLite only)
 - [ ] 7.9 Code review + checkpoint, tag phase-7-done
 
 ### Phase 8: REST API and Docker (115 min)
@@ -164,6 +164,7 @@
 Half-finished work, uncommitted changes, or things the next session must know:
 
 - 6.7 THIRD REAL RUN (same model, with the no-quote reviewer retry, commit 8911580, same run id `run_24092c5adac5`, overwritten): ACCURACY 15/25, IDENTICAL to the second run (same 10 false no_evidence). The reviewer was called 15 times (14 retries + 1) and quoted nothing in any of the 14 retry cases, so the retry changed no finding and cost 14 extra calls (+4 min). Conclusion: the 3B model's failure to quote is not fixed by a second look; the retry is unproven on larger models. It can be reverted with `git revert 8911580` (no other code depends on it). `.venv`: the stray `.venv` that reappears is an iCloud artifact (`.venv/lib 2`, an empty duplicate folder iCloud restores after a delete), NOT uv: delete it again if it shows up; the real fix is moving the repo out of ~/Documents. Environment guard added: `.claude/settings.json` sets `UV_PROJECT_ENVIRONMENT=.venv.nosync` (new sessions).
+- 7.4-7.8 (ADR-019): Letta is DEFERRED by the user's choice ('skip optional'): 7.4, 7.5, 7.6 and the Letta parts of 7.7/7.8 are not built (marked `[~]` above); `memory.provider: letta` still validates but `build_memory_store` raises 'not implemented yet'. Docker is still not installed (0.8 open). 7.7: store, diff and ask tests exist already (2241 tests). 7.8: `make demo-memory` (`scripts/memory_demo.sh`) = offline mock demo in `.vendorguard/demo` (git-ignored): assess nimbara-hr, assess nimbara-hr-y2 (diff vs year 1), `vg vendors list/history`, `vg ask 'What changed for nimbara-hr?'` -> 'New gaps: OPS-02. Resolved gaps: IAM-04, PEO-02, RES-03' with both run ids cited; the year-2 report (`.vendorguard/demo/runs/<run>/report.html`) has the diff section. README/docs that mention Letta must say optional/not implemented (10.7). NEXT: 7.9 = Phase 7 review (code-reviewer sub-agent, fix commit) then tag `phase-7-done`. PUSH STILL PENDING (phase-6-done and everything since is local).
 - 7.3: ADR-018. `agents/ask.py` `AskAgent(llm, prompts, audit, cost, memory, settings.memory, settings.reporting)` implements `MemoryAssistant` (`ask(vendor_id, question) -> Answer`, provider label `local/<llm.provider>`): last `memory.ask_max_history_runs` stored results, facts-only prompt data (see ADR), `prompts/ask.v1.md` (question alone in `<question>`, data in `<data>`), guard `verification/answer_guard.check_answer` (IDs exist AND every ID written is cited), fallback `reporting/fallback_answer.fallback_answer` (moved out of `providers/llm/mock_reports.py`, which delegates; the mock's answer IS the template) + `ask.fallback` audit event; `ask.failed` on LLMError/SchemaValidationError; BudgetExceededError propagates; no stored runs = fixed sentence, no model call; empty or too-long question = ConfigError (new setting `memory.ask_max_question_chars: 500`). `vg ask VENDOR "question" [--llm]` (`cli/ask.py`; its audit events go to `paths.state_dir/ask.audit.jsonl`). DONE-WHEN: on the mock 'What changed for nimbara-hr?' names exactly IAM-04, PEO-02, RES-03 (resolved), OPS-02 (new) and both run ids (tested). ON OLLAMA (qwen2.5:3b, 35 s, 1.1k tokens in): the model WAS called but is unreliable: one answer fell back to the (correct) template, one passed the ID guard with a false claim; the guard now also demands that written IDs are cited. A live test exists: `tests/live/test_ask_ollama.py` (`-m ollama`, only asserts that cited IDs exist; not run live by the test-writer). Hint for 7.5: the Letta assistant must implement the same `MemoryAssistant` protocol and should reuse `check_answer`. 2241 tests, 98.89 %.
 - 7.2: `diff/reassessment.py` `compute_diff(findings, score, previous: AssessmentResult) -> ReassessmentDiff` (pure): gap = effective status not `met` (same as `reporting.facts`; overrides and needs_human_review count); only controls assessed in BOTH runs are compared; `new_gaps` = met before and not now, `resolved_gaps` = gap before and met now, `changed` = every status change as `StatusChange`, all sorted by control id; `score_delta` = new - previous, exact to 1 dp via Decimal (no float noise). The orchestrator now uses it BY DEFAULT whenever `memory.latest_assessment(vendor, exclude_run_id=this run)` finds a previous run (`differ=` still overrides); the diff goes into `AssessmentResult.diff`, the reporter facts (`facts['diff']`) and the existing report section. DONE-WHEN verified with the mock + a shared SQLite store: nimbara-hr then nimbara-hr-y2 gives exactly the spec's `fixed` (IAM-04, RES-03, PEO-02) as resolved gaps and `new_gaps` (OPS-02), the same 4 controls as `changed`, score delta < 0; the diff appears in report.md/html. CAVEAT: 'previous' = the vendor's NEWEST stored run (not 'newest older than this one'), so re-running an old document after a newer one diffs against the newer one. The fallback executive summary does not mention the diff (the Reporter agent may, 7.x/9.x can add a sentence). Tests: `tests/unit/diff/test_reassessment.py` (8+), `tests/integration/test_reassessment.py` (4). `vg vendors history` was done in 7.1.
 - 7.1: `providers/memory/schema.sql` + `sqlite_store.py` `SqliteMemoryStore(path)` implements `MemoryStore` (+ `close()`): tables vendors, assessments (canonical `result_json` = source of truth, `result_hash`, overall, band, created_at), findings (status + effective_status), overrides (rewritten with the result, so latest override only), letta_usage (day, messages; for 7.6); WAL, foreign keys, one lock, parameterised SQL only. `save_assessment` REPLACES a run (same run id) and its child rows; `get_assessment` returns an equal result with the same `result_hash` (tested); `latest_assessment(vendor, exclude_run_id=)` newest by (created_at, run_id); `list_assessments` newest first; `list_vendors` (name = last saved profile name, runs, latest band). Errors are `MemoryStoreError` (unusable path, damaged row). Factory: `MEMORY_STORES['sqlite']`; `build_memory_store(settings)`; CLI helper `cli/common.open_memory(settings)` (context manager that closes it). WIRED: `vg assess` and `vg review` now pass `memory=` (the orchestrator already calls `latest_assessment(exclude_run_id)` for the diff and `save_assessment` after the final manifest), and `vg vendors list|history` now read the MEMORY STORE, NOT the run folders (older runs that were never saved to memory do not appear; the run folders are untouched and `vg runs list` still shows them). 7.5 registers `letta` (then tighten the memory registry test to equality). The default memory path is `.vendorguard/memory.db` (git-ignored). A PUSH IS STILL PENDING: `git push && git push --tags` (phase-6-done is local only). 2166 tests.
@@ -228,4 +229,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3, 7.7-7.8 (7.4-7.6 skipped) | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

@@ -7,7 +7,7 @@
 export UV_PROJECT_ENVIRONMENT ?= .venv.nosync
 
 .PHONY: help setup fmt lint type test check hf test-live test-hosted sample record eval api \
-        letta-up letta-down docs docs-config doctor clean
+        demo-memory letta-up letta-down docs docs-config doctor clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -56,6 +56,9 @@ eval: ## Run the evaluation matrix
 
 api: ## Start the REST API (host and port come from config/settings.yaml)
 	uv run python -m vendorguard.api.app
+
+demo-memory: ## Offline demo: nimbara-hr year 1, year 2, the diff, and a question
+	bash scripts/memory_demo.sh
 
 letta-up: ## Start self-hosted Letta in Docker
 	docker compose --profile letta up -d
