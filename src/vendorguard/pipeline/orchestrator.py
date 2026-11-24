@@ -16,6 +16,7 @@ from vendorguard.agents.reporter import ReporterAgent
 from vendorguard.agents.reviewer import ReviewerAgent
 from vendorguard.config import Settings
 from vendorguard.controls.loader import load_controls
+from vendorguard.diff.reassessment import compute_diff
 from vendorguard.errors import ConfigError
 from vendorguard.factory import DeciderDeps, Providers, build_decider, build_providers
 from vendorguard.ingest.chunker import chunk_document
@@ -66,7 +67,7 @@ from vendorguard.verification.citation_check import CitationChecker
 
 log = logging.getLogger(__name__)
 
-# Hooks: ``render`` replaces the default report writer, ``differ`` is filled in by 7.2.
+# Hooks: ``render`` replaces the default report writer, ``differ`` the default ``compute_diff``.
 Differ = Callable[[list[ControlFinding], RiskScore, AssessmentResult], ReassessmentDiff]
 Renderer = Callable[[AssessmentResult, Path], None]
 PROMPT_AGENTS = ("intake", "mapper", "reviewer", "reporter")
@@ -152,7 +153,7 @@ def _execute(
     findings = _assess_controls(ctx, controls, evidence)
     score = score_findings(findings, controls, inherent.tier, s.scoring)
     previous = memory.latest_assessment(vendor_id, exclude_run_id=ctx.run_id) if memory else None
-    diff = differ(findings, score, previous) if differ and previous else None
+    diff = (differ or compute_diff)(findings, score, previous) if previous else None
     facts = build_facts(profile.vendor_name, inherent, score, findings, diff)
     result = AssessmentResult(
         run_id=ctx.run_id,
