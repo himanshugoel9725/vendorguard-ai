@@ -14,6 +14,7 @@ RULES = RuleDeciderSettings(
     triage_min_keyword_hits=2,
     triage_min_retrieval_score=0.15,
     verify_min_keyword_coverage=0.3,
+    unsure_confidence=0.5,
     partial_signal_phrases=["where feasible", "planned"],
     negative_signal_phrases=["does not", "not currently"],
 )

@@ -7,7 +7,7 @@ import pytest
 from vendorguard.config_models.providers import RuleDeciderSettings
 from vendorguard.models.decision import DecisionLabel
 from vendorguard.models.finding import DraftStatus
-from vendorguard.verification.rule_logic import UNSURE_CONFIDENCE, triage_verdict, verify_verdict
+from vendorguard.verification.rule_logic import triage_verdict, verify_verdict
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def test_triage_enough_hits_is_addressed_with_scaled_confidence(rules: RuleDecid
     v = triage_verdict(texts, KW, 0.0, rules)
     assert v.label is DecisionLabel.ADDRESSED
     assert v.hits == ["encryption", "backup"]
-    assert v.confidence == pytest.approx(UNSURE_CONFIDENCE + UNSURE_CONFIDENCE * 2 / 4)
+    assert v.confidence == pytest.approx(rules.unsure_confidence * 1.5)
 
 
 def test_triage_all_keywords_gives_confidence_one(rules: RuleDeciderSettings) -> None:
@@ -40,14 +40,14 @@ def test_triage_near_miss_is_not_confident(rules: RuleDeciderSettings) -> None:
     assert rules.triage_min_keyword_hits > 1
     v = triage_verdict(["only mfa here"], KW, 0.0, rules)
     assert v.label is DecisionLabel.NOT_ADDRESSED
-    assert v.confidence == UNSURE_CONFIDENCE
+    assert v.confidence == rules.unsure_confidence
 
 
 def test_triage_cosine_floor_is_inclusive(rules: RuleDeciderSettings) -> None:
     floor = rules.triage_min_retrieval_score
     at = triage_verdict(["x"], KW, floor, rules)
     below = triage_verdict(["x"], KW, floor - 0.001, rules)
-    assert (at.label, at.confidence) == (DecisionLabel.ADDRESSED, UNSURE_CONFIDENCE)
+    assert (at.label, at.confidence) == (DecisionLabel.ADDRESSED, rules.unsure_confidence)
     assert below.label is DecisionLabel.NOT_ADDRESSED
 
 

@@ -13,9 +13,6 @@ from vendorguard.models.finding import DraftStatus
 from vendorguard.utils.keywords import matching_phrases
 from vendorguard.verification.keyword_reading import read_status
 
-# Confidence of a near miss (some keywords, not enough) or an embedding-only match.
-UNSURE_CONFIDENCE = 0.5
-
 
 @dataclass(frozen=True)
 class Verdict:
@@ -44,11 +41,11 @@ def triage_verdict(
     total = max(len(keywords), 1)
     needed = max(rules.triage_min_keyword_hits, 1)
     if len(hits) >= needed:
-        confidence = min(1.0, UNSURE_CONFIDENCE + UNSURE_CONFIDENCE * len(hits) / total)
+        confidence = min(1.0, rules.unsure_confidence * (1 + len(hits) / total))
         return Verdict(DecisionLabel.ADDRESSED, round(confidence, 6), hits)
     if top_cosine >= rules.triage_min_retrieval_score:
-        return Verdict(DecisionLabel.ADDRESSED, UNSURE_CONFIDENCE, hits)
-    return Verdict(DecisionLabel.NOT_ADDRESSED, UNSURE_CONFIDENCE if hits else 1.0, hits)
+        return Verdict(DecisionLabel.ADDRESSED, rules.unsure_confidence, hits)
+    return Verdict(DecisionLabel.NOT_ADDRESSED, rules.unsure_confidence if hits else 1.0, hits)
 
 
 def verify_verdict(
@@ -79,4 +76,4 @@ def verify_verdict(
     return Verdict(label, 1.0, hits)
 
 
-__all__ = ["UNSURE_CONFIDENCE", "Verdict", "triage_verdict", "verify_verdict"]
+__all__ = ["Verdict", "triage_verdict", "verify_verdict"]

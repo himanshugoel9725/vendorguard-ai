@@ -130,6 +130,7 @@ decision:
     triage_min_keyword_hits: 2
     triage_min_retrieval_score: 0.15
     verify_min_keyword_coverage: 0.3
+    unsure_confidence: 0.5          # confidence of a near miss or an embedding-only match (never skipped: below triage_threshold)
     partial_signal_phrases:
       - where feasible
       - where possible
@@ -164,6 +165,7 @@ decision:
     timeout_s: 15
     max_calls_per_run: 200
     fallback_provider: rule         # used automatically if Jev fails or no key is set
+    yes_threshold: 0.5              # P(yes) at or above this counts as a yes
     api_key: ""                     # keep empty - set VG_DECISION__JEV__API_KEY in .env
 
 verification:

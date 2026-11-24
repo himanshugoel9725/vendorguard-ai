@@ -73,6 +73,7 @@ class RuleDeciderSettings(StrictModel):
     triage_min_keyword_hits: NonNegInt
     triage_min_retrieval_score: Probability
     verify_min_keyword_coverage: Probability
+    unsure_confidence: Probability
     partial_signal_phrases: list[str]
     negative_signal_phrases: list[str]
 
@@ -85,6 +86,7 @@ class JevSettings(StrictModel):
     timeout_s: PositiveFloat
     max_calls_per_run: PositiveInt
     fallback_provider: Literal["rule", "llm_judge", "mock"]
+    yes_threshold: Probability
     api_key: SecretStr
 
 

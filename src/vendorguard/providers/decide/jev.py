@@ -16,7 +16,6 @@ from vendorguard.providers.decide.jev_client import JevClient
 from vendorguard.utils.hashing import hash_obj
 
 PROVIDER = "jev"
-YES_THRESHOLD = 0.5  # a probability of yes at or above one half is a yes (the natural split)
 TRIAGE_QUESTION = {
     "addressed": {
         "type": "noul",
@@ -53,6 +52,7 @@ class JevDecider:
     ) -> None:
         self._client = client
         self._max_calls = jev.max_calls_per_run
+        self._yes_threshold = jev.yes_threshold
         self._audit = audit
         self._cost = cost
         self._calls = 0
@@ -63,7 +63,9 @@ class JevDecider:
         docs = [{"chunk_id": e.chunk.chunk_id, "text": e.chunk.text} for e in _sorted(evidence)]
         state = {**_control_state(control), "documents": docs}
         p = self._ask("triage", control.id, state, TRIAGE_QUESTION, "addressed")
-        return _decision(p, DecisionLabel.ADDRESSED, DecisionLabel.NOT_ADDRESSED)
+        return _decision(
+            p, self._yes_threshold, DecisionLabel.ADDRESSED, DecisionLabel.NOT_ADDRESSED
+        )
 
     def verify(
         self, control: Control, draft: DraftFinding, evidence: Sequence[ScoredChunk]
@@ -72,7 +74,7 @@ class JevDecider:
         quotes = [{"chunk_id": c.chunk_id, "text": c.quote} for c in draft.citations]
         state = {**_control_state(control), "proposed_status": draft.status.value, "quotes": quotes}
         p = self._ask("verify", control.id, state, VERIFY_QUESTION, "supported")
-        return _decision(p, DecisionLabel.SUPPORTED, DecisionLabel.UNSUPPORTED)
+        return _decision(p, self._yes_threshold, DecisionLabel.SUPPORTED, DecisionLabel.UNSUPPORTED)
 
     def _ask(
         self, gate: str, control_id: str, state: dict[str, Any], question: dict[str, Any], key: str
@@ -116,8 +118,8 @@ def _control_state(control: Control) -> dict[str, Any]:
     }
 
 
-def _decision(p_yes: float, yes: DecisionLabel, no: DecisionLabel) -> Decision:
-    label = yes if p_yes >= YES_THRESHOLD else no
+def _decision(p_yes: float, threshold: float, yes: DecisionLabel, no: DecisionLabel) -> Decision:
+    label = yes if p_yes >= threshold else no
     confidence = p_yes if label is yes else 1.0 - p_yes
     return Decision(
         label=label,
