@@ -262,9 +262,17 @@ api:
   port: 8000
   auth_enabled: true                # requires VG_API__AUTH_KEY in .env
   auth_key: ""                      # keep empty - set VG_API__AUTH_KEY in .env
+  auth_key_min_chars: 16            # the API refuses to start with a shorter key
+  auth_key_min_distinct_chars: 8    # ... or one with fewer different characters (aaaa..., changeme...)
+  docs_enabled: true                # /docs, /redoc, /openapi.json; set false when the port is exposed
+  trust_proxy_headers: false        # true only behind a reverse proxy you control (X-Forwarded-For)
   cors_origins: ["http://localhost:5173", "http://localhost:8501"]
-  max_upload_mb: 20
+  max_upload_mb: 20                 # per file
+  max_files_per_request: 5
+  max_form_fields: 20               # non-file form fields per request
+  max_json_body_kb: 64              # body limit of every route that is not an upload
   rate_limit_per_minute: 30
+  rate_limit_max_principals: 10000  # clients tracked at once; the least recently seen are dropped
 
 samples:
   specs_dir: data/samples/specs

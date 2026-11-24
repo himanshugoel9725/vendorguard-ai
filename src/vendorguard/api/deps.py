@@ -19,9 +19,14 @@ def get_metrics(request: Request) -> Metrics:
     return cast(Metrics, request.app.state.metrics)
 
 
+def get_principal(request: Request) -> str:
+    """Who the gate let in (``key`` or ``ip:<address>``); set by ``AccessGate``."""
+    return str(request.state.principal)
+
+
 def get_memory(request: Request) -> MemoryStore:
     """The memory store (one SQLite connection, shared and lock-guarded)."""
     return cast(MemoryStore, request.app.state.memory)
 
 
-__all__ = ["get_memory", "get_metrics", "get_settings"]
+__all__ = ["get_memory", "get_metrics", "get_principal", "get_settings"]

@@ -139,9 +139,24 @@ class ApiSettings(StrictModel):
     port: Annotated[int, Field(ge=1, le=65535)]
     auth_enabled: bool
     auth_key: SecretStr
+    auth_key_min_chars: PositiveInt
+    auth_key_min_distinct_chars: PositiveInt
+    docs_enabled: bool
+    trust_proxy_headers: bool
     cors_origins: list[str]
     max_upload_mb: PositiveInt
+    max_files_per_request: PositiveInt
+    max_form_fields: PositiveInt
+    max_json_body_kb: PositiveInt
     rate_limit_per_minute: PositiveInt
+    rate_limit_max_principals: PositiveInt
+
+    @model_validator(mode="after")
+    def _cors_has_no_wildcards(self) -> "ApiSettings":
+        bad = [o for o in self.cors_origins if o.strip().lower() in {"*", "null"}]
+        if bad:
+            raise ValueError("cors_origins must list real origins, not '*' or 'null'")
+        return self
 
 
 class SamplesSettings(StrictModel):

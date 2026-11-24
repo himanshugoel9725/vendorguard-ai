@@ -14,9 +14,14 @@ from vendorguard.config import Settings
 Make = Callable[..., Settings]
 
 
+def _auth(s: Settings) -> dict[str, str]:
+    return {"X-API-Key": s.api.auth_key.get_secret_value()}
+
+
 @pytest.fixture
 def client(settings_override: Make) -> Any:
-    with TestClient(create_app(settings_override())) as c:
+    s = settings_override()
+    with TestClient(create_app(s), headers=_auth(s)) as c:
         yield c
 
 
@@ -84,8 +89,9 @@ def test_the_memory_store_is_built_once_and_closed_on_shutdown(
 
 
 def test_two_apps_do_not_share_metrics(settings_override: Make) -> None:
-    a, b = create_app(settings_override()), create_app(settings_override())
-    with TestClient(a) as ca, TestClient(b) as cb:
+    s = settings_override()
+    a, b = create_app(s), create_app(s)
+    with TestClient(a, headers=_auth(s)) as ca, TestClient(b, headers=_auth(s)) as cb:
         assert a.state.metrics is not b.state.metrics
         assert ca.get("/metrics").status_code == cb.get("/metrics").status_code == 200
 
