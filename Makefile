@@ -44,11 +44,11 @@ test-hosted: ## One tiny real call per hosted LLM with a key set (OpenAI spends 
 sample: ## Generate the synthetic sample vendors and golden labels (deterministic)
 	uv run python scripts/make_samples.py
 
-record: ## Re-record replay cassettes with local Ollama (needs the CLI of task 6.x; not runnable yet)
+record: ## Re-record replay cassettes with local Ollama (sequential: one process per cassette folder)
 	@for spec in data/samples/specs/*.yaml; do \
 	  v=$$(basename $$spec .yaml); \
 	  VG_CACHE__BACKEND=jsonl VG_CACHE__MODE=read_write \
-	    uv run vg assess --vendor $$v --docs data/samples/$$v.pdf || exit 1; \
+	    uv run vg assess --sample $$v || exit 1; \
 	done
 
 eval: ## Run the evaluation matrix

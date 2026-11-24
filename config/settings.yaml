@@ -15,6 +15,7 @@ app:
   environment: local                # local | ci | demo | prod
   log_level: INFO                   # DEBUG | INFO | WARNING | ERROR
   log_json: false                   # true = JSON lines (servers / CI)
+  doctor_timeout_s: 3               # per-service time limit of `vg doctor` reachability checks
 
 paths:
   samples_dir: data/samples

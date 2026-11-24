@@ -27,6 +27,7 @@ class AppSettings(StrictModel):
     environment: Literal["local", "ci", "demo", "prod"]
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"]
     log_json: bool
+    doctor_timeout_s: PositiveFloat
 
 
 class PathsSettings(StrictModel):
