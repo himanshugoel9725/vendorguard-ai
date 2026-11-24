@@ -231,6 +231,10 @@ cost:
     "groq/openai/gpt-oss-20b": {input: 0.0, output: 0.0}   # free plan (list price would be 0.075 / 0.30)
     "openai_compat/*": {input: 0.0, output: 0.0}   # free tier; set real prices if you pay
 
+observability:
+  latency_buckets_s: [0.01, 0.05, 0.25, 1, 5, 20, 60, 180]   # Prometheus histogram buckets (seconds) for stage latency
+  git_timeout_s: 5                  # time limit for reading the git commit into the run manifest
+
 reporting:
   formats: [json, md, html]
   summary_max_words: 150

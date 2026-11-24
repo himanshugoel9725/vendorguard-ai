@@ -116,6 +116,13 @@ class PipelineSettings(StrictModel):
     deterministic_run_ids: bool
 
 
+class ObservabilitySettings(StrictModel):
+    """Audit log, run manifest and Prometheus metrics."""
+
+    latency_buckets_s: Annotated[list[PositiveFloat], Field(min_length=1)]
+    git_timeout_s: PositiveFloat
+
+
 class ReportingSettings(StrictModel):
     """Report rendering."""
 

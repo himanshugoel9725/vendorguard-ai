@@ -7,9 +7,9 @@
 
 | Field | Value |
 |---|---|
-| Current phase | 5: Agents and the decision layer |
-| Next task | 6.1 |
-| Last completed task | 5.12 |
+| Current phase | 6: Orchestrator, CLI, reports, first real run |
+| Next task | 6.2 |
+| Last completed task | 6.1 |
 | Last updated | 2026-11-24 |
 | Blockers | none |
 
@@ -96,7 +96,7 @@
 - [x] 5.12 Code review + checkpoint, tag phase-5-done
 
 ### Phase 6: Orchestrator, CLI, reports, first real run (180 min)
-- [ ] 6.1 Audit log, run manifest, metrics
+- [x] 6.1 Audit log, run manifest, metrics
 - [ ] 6.2 RunContext, control cascade, orchestrator
 - [ ] 6.3 JSON / Markdown / HTML reports
 - [ ] 6.4 CLI commands
@@ -163,6 +163,7 @@
 
 Half-finished work, uncommitted changes, or things the next session must know:
 
+- 6.1: new settings section `observability` (`latency_buckets_s`, `git_timeout_s`; Settings has 21 sections now). `observability/audit_log.py` `AuditLog(path, run_id, on_event=None)` implements `AuditSink` (adds run_id, `seq` from 0 and continues after an existing file, `ts` via `utcnow`; thread-safe; one flushed JSONL line per event; `.events()`), `read_audit_log(path)` (damaged line or non-increasing seq = ConfigError). `observability/run_manifest.py`: `start_manifest(run_id, settings, controls_version=, prompt_hashes=, providers=, inputs=, git_sha=)` (status running; sorted), `finish_manifest(m, status, result_sha)` (done needs the hash; failed drops it), `result_hash(result)` (canonical hash without `created_at`, `cost`, `manifest_path`), `write_manifest` (atomic) / `read_manifest`, `current_git_sha(cwd, timeout)`. `observability/metrics.py` `Metrics(settings.observability)` on a PRIVATE registry: `observe_event(event)` (pass as `AuditLog(on_event=...)`), `run_finished(status)`, `render() -> bytes` (for `/metrics` in 8.1; `CONTENT_TYPE`). 6.2 must: create the AuditLog per run in `paths.runs_dir/<run_id>/audit.jsonl`, write the manifest with `status: failed` on error (also call `Metrics.run_finished`), fill `ManifestInput` from the loaded documents, and set `AssessmentResult.manifest_path`. The orchestrator must pass the AuditLog (not a new sink) to every agent and decider.
 - 5.12 review (code-reviewer, verdict: fix blockers first; blocker and quick fixes DONE). FIXED: (1) `CitationChecker` now replaces the model's quote with the matched (normalised) source window on any fuzzy match, so negation can no longer be doctored past `verify_verdict`/`read_status`; `best_window()` added; (2) `FallbackDecider` also catches `SchemaValidationError` (an LLM-judge failure no longer aborts a run); (3) summary guard: negative facts also allow their absolute value, control IDs are case-insensitive, decimal-comma fragments are read as one number (digits glued to letters such as `AES256` stay ignored on purpose); (13) `Criticality.CRITICAL` enum instead of a string. **OPEN follow-ups (do before 6.7 / as noted):** (5) DONE after the tag: `decision.rule.unsure_confidence` and `decision.jev.yes_threshold` now live in settings.yaml (the module constants are gone); (6) DONE: `prompts/reviewer.v2.md` wraps the draft in `<draft>`/`<draft_quote>` tags and declares it untrusted; `prompts.reviewer: v2` in settings (v1 file kept; no cassettes existed yet); (7) `vendor_name` comes from untrusted text: cap its length via a setting in `build_facts` and escape it in the 6.3 HTML/Markdown reports; the guard blanks it, so digits in it are not checked; (8/11) Jev and failure audit events have `latency_ms=0.0`; (9) comment that failed Jev calls count toward `max_calls_per_run`; (10) dead `isinstance` branch in `llm_judge.py` verify; (12) `factory.py` is 218 lines: split registries from builders before 7.x; build `llm_judge` behind a FallbackDecider in the factory (6.2 decision); (14) ADR line that `needs_human_review` on a critical control does not trigger the floor (intentional).
 - 5.11: 1925 tests, 98.6 % coverage. Three test-writers added ~180 edge tests (`tests/unit/agents/test_agent_edges.py`, `tests/unit/providers/decide/test_decide_edge.py`, `tests/unit/scoring/test_rules_engine_edge.py`, `tests/unit/verification/*_edge.py`, `test_rule_logic.py`, `test_summary_guard.py`). No source bugs found; no src changes. `scoring/` and `verification/` are at 100 %. `Chunk` rejects blank text, so a whitespace-only chunk cannot reach the citation checker. The decide test-writer ran `ruff format` on its folder.
 - 1.4: `setup_logging(app, secrets)` is called by cli/ and api/ with `collect_secrets(settings)`. Redaction also pattern-matches `Bearer`, `sk-` and `gsk_` tokens; secrets stored under non-`VG_` names are only caught by those patterns.
@@ -214,4 +215,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

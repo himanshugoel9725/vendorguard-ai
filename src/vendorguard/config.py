@@ -24,6 +24,7 @@ from vendorguard.config_models.core import (
     EvalSettings,
     IngestSettings,
     IntakeSettings,
+    ObservabilitySettings,
     PathsSettings,
     PipelineSettings,
     PromptsSettings,
@@ -76,6 +77,7 @@ class Settings(BaseSettings):
     memory: MemorySettings
     cache: CacheSettings
     cost: CostSettings
+    observability: ObservabilitySettings
     reporting: ReportingSettings
     api: ApiSettings
     samples: SamplesSettings

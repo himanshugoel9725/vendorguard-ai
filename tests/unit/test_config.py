@@ -44,7 +44,7 @@ def test_committed_yaml_loads_with_every_section() -> None:
     s = load_settings(DEFAULT_CONFIG, env_file=None)
     for name in Settings.model_fields:
         assert getattr(s, name) is not None
-    assert len(Settings.model_fields) == 20
+    assert len(Settings.model_fields) == 21
     assert s.llm.seed == 42
     assert s.llm.openai_compat.api_key.get_secret_value() == ""
 
