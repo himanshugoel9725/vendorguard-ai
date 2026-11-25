@@ -20,13 +20,19 @@ env:
 
 jobs:
   check:
+    name: check (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           enable-cache: true
+          python-version: ${{ matrix.python }}
       - name: Install dependencies (locked)
         run: uv sync --frozen --all-groups
       - name: No Hugging Face guard
@@ -37,5 +43,38 @@ jobs:
         run: uv run ruff format --check .
       - name: Type check (mypy strict)
         run: uv run mypy
-      - name: Tests (offline, mock providers)
-        run: uv run pytest --cov --cov-report=term-missing:skip-covered
+      - name: Tests with the 80 % coverage gate (offline, mock providers)
+        run: uv run pytest --cov --cov-report=term-missing:skip-covered --cov-report=xml
+      - name: Replay and determinism tests (committed cassettes, no model)
+        run: >
+          uv run pytest --no-cov -o addopts=""
+          tests/integration/test_replay.py tests/integration/test_determinism.py
+      - name: Mock evaluation smoke run
+        env:
+          VG_EVAL__RESULTS_DIR: ${{ runner.temp }}/eval
+          VG_EVAL__WORK_DIR: ${{ runner.temp }}/eval-work
+        run: |
+          uv run vg eval --configs keyword-baseline
+          uv run vg determinism --config keyword-baseline
+          test -s "$VG_EVAL__RESULTS_DIR/results.json"
+          test -s "$VG_EVAL__RESULTS_DIR/determinism.json"
+      - name: Upload coverage report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-py${{ matrix.python }}
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  secrets:
+    name: gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the whole history, not only the last commit
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
