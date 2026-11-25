@@ -25,7 +25,8 @@ re-assessment diff, the evaluation harness, the documentation site, CI and a rel
 - The optional Streamlit UI exists (local use only; see [docs](docs/ui.md)); it has not been clicked through in a real browser session by the author.
 - The Docker image was built and smoke-tested only on a CI runner; `docker compose up` and Docker Desktop on
   macOS were not tried.
-- No version tag or GitHub Release has been published, and no image has been pushed to a registry.
+- Version 1.0.0 is the first release. The API image is built, smoke-tested and published by the release
+  workflow; nobody has yet run it with `docker compose` on a developer machine.
 
 Build notes: [docs/PROGRESS.md](docs/PROGRESS.md) and [docs/PLAN.md](docs/PLAN.md).
 
@@ -482,7 +483,7 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 ## Roadmap
 
 - [x] CLI, API, reports, SQLite memory and diff, decision gates, evaluation, CI, docs site
-- [ ] Tag v1.0.0, publish the first release and image
+- [x] Tag v1.0.0, publish the first release and image (v1.0.0)
 - [ ] Measure a hosted LLM on the evaluation set
 - [ ] Letta memory (optional, deferred in ADR-019)
 - [x] Optional UI (Streamlit, local use; a React client is not planned)
