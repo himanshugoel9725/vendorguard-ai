@@ -190,6 +190,23 @@ class EvalConfig(StrictModel):
     embeddings: EmbeddingsProvider
 
 
+class ChartSettings(StrictModel):
+    """Look of the evaluation charts (PNG). Colours follow the data-viz reference palette."""
+
+    dpi: PositiveInt
+    width_in: PositiveFloat
+    row_height_in: PositiveFloat  # bar charts: height per config row
+    cell_in: PositiveFloat  # confusion matrix: size of one cell
+    surface: str
+    ink: str
+    ink_secondary: str
+    grid: str
+    muted: str  # de-emphasised bars
+    primary: str  # categorical slot 1 (and the emphasised bar)
+    secondary: str  # categorical slot 2
+    ramp: list[str]  # sequential ramp, light to dark (heatmap)
+
+
 class EvalSettings(StrictModel):
     """Evaluation runner settings."""
 
@@ -197,6 +214,7 @@ class EvalSettings(StrictModel):
     work_dir: Path
     cache_enabled: bool
     round_digits: NonNegInt
+    charts: ChartSettings
     determinism_repeats: PositiveInt
     configs: list[EvalConfig]
 
@@ -205,6 +223,7 @@ __all__ = [
     "ApiSettings",
     "AppSettings",
     "ChunkingSettings",
+    "ChartSettings",
     "EvalConfig",
     "EvalSettings",
     "IngestSettings",

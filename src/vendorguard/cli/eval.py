@@ -81,4 +81,27 @@ def determinism(
     console.print(f"written: {path}", markup=False, soft_wrap=True)
 
 
-__all__ = ["determinism", "eval_matrix"]
+CHARTS_DIR = "charts"
+
+
+@guarded
+def charts() -> None:
+    """Draw the evaluation charts (PNG) from docs/evaluation/results.json."""
+    settings = load()
+    results_file = settings.eval.results_dir / RESULTS_FILE
+    if not results_file.is_file():
+        raise ConfigError(f"{results_file} does not exist: run `vg eval` first")
+    results = EvalResults.model_validate_json(results_file.read_text("utf-8"))
+    try:  # matplotlib is a dev dependency: do not import it when any other command starts
+        from vendorguard.eval.charts import render_charts
+    except ImportError as exc:
+        raise ConfigError(
+            "`vg charts` needs matplotlib: run `make setup` (dev dependencies)"
+        ) from exc
+    for path in render_charts(
+        results, settings.eval.charts, settings.eval.results_dir / CHARTS_DIR
+    ):
+        console.print(f"written: {path}", markup=False, soft_wrap=True)
+
+
+__all__ = ["charts", "determinism", "eval_matrix"]

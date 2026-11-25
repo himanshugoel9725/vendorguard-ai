@@ -357,16 +357,29 @@ docs/                         plan, progress, decisions, configuration, evaluati
 
 ## Evaluation
 
-Evaluation runs on synthetic sample vendors whose true control statuses are known by construction.
+Evaluation runs on 4 synthetic sample vendors (25 controls each) whose true control statuses are known by
+construction. The results do not transfer to real vendor documents. All real-model runs use one small model
+(`qwen2.5:3b`, CPU-only Intel Mac); no hosted LLM was measured.
 
-| Config | LLM | Decider | Accuracy | Macro-F1 | LLM calls / vendor | Determinism |
+| Config | Decider | Accuracy | Macro-F1 | Human review | LLM calls | Cost USD |
 |---|---|---|---|---|---|---|
-| keyword-baseline | mock | rule | TBD | TBD | 0 | 100 % |
-| ollama-rule | qwen2.5:7b | rule | TBD | TBD | TBD | TBD |
-| ollama-judge | qwen2.5:7b | llm_judge | TBD | TBD | TBD | TBD |
-| ollama-jev | qwen2.5:7b | jev | TBD | TBD | TBD | TBD |
+| `ollama-jev` | Jev | 0.52 | 0.59 | 14 % | 113 | 0.0061 |
+| `ollama-rule-bm25` | rule | 0.40 | 0.40 | 0 % | 95 | 0 |
+| `ollama-rule` | rule | 0.35 | 0.30 | 1 % | 110 | 0 |
+| `ollama-judge` | LLM judge | 0.17 | 0.08 | 1 % | 116 | 0 |
 
-Full method, charts and the decider comparison: [docs/EVALUATION.md](docs/EVALUATION.md) (Phase 9).
+- `keyword-baseline` (mock LLM) scores 1.00 only because it matches the generator's vocabulary. It checks the
+  pipeline and is not a model result.
+- Most errors are a false `no_evidence`: the 3B model often returns no quote. The weak LLM-judge result is a
+  limit of this small model, not a verdict on LLM judges.
+- Jev scores best, apparently because its verify gate is stricter and sends doubtful findings to a person
+  (14 %); no ablation isolated the cause. It is a
+  hosted, paid, alpha-stage service, and this is one small sample.
+- Real-model runs are not repeatable: with the cache off, two identical runs gave 0 % identical result hashes
+  and 52 % identical findings. Replaying the committed cassettes is 100 % identical.
+
+Method, per-vendor tables, charts, determinism and how to reproduce:
+[docs/EVALUATION.md](docs/EVALUATION.md).
 
 ## Testing and CI/CD
 

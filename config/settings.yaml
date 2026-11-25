@@ -299,6 +299,19 @@ eval:
   work_dir: .vendorguard/eval       # run folders and state of eval runs (git-ignored)
   cache_enabled: false              # false = every call is real (honest tokens and timing); true = reuse the cache
   round_digits: 4                   # decimals of the rates and times written to results.json
+  charts:                           # PNG charts of `vg charts` (palette: data-viz reference, light surface)
+    dpi: 160
+    width_in: 8.0
+    row_height_in: 0.62             # bar charts: height per config
+    cell_in: 1.15                   # confusion matrix: size of one cell
+    surface: "#fcfcfb"
+    ink: "#0b0b0b"
+    ink_secondary: "#52514e"
+    grid: "#e6e5e1"
+    muted: "#b9b8b2"                # bars that are not the point
+    primary: "#2a78d6"              # categorical slot 1, also the highlighted bar
+    secondary: "#eb6834"            # categorical slot 2
+    ramp: ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]   # blue 100..700
   determinism_repeats: 2
   configs:                          # evaluation matrix (Phase 9)
     - {name: keyword-baseline, llm: mock,   decider: rule,      embeddings: none}
