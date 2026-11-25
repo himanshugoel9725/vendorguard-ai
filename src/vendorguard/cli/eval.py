@@ -9,7 +9,7 @@ from vendorguard.cli.common import console, guarded, load
 from vendorguard.errors import ConfigError
 from vendorguard.eval.determinism import best_config_name, run_determinism, write_determinism
 from vendorguard.eval.results import EvalResults
-from vendorguard.eval.runner import run_eval, write_results
+from vendorguard.eval.runner import merge_results, run_eval, write_results
 
 RESULTS_FILE = "results.json"
 
@@ -28,9 +28,12 @@ def eval_matrix(
     if unknown:
         raise ConfigError(f"unknown eval config(s): {', '.join(unknown)} (known: {sorted(known)})")
     results = run_eval(settings, names, progress=lambda m: console.print(m, markup=False))
-    path = write_results(
-        results, settings.eval.results_dir / RESULTS_FILE, settings.eval.round_digits
+    target = settings.eval.results_dir / RESULTS_FILE
+    before = (
+        EvalResults.model_validate_json(target.read_text("utf-8")) if target.is_file() else None
     )
+    results = merge_results(before, results, [c.name for c in settings.eval.configs])
+    path = write_results(results, target, settings.eval.round_digits)
     table = Table(
         "config", "outcome", "accuracy", "macro-F1", "LLM calls", "tokens in/out", "time s"
     )

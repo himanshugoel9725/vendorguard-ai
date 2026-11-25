@@ -124,6 +124,18 @@ def run_eval(
     )
 
 
+def merge_results(
+    existing: EvalResults | None, new: EvalResults, order: Sequence[str]
+) -> EvalResults:
+    """``new`` configs replace same-named ones in ``existing``; the others are kept. Configs
+    come out in the order of ``eval.configs`` (names no longer configured go last, by name)."""
+    by_name = {c.name: c for c in (existing.configs if existing else [])}
+    by_name.update({c.name: c for c in new.configs})
+    rank = {n: i for i, n in enumerate(order)}
+    configs = sorted(by_name.values(), key=lambda c: (rank.get(c.name, len(rank)), c.name))
+    return EvalResults(samples=new.samples, configs=configs)
+
+
 def _round(value: Any, digits: int) -> Any:
     if isinstance(value, float):
         return round(value, digits)

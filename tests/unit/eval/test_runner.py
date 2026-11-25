@@ -140,3 +140,13 @@ def test_cli_determinism_picks_best_config_from_results(
     assert r.exit_code == 0, r.output
     assert "mock-judge: 2 repeats" in r.output and "identical result hashes: 100 %" in r.output
     assert (s.eval.results_dir / "determinism.json").is_file()
+
+
+def test_eval_keeps_configs_that_were_not_rerun(
+    s: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("vendorguard.cli.common.load_settings", lambda **_: s)
+    for name in ("mock-judge", "mock-rule"):  # second run must not drop the first
+        assert CliRunner().invoke(app, ["eval", "--configs", name]).exit_code == 0
+    body = json.loads((s.eval.results_dir / "results.json").read_text(encoding="utf-8"))
+    assert [c["name"] for c in body["configs"]] == ["mock-rule", "mock-judge"]
