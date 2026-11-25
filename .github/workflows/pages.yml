@@ -1,0 +1,74 @@
+name: Pages
+
+# Builds the documentation site and a demo of four synthetic reports replayed from the committed
+# cassettes (no model, no network, $0), then publishes both to GitHub Pages.
+# One-time setup by the repository owner: Settings -> Pages -> Source: GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Replay exactly as recorded by `make record`: Ollama provider answering from the cassettes.
+  VG_APP__ENVIRONMENT: ci
+  VG_LLM__PROVIDER: ollama
+  VG_EMBEDDINGS__PROVIDER: none
+  VG_DECISION__PROVIDER: rule
+  VG_CACHE__ENABLED: "true"
+  VG_CACHE__BACKEND: jsonl
+  VG_CACHE__MODE: read_only
+  VG_CACHE__JSONL_DIR: tests/cassettes
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+      - name: Install dependencies (locked)
+        run: uv sync --frozen --all-groups
+      - name: Build the documentation site (strict)
+        run: uv run mkdocs build --strict
+      - name: Replay the four sample assessments (offline)
+        run: |
+          for stem in brightdock nimbara-hr nimbara-hr-y2 quillfield; do
+            VG_PATHS__RUNS_DIR="$RUNNER_TEMP/runs-$stem" \
+            VG_PATHS__STATE_DIR="$RUNNER_TEMP/state-$stem" \
+            VG_MEMORY__SQLITE_PATH="$RUNNER_TEMP/state-$stem/memory.db" \
+              uv run vg assess --sample "$stem"
+          done
+      - name: Add the demo reports and index to the site
+        run: |
+          uv run python scripts/build_demo.py site \
+            brightdock="$RUNNER_TEMP/runs-brightdock" \
+            nimbara-hr="$RUNNER_TEMP/runs-nimbara-hr" \
+            nimbara-hr-y2="$RUNNER_TEMP/runs-nimbara-hr-y2" \
+            quillfield="$RUNNER_TEMP/runs-quillfield"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -58,6 +58,7 @@ For a real local model, install [Ollama](https://ollama.com), pull the models na
 | [CLI](cli.md) | Every `vg` command and the run folder |
 | [REST API](api.md) | Endpoints, authentication, limits, Docker |
 | [Configuration](CONFIG.md) | Every setting (generated from `config/settings.yaml`) |
+| [Demo reports](https://himanshugoel9725.github.io/vendorguard-ai/demo/) | Four synthetic vendors, replayed from a recorded run (live once GitHub Pages is enabled) |
 | [Evaluation](EVALUATION.md) | Method and measured results |
 | [Decisions](DECISIONS.md) | Architecture decision records |
 
