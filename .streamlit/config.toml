@@ -11,3 +11,13 @@ gatherUsageStats = false
 [client]
 showErrorDetails = "type"      # an unexpected error shows its type, not a traceback
 toolbarMode = "minimal"
+
+[theme]
+# Always dark: near-black page, white text, slightly lighter panels and inputs (not the system setting).
+base = "dark"
+backgroundColor = "#0b0b0b"
+secondaryBackgroundColor = "#1a1a1a"
+textColor = "#ffffff"
+primaryColor = "#3b82f6"       # buttons and focus: a blue that keeps white button text readable
+baseRadius = "large"           # rounded inputs and buttons
+font = "sans serif"

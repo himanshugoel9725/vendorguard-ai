@@ -22,7 +22,7 @@
 re-assessment diff, the evaluation harness, the documentation site, CI and a release workflow. Not there yet:
 
 - Letta memory is not implemented (optional, deferred in ADR-019); only SQLite memory exists.
-- The optional Streamlit UI exists (local use only; see [docs](docs/ui.md)); it has not been clicked through in a real browser session by the author.
+- The optional Streamlit UI exists (local use only; see [docs](docs/ui.md)); it was clicked through in headless Chrome (three tabs; file upload and the override form were not).
 - The Docker image was built and smoke-tested only on a CI runner; `docker compose up` and Docker Desktop on
   macOS were not tried.
 - Version 1.0.0 is the first release. The API image is built, smoke-tested and published by the release
@@ -393,8 +393,10 @@ assessments (one runs at a time). Limits are in the `api` section of `config/set
 
 `make ui` starts a small Streamlit page on `http://127.0.0.1:8501` that uses this API: upload documents, follow
 a run, review findings and quotes, record overrides, browse vendor history and ask questions. It needs the API
-running and the same key in `VG_UI__API_KEY`. It is for local use only: it has no login of its own. Details:
-[Web UI](https://himanshugoel9725.github.io/vendorguard-ai/ui/).
+running and the same key in `VG_UI__API_KEY`. It is always dark (near-black, white text). It is for local use
+only: it has no login of its own. Details: [Web UI](https://himanshugoel9725.github.io/vendorguard-ai/ui/).
+
+![Findings tab of the UI](docs/assets/ui-findings.png)
 
 ## Project structure
 

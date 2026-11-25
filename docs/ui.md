@@ -25,6 +25,13 @@ make ui                         # terminal 2: the UI on http://127.0.0.1:8501
 The sidebar shows whether the API is reachable. If you only want to try it, start the API with the mock LLM:
 `VG_LLM__PROVIDER=mock VG_EMBEDDINGS__PROVIDER=none make api`.
 
+The page is always dark (near-black background, white text), set in `.streamlit/config.toml`. Screenshots use
+the synthetic sample vendors.
+
+![Findings tab: score, summary, filters and the findings table](assets/ui-findings.png)
+
+![History tab: vendors, run history and the Ask form](assets/ui-history.png)
+
 ## The three tabs
 
 | Tab | What you can do |
@@ -75,7 +82,8 @@ size, number of files) are read from the same file's `ingest` and `api` sections
 ## How it was tested
 
 Streamlit's own test harness drives the real pages against a fake client; the HTTP client is tested against
-mocked responses; a layering test keeps the UI from importing server code. The author also ran the client once
-against the real API in a scripted check (upload, override, reports, history, ask), which is not part of the
-test suite, and started the real Streamlit server to confirm it answers on `127.0.0.1` only. Nobody has yet
-clicked through it in a real browser session, so rendering details such as table export are untested.
+mocked responses; a layering test keeps the UI from importing server code; a test pins the dark theme and its
+contrast. The author also ran the client against the real API in a scripted check (upload, override, reports,
+history, ask) and drove the real page in headless Chrome: it loaded all three tabs, listed vendors and history,
+and loaded a run on the Findings tab (the screenshots above). Not exercised in a real browser: file upload,
+the override form and the report download, so their rendering is untested outside the test harness.
