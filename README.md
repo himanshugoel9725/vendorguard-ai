@@ -388,7 +388,8 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 - **GitHub Actions:** lint, type-check, tests, determinism test, secret scan (gitleaks) and a guard that fails
   the build if any Hugging Face package or model appears.
 - **GitHub Pages:** documentation plus demo reports generated in replay mode on every push to `main`.
-- **Releases:** tagging `v*` builds and publishes a Docker image to GitHub Container Registry.
+- **Releases:** tagging `v*` builds the API image, smoke-tests it (upload, assessment and report through the
+  running container, with the mock LLM), publishes it to GitHub Container Registry and creates a GitHub Release.
 
 ## Security
 

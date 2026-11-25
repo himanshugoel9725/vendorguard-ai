@@ -69,8 +69,8 @@ For a real local model, install [Ollama](https://ollama.com), pull the models na
       are known by construction. The results may not transfer to real vendor documents.
     - **One small local model was measured** (`qwen2.5:3b` on a CPU-only machine). No hosted LLM was measured.
       The small model often returns no quote, which shows up as a false `no_evidence`.
-    - **The Docker image has not been built or run by the author.** The Dockerfile and compose file were
-      checked statically only.
+    - **The Docker image is smoke-tested only on a CI runner.** It builds and serves an assessment there with
+      the mock LLM; it was not run on the author's machine, with `docker compose`, or with a real Ollama.
     - **Letta memory is not implemented** (ADR-019). Vendor memory uses SQLite only. The `letta` setting
       validates, but building the store fails with "not implemented yet".
     - **The API is single-process.** The rate limiter and the job queue live in memory, and assessments run

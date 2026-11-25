@@ -162,10 +162,15 @@ is never sent.
 
 ## Docker
 
-!!! warning "Not verified"
-    The author has not built or run the image: Docker was not installed on the development machine. The
-    Dockerfile and compose file were checked statically and by tests that read them. The same application was
-    run from a non-editable wheel install in a clean folder, which is not the same as running the image.
+!!! note "What has been verified"
+    The release workflow (`.github/workflows/release.yml`) builds the image on a GitHub runner (linux/amd64)
+    and smoke-tests it before anything is pushed. The test starts the container with the same hardening as
+    `docker-compose.yml` (read-only root, no capabilities, no new privileges), the mock LLM and a random API key,
+    and checks that it becomes healthy, runs as the unprivileged user, refuses a request without a key, accepts
+    an upload, finishes the assessment and serves the HTML report.
+
+    Not verified: `docker compose up` itself, running on Docker Desktop for macOS, and talking to a real Ollama
+    from inside the container (`host.docker.internal`). The image contains no model.
 
 `docker-compose.yml` defines one service, `api`, under the profile `api`. It needs a `.env` with
 `VG_API__AUTH_KEY`.
