@@ -1,8 +1,8 @@
 """Clean extracted page text: Unicode, header/footer lines, hyphenation and whitespace.
 
 Order matters. Line-based rules run before whitespace is collapsed:
-``normalize_unicode`` -> ``neutralize_prompt_tags`` -> ``strip_repeated_lines`` -> ``dehyphenate``
--> ``collapse_whitespace``.
+``normalize_unicode`` -> ``strip_invisible`` -> ``neutralize_prompt_tags`` ->
+``strip_repeated_lines`` -> ``dehyphenate`` -> ``collapse_whitespace``.
 The cleaned text is what chunks, citations and quotes refer to; the document's hash and ID still
 describe the original bytes.
 """
@@ -27,6 +27,12 @@ _PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
 
 
 LOOKALIKE_OPEN = "\u2039"  # single left-pointing angle quotation mark
+
+
+def strip_invisible(text: str) -> str:
+    """Remove invisible format characters (zero-width space/joiner, word joiner, BOM, ...), so a
+    tag cannot be disguised as ``<\u200bdocument>``. Soft hyphens stay: hyphenation reads them."""
+    return "".join(ch for ch in text if ch == SOFT_HYPHEN or unicodedata.category(ch) != "Cf")
 
 
 def neutralize_prompt_tags(text: str, tags: list[str]) -> str:
@@ -114,7 +120,9 @@ def collapse_whitespace(text: str) -> str:
 def clean_document(document: Document, settings: IngestSettings) -> Document:
     """Return the document with every page cleaned (identity, hash and page numbers are kept)."""
     texts = [
-        neutralize_prompt_tags(normalize_unicode(page.text), settings.reserved_prompt_tags)
+        neutralize_prompt_tags(
+            strip_invisible(normalize_unicode(page.text)), settings.reserved_prompt_tags
+        )
         for page in document.pages
     ]
     if settings.strip_repeated_lines:
@@ -135,6 +143,7 @@ __all__ = [
     "dehyphenate",
     "neutralize_prompt_tags",
     "normalize_unicode",
+    "strip_invisible",
     "strip_repeated_lines",
     "vocabulary",
 ]

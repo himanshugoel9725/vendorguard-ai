@@ -35,25 +35,47 @@ The sidebar shows whether the API is reachable. If you only want to try it, star
 
 ## Safety rules
 
-- **Local use only.** The page has no login. It uses the API key of whoever started it and binds to
-  `127.0.0.1`. Never expose it to a network.
+- **Local use only.** The page has no login. It uses the API key of whoever started it, so anyone who can
+  reach the page can do what the key can do. `make ui` and `.streamlit/config.toml` bind it to `127.0.0.1`;
+  if you start it any other way, check that it is not listening on your network. Never expose it.
+- **DNS rebinding.** A hostile web page can make your browser reach a local server under the page's own name.
+  The UI therefore answers only when the request's `Host` header is one of `ui.allowed_hosts`
+  (`127.0.0.1`, `localhost`, `[::1]`); under any other name it draws one refusal message and calls nothing.
+  This is the same check that stops a request arriving from another machine on your network.
 - **The key** goes only to `ui.api_base_url`, and only over https unless that address is this machine
-  (the settings refuse anything else). It is never shown on the page or written to a log.
-- **Text from documents and models** (quotes, rationales, answers, vendor names) is shown as plain text,
-  never as Markdown or HTML, so a vendor document cannot put links, images or markup into the page.
-- **Errors** show the API's own short messages, not internal details.
+  (the settings refuse anything else). It is never shown on the page or written to a log, and redirects are
+  not followed.
+- **Text from documents and models** (quotes, rationales, summaries, answers) is shown with `st.text` and
+  `st.code`, never as Markdown or HTML. The few widgets that always render Markdown (error boxes, labels) only
+  receive API strings after they have been escaped, and table cells that start with `=`, `+`, `-` or `@` get a
+  leading quote so an exported CSV cannot run as a spreadsheet formula.
+- **Identifiers** (run, vendor and control IDs) are checked against the server's patterns before they are
+  placed in a request path.
+- **Errors** show the API's own short messages (cut to `ui.max_detail_chars`), not internal details.
 
 ## Settings
 
 The section `ui` of `config/settings.yaml` (see [Configuration](CONFIG.md)): `ui.api_base_url`,
-`ui.request_timeout_s`, `ui.poll_interval_s`, `ui.poll_timeout_s`, `ui.page_title`. The key is
-`VG_UI__API_KEY` in `.env`. Keep `ui.poll_interval_s` high enough that polling stays under
-`api.rate_limit_per_minute`: the default of 3 seconds is 20 requests a minute against a limit of 30.
+`ui.request_timeout_s`, `ui.poll_interval_s`, `ui.poll_timeout_s`, `ui.refresh_ttl_s`, `ui.max_detail_chars`,
+`ui.allowed_hosts`, `ui.page_title`. The key is `VG_UI__API_KEY` in `.env`. The upload limits (file types,
+size, number of files) are read from the same file's `ingest` and `api` sections, so the page and the API agree.
 
-## Limits
+## What to expect
 
-- Tested with Streamlit's own test harness and against the real API in a scripted run. The author has not
-  clicked through it in a real browser session.
+- Every click reruns the page. A run being followed is picked up again after a click, and the vendor list and
+  history are fetched at most every `ui.refresh_ttl_s` seconds, but two browser tabs each polling a run share
+  the API's per-key limit (`api.rate_limit_per_minute`, 30 by default). The UI backs off when the API answers
+  429.
+- Streamlit itself accepts uploads up to 200 MB per file; the page checks your files against the API's limit
+  (20 MB, 5 files) before reading them.
 - Control titles are not shown, only IDs: the API does not expose the control catalogue.
 - A run that takes longer than `ui.poll_timeout_s` keeps running on the server; load it again by its ID.
 - No hosted deployment: a public UI in front of a private API key would defeat the key.
+
+## How it was tested
+
+Streamlit's own test harness drives the real pages against a fake client; the HTTP client is tested against
+mocked responses; a layering test keeps the UI from importing server code. The author also ran the client once
+against the real API in a scripted check (upload, override, reports, history, ask), which is not part of the
+test suite, and started the real Streamlit server to confirm it answers on `127.0.0.1` only. Nobody has yet
+clicked through it in a real browser session, so rendering details such as table export are untested.

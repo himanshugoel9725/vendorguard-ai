@@ -336,8 +336,12 @@
   and only over https unless that address is this machine (validated in the settings). (3) Text that comes from
   vendor documents or from a model (quotes, rationales, vendor names, answers) is shown with `st.text`/`st.code`
   and table cells, never as Markdown or HTML, so a document cannot inject links, images or markup into the page.
-  (4) Errors shown to the user carry the API's own fixed messages, never exception text or the key. (5) Polling
-  respects `api.rate_limit_per_minute` through `ui.poll_interval_s`.
+  (4) Errors shown to the user carry the API's own fixed messages, never exception text or the key, and are
+  escaped before they reach Markdown-rendering widgets. (5) Polling respects `api.rate_limit_per_minute` through
+  `ui.poll_interval_s`; reruns do not add requests because lists are cached for `ui.refresh_ttl_s` and a 429 is
+  waited out. (6) DNS rebinding: Streamlit 1.67 checks that Origin equals Host but not that Host is loopback
+  (reproduced by the security audit), so the app refuses any request whose Host is not in `ui.allowed_hosts`
+  before it calls the API. (7) Ids are validated against the server's patterns before they enter a path.
 - **Not done.** Task 12.6 (deploy to Streamlit Community Cloud) is skipped: there is no hosted API to point it at,
   and a public UI in front of a private API key would defeat the key. The UI is for local use.
 - **Consequences.** One more dependency group (Streamlit and its dependencies; `pip-audit` found nothing for

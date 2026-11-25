@@ -49,7 +49,9 @@ Keys are compared in constant time. Every key failure gets the same 401 message.
 
 Repeated wrong keys from one client address are answered with 429 and a `Retry-After` header, which slows
 guessing. A correct key is never refused for that reason, so someone guessing from a shared address (a proxy,
-Docker's network) cannot lock the real users out. Body sizes are counted as bytes arrive, whatever `Content-Length` claims. All of these are
+Docker's network) cannot lock the real users out. The trade-off: a guesser still gets `api.rate_limit_per_minute`
+tries per window and a lucky guess succeeds, which is negligible against the 16-character, 8-distinct-character
+minimum for the key. Body sizes are counted as bytes arrive, whatever `Content-Length` claims. All of these are
 in [Configuration](CONFIG.md).
 
 ## Endpoints
@@ -215,4 +217,5 @@ container can reach. There is no Letta service (ADR-019).
 - **One key, one tenant.** Every holder of the API key can read and write every vendor. There is no per-user
   authorisation. Keep `.env` private (`chmod 600 .env`; `vg doctor` warns if it is readable by others).
 - **Leftover uploads.** Uploaded files are deleted after each run. If the process is killed mid-run, uploads
-  older than `api.stale_upload_max_age_s` are removed at the next start.
+  older than `api.stale_upload_max_age_s` are removed at the next start. This assumes one API process (as
+  documented): a second process, or a queue that waits longer than that age, could lose a waiting upload.

@@ -48,7 +48,7 @@ dev = [
 ]
 docs = ["mkdocs-material>=9.5"]
 ui = [
-    "streamlit>=1.40",
+    "streamlit>=1.50",
 ]
 
 [tool.hatch.build.targets.wheel]

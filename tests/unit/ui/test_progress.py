@@ -63,3 +63,29 @@ def test_an_api_error_while_polling_propagates() -> None:
 
     with pytest.raises(UiApiError, match="no such assessment"):
         _wait(Broken())  # type: ignore[arg-type]
+
+
+def test_rate_limiting_is_waited_out_not_fatal() -> None:
+    class Limited:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get_run(self, run_id: str) -> RunView:
+            self.calls += 1
+            if self.calls <= 2:
+                raise UiApiError(429, "too many requests")
+            return RunView(run_id=run_id, status="done")
+
+    client = Limited()
+    view, sleeps, _ = _wait(client)  # type: ignore[arg-type]
+    assert view.status == "done" and sleeps == [3.0, 3.0] and client.calls == 3
+
+
+def test_endless_rate_limiting_still_ends_at_the_timeout() -> None:
+    class Always429:
+        def get_run(self, run_id: str) -> RunView:
+            raise UiApiError(429, "too many requests")
+
+    with pytest.raises(UiApiError) as info:
+        _wait(Always429(), timeout=10.0)  # type: ignore[arg-type]
+    assert info.value.status == 429

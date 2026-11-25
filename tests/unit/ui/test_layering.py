@@ -57,3 +57,10 @@ def test_only_the_entry_point_loads_settings(path: Path) -> None:
 def test_ui_never_renders_untrusted_text_as_markup(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     assert "unsafe_allow_html" not in text and "st.html" not in text
+
+
+@pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(UI)))
+def test_no_markdown_widgets_are_used_for_data(path: Path) -> None:
+    """st.write and st.markdown render Markdown: the UI uses st.text, st.code or plain()."""
+    text = path.read_text(encoding="utf-8")
+    assert "st.write(" not in text and "st.markdown(" not in text

@@ -2785,7 +2785,7 @@ dev = [
     { name = "types-pyyaml" },
 ]
 docs = [{ name = "mkdocs-material", specifier = ">=9.5" }]
-ui = [{ name = "streamlit", specifier = ">=1.40" }]
+ui = [{ name = "streamlit", specifier = ">=1.50" }]
 
 [[package]]
 name = "virtualenv"

@@ -101,7 +101,7 @@ LLM for the worker agents. provider: ollama ($0, local) | openai | groq (free pl
 | `ingest.strip_repeated_lines` | `true` | true/false | remove headers/footers |
 | `ingest.repeated_line_scan_lines` | `3` | integer (> 0) | only the first and last N lines of a page can be headers or footers |
 | `ingest.repeated_line_min_ratio` | `0.6` | number (>= 0.0, <= 1.0) | a line on >= 60 % of pages counts as header/footer |
-| `ingest.reserved_prompt_tags` | `[document, draft, draft_quote, data, question]` | list of text | tags our prompts use: a '<' that would open or close one in a vendor document is replaced by U+2039 (keep in step with prompts/) |
+| `ingest.reserved_prompt_tags` | `[document, draft, draft_quote, draft_rationale, data, question]` | list of text | tags our prompts use: a '<' that would open or close one in a vendor document is replaced by U+2039 (keep in step with prompts/) |
 
 ## `chunking`
 
@@ -333,4 +333,7 @@ the optional Streamlit UI (`make ui`); it calls the REST API
 | `ui.request_timeout_s` | `30` | number (> 0.0) | time limit of one API request |
 | `ui.poll_interval_s` | `3` | number (> 0.0) | seconds between status checks of a running assessment (the API allows api.rate_limit_per_minute requests) |
 | `ui.poll_timeout_s` | `3600` | number (> 0.0) | stop waiting for an assessment after this long (it keeps running on the server) |
+| `ui.refresh_ttl_s` | `15` | number (> 0.0) | the vendor list and history are re-fetched at most this often (saves API requests) |
+| `ui.max_detail_chars` | `300` | integer (> 0) | an API error message is cut to this length |
+| `ui.allowed_hosts` | `[127.0.0.1, localhost, '[::1]']` | list of text | Host names the page answers to; others get nothing (DNS-rebinding guard) |
 | `ui.page_title` | `VendorGuard AI` | text |  |

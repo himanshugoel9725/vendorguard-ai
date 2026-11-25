@@ -5,6 +5,7 @@ Every answer is validated with the same Pydantic models the API serialises. Erro
 """
 
 from collections.abc import Sequence
+from re import Pattern
 from typing import Any, Literal
 from urllib.parse import quote
 
@@ -15,8 +16,8 @@ from vendorguard.models._base import ContractModel
 from vendorguard.models.finding import ControlFinding, DraftStatus
 from vendorguard.models.run import Answer, AssessmentResult, AssessmentSummary, VendorSummary
 from vendorguard.models.score import RiskScore
+from vendorguard.ui.validation import CONTROL_ID_PATTERN, RUN_ID_PATTERN, VENDOR_ID_PATTERN
 
-MAX_DETAIL_CHARS = 300  # an error message longer than this is cut
 ReportFormat = Literal["html", "md", "json"]
 RunPhase = Literal["queued", "running", "done", "failed"]
 
@@ -46,7 +47,7 @@ class OverrideOutcome(ContractModel):
     score: RiskScore
 
 
-def _detail(response: httpx.Response) -> str:
+def _detail(response: httpx.Response, limit: int) -> str:
     """The API's message for a refused request (never the request body or the key)."""
     try:
         detail = response.json().get("detail")
@@ -58,7 +59,14 @@ def _detail(response: httpx.Response) -> str:
         )
     if not isinstance(detail, str) or not detail:
         detail = f"the API answered HTTP {response.status_code}"
-    return detail[:MAX_DETAIL_CHARS]
+    return detail[:limit]
+
+
+def _seg(value: str, pattern: Pattern[str]) -> str:
+    """A path segment: it must match the server's pattern and is then fully percent-encoded."""
+    if not pattern.match(value):
+        raise UiApiError(0, "invalid identifier")
+    return quote(value, safe="")
 
 
 class ApiClient:
@@ -69,8 +77,10 @@ class ApiClient:
         base_url: str,
         key: SecretStr,
         timeout_s: float,
+        max_detail_chars: int,
         client: httpx.Client | None = None,
     ) -> None:
+        self._limit = max_detail_chars
         self._base = base_url.rstrip("/")
         self._headers = {"X-API-Key": key.get_secret_value()}
         self._client = client or httpx.Client(timeout=timeout_s)
@@ -88,7 +98,7 @@ class ApiClient:
         except httpx.HTTPError as exc:
             raise UiApiError(0, f"cannot reach the API at {self._base}") from exc
         if response.status_code >= 400:
-            raise UiApiError(response.status_code, _detail(response))
+            raise UiApiError(response.status_code, _detail(response, self._limit))
         return response
 
     def _json(self, method: str, path: str, **kwargs: Any) -> Any:
@@ -112,18 +122,21 @@ class ApiClient:
 
     def get_run(self, run_id: str) -> RunView:
         """Status of a run, with the result once it is done."""
-        return self._validated(RunView, self._json("GET", f"/v1/assessments/{quote(run_id)}"))
+        return self._validated(
+            RunView, self._json("GET", f"/v1/assessments/{_seg(run_id, RUN_ID_PATTERN)}")
+        )
 
     def get_report(self, run_id: str, fmt: ReportFormat) -> bytes:
         """The rendered report of a finished run."""
-        path = f"/v1/assessments/{quote(run_id)}/report"
+        path = f"/v1/assessments/{_seg(run_id, RUN_ID_PATTERN)}/report"
         return self._request("GET", path, params={"format": fmt}).content
 
     def override(
         self, run_id: str, control_id: str, status: DraftStatus, reason: str, analyst: str
     ) -> OverrideOutcome:
         """Record an analyst decision for one control."""
-        path = f"/v1/assessments/{quote(run_id)}/findings/{quote(control_id)}"
+        run, control = _seg(run_id, RUN_ID_PATTERN), _seg(control_id, CONTROL_ID_PATTERN)
+        path = f"/v1/assessments/{run}/findings/{control}"
         body = {"status": status.value, "reason": reason, "analyst": analyst}
         return self._validated(OverrideOutcome, self._json("PATCH", path, json=body))
 
@@ -133,12 +146,12 @@ class ApiClient:
 
     def history(self, vendor_id: str) -> list[AssessmentSummary]:
         """A vendor's stored assessments, newest first."""
-        data = self._json("GET", f"/v1/vendors/{quote(vendor_id)}/history")
+        data = self._json("GET", f"/v1/vendors/{_seg(vendor_id, VENDOR_ID_PATTERN)}/history")
         return [self._validated(AssessmentSummary, item) for item in data]
 
     def ask(self, vendor_id: str, question: str) -> Answer:
         """A question about a vendor's history."""
-        path = f"/v1/vendors/{quote(vendor_id)}/ask"
+        path = f"/v1/vendors/{_seg(vendor_id, VENDOR_ID_PATTERN)}/ask"
         return self._validated(Answer, self._json("POST", path, json={"question": question}))
 
     @staticmethod

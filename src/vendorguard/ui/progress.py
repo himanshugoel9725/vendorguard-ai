@@ -5,6 +5,7 @@ from collections.abc import Callable
 from vendorguard.ui.api_client import ApiClient, RunView, UiApiError
 
 TERMINAL = ("done", "failed")
+RATE_LIMITED = 429
 
 
 def wait_for_run(
@@ -21,7 +22,13 @@ def wait_for_run(
     the timeout is reached; that raises ``UiApiError`` so the page can say so."""
     started = clock()
     while True:
-        view = client.get_run(run_id)
+        try:
+            view = client.get_run(run_id)
+        except UiApiError as exc:
+            if exc.status != RATE_LIMITED or clock() - started >= timeout_s:
+                raise
+            sleep(interval_s)  # the API asked us to slow down: wait and ask again
+            continue
         if on_tick:
             on_tick(view)
         if view.status in TERMINAL:

@@ -30,7 +30,7 @@ SCORE = {
 
 @pytest.fixture
 def client() -> ApiClient:
-    return ApiClient(BASE, SecretStr(KEY), 5.0)
+    return ApiClient(BASE, SecretStr(KEY), 5.0, 300)
 
 
 @respx.mock
@@ -99,10 +99,23 @@ def test_report_override_vendors_history_and_ask(client: ApiClient) -> None:
     assert client.ask("v", "what?").cited_control_ids == ["IAM-02"]
 
 
-@respx.mock
-def test_path_parts_are_quoted(client: ApiClient) -> None:
-    route = respx.get(f"{BASE}/v1/vendors/a%2Fb/history").respond(200, json=[])
-    assert client.history("a/b") == [] and route.called
+@pytest.mark.parametrize(
+    "bad", ["../vendors", "a/b", "a?x=1", "a#f", "%2e%2e", "a b", "", "x" * 65]
+)
+def test_a_crafted_id_never_reaches_the_network(client: ApiClient, bad: str) -> None:
+    """Every id is checked against the server's pattern before a path is built (audit 12.7, L3)."""
+    with respx.mock(assert_all_called=False) as mock:
+        for call in (
+            lambda: client.history(bad),
+            lambda: client.ask(bad, "q"),
+            lambda: client.get_run(bad),
+            lambda: client.get_report(bad, "html"),
+            lambda: client.override(bad, "IAM-02", DraftStatus.MET, "r", "a"),
+            lambda: client.override("run_1", bad, DraftStatus.MET, "r", "a"),
+        ):
+            with pytest.raises(UiApiError, match="invalid identifier"):
+                call()
+        assert not mock.calls
 
 
 @respx.mock
@@ -157,3 +170,20 @@ def test_health_needs_no_key_and_never_raises(client: ApiClient) -> None:
     assert client.health() is False
     respx.get(f"{BASE}/health").respond(503)
     assert client.health() is False
+
+
+@respx.mock
+def test_the_error_length_limit_is_a_setting() -> None:
+    short = ApiClient(BASE, SecretStr(KEY), 5.0, 10)
+    respx.get(f"{BASE}/v1/vendors").respond(500, json={"detail": "y" * 100})
+    with pytest.raises(UiApiError) as info:
+        short.vendors()
+    assert info.value.detail == "y" * 10
+
+
+@respx.mock
+def test_a_redirect_is_never_followed_with_the_key(client: ApiClient) -> None:
+    respx.get(f"{BASE}/v1/vendors").respond(302, headers={"location": "http://evil.test/steal"})
+    with pytest.raises(UiApiError):
+        client.vendors()
+    assert len(respx.calls) == 1  # only the first request was made

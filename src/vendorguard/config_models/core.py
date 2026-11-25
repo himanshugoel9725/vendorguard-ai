@@ -202,10 +202,15 @@ class UiSettings(StrictModel):
     request_timeout_s: PositiveFloat
     poll_interval_s: PositiveFloat
     poll_timeout_s: PositiveFloat
+    refresh_ttl_s: PositiveFloat
+    max_detail_chars: PositiveInt
+    allowed_hosts: list[str]
     page_title: str
 
     @model_validator(mode="after")
     def _key_travels_only_over_https_or_loopback(self) -> "UiSettings":
+        if not self.allowed_hosts:
+            raise ValueError("ui.allowed_hosts must list at least one host name")
         url = urlsplit(self.api_base_url)
         if url.scheme not in {"http", "https"} or not url.hostname:
             raise ValueError("ui.api_base_url must be an http(s) URL")

@@ -1,0 +1,13 @@
+# Streamlit settings for the local VendorGuard AI UI (ADR-021). The UI has no login: keep it on this machine.
+[server]
+address = "127.0.0.1"          # without this, `streamlit run` listens on every interface
+headless = true
+enableXsrfProtection = true
+enableCORS = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = "type"      # an unexpected error shows its type, not a traceback
+toolbarMode = "minimal"
