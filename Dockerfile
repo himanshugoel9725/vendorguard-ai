@@ -3,8 +3,9 @@
 # Build:  docker build -t vendorguard-ai .      Run: see docker-compose.yml (profile "api").
 # No secret is baked in: keys come from the environment at run time (compose reads .env).
 
-ARG PYTHON_IMAGE=python:3.12-slim-bookworm
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.10.0
+# Base images are pinned by digest (the tag stays for readers and for Dependabot, which bumps both).
+ARG PYTHON_IMAGE=python:3.12-slim-bookworm@sha256:44cf1793efa7c7a476bb0f2cff81443f4a072c90c1cb127e2924933daa3e8c64
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
 
 FROM ${UV_IMAGE} AS uv
 
@@ -30,6 +31,7 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     VENDORGUARD_CONFIG=/app/config/settings.yaml \
     VG_API__HOST=0.0.0.0 \
+    VG_API__DOCS_ENABLED=false \
     VG_PATHS__RUNS_DIR=/data/runs \
     VG_PATHS__STATE_DIR=/data/state \
     VG_MEMORY__SQLITE_PATH=/data/state/memory.db \

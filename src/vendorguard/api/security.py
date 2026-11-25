@@ -201,12 +201,11 @@ class AccessGate:
         client = client_key(peer[0]) if peer else "unknown"
         state: MutableMapping[str, Any] = scope.setdefault("state", {})
         if api.auth_enabled:
-            lockout = self._limiter.blocked(f"fail:{client}")  # first: a guesser is locked out
-            if lockout is not None:
-                return 429, "too many requests", {"Retry-After": str(lockout)}
             values = Headers(scope=scope).getlist("x-api-key")
             given = values[0] if len(values) == 1 else ""
             if not _same_key(given, api.auth_key.get_secret_value()):
+                # Only wrong keys are throttled (429 once a client has failed too often): a correct
+                # key is never refused, so a guesser behind a shared address cannot lock others out.
                 retry = self._limiter.hit(f"fail:{client}")
                 if retry is not None:
                     return 429, "too many requests", {"Retry-After": str(retry)}

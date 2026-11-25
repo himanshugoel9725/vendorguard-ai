@@ -459,9 +459,18 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 - Vendor documents are treated as untrusted input: they are delimited in prompts, instructions inside them
   are ignored, and every quote is checked against the source. A sample vendor contains a prompt-injection
   paragraph as a regression test.
+- Vendor text cannot close or open the tags of our prompts: reserved tags such as `</document>` are made
+  harmless when a document is loaded. A model that obeys an injected instruction still cannot set a status or
+  a score, because Python derives both from quotes that are verified against the source; a test with an LLM
+  that obeys the injection checks this.
 - The API uses an API key with constant-time comparison, upload type and size checks, filename sanitising,
-  rate limiting and configurable CORS.
-- Dependencies are pinned in `uv.lock` and monitored by Dependabot.
+  rate limiting, throttling of repeated wrong keys, and configurable CORS.
+- Dependencies are pinned in `uv.lock` and monitored by Dependabot; `pip-audit` found no known vulnerabilities
+  at the 1.0 audit (see the security audit notes in `docs/PROGRESS.md`).
+- **Privacy.** By default nothing leaves your machine (local Ollama or the mock). If you enable a hosted LLM or
+  Jev, excerpts of the vendor documents are sent to that provider under its terms: use them only with
+  documents you may share. Run artifacts are stored unencrypted with no retention policy, and one API key
+  gives access to all vendors (single tenant). Details: [REST API](https://himanshugoel9725.github.io/vendorguard-ai/api/#data-handling-and-privacy).
 
 ## Roadmap
 
@@ -489,7 +498,7 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 - Letta memory is not implemented; the optional UI is not built.
 - The Docker image was only smoke-tested on a CI runner (mock LLM).
 - **API:** single process (in-memory rate limiter and job queue); one shared rate-limit bucket per key, so a
-  polling client can hit 429; failed keys lock out a client address (clients behind one proxy share it); uploads
+  polling client can hit 429; wrong keys from one address are throttled (a correct key is never refused); uploads
   are read into memory; no runs-folder quota; no ingestion timeout; no TLS (put a reverse proxy in front).
 
 ## License

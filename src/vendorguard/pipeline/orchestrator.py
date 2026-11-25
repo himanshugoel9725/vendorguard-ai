@@ -166,7 +166,8 @@ def _execute(
         diff=diff,
         summary=ctx.reporter.summarize(facts),
         cost=ctx.cost.summary(),
-        manifest_path=ctx.run_dir / MANIFEST_FILE,
+        manifest_path=Path(ctx.run_id)
+        / MANIFEST_FILE,  # relative to the runs folder: no server path
     )
     persist_result(ctx.run_dir, result)
     return result

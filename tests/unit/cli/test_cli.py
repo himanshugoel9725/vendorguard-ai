@@ -280,3 +280,16 @@ def test_each_ask_writes_its_own_audit_file(
 
 def test_ask_is_listed_in_help() -> None:
     assert "ask" in _ok("--help")
+
+
+def test_doctor_warns_when_env_is_readable_by_others(tmp_path: Path) -> None:
+    """Audit 11.1 (L1): .env holds keys; only its permission bits are looked at, never its text."""
+    from vendorguard.cli.doctor import env_file_warnings
+
+    env = tmp_path / ".env"
+    env.write_text("X=1\n", encoding="utf-8")
+    env.chmod(0o644)
+    assert "chmod 600" in env_file_warnings(env)[0]
+    env.chmod(0o600)
+    assert env_file_warnings(env) == []
+    assert env_file_warnings(tmp_path / "missing") == []

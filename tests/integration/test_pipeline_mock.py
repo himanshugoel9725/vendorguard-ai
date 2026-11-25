@@ -42,6 +42,7 @@ def test_sample_matches_golden_and_leaves_every_artifact(
     ):
         assert (run_dir / name).is_file(), name
     assert read_manifest(run_dir / "manifest.json").result_hash == result_hash(result)
+    assert result.manifest_path == Path(result.run_id) / "manifest.json"  # relative: no server path
     stages = [e.stage for e in read_audit_log(run_dir / "audit.jsonl")]
     assert stages.count("cascade.finding") == 25
     assert all(f.status.value != "needs_human_review" for f in result.findings)

@@ -1,6 +1,7 @@
 """Upload validation: type, content check, size and a safe on-disk name."""
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from starlette.formparsers import MultiPartException
 
 from vendorguard.config import Settings
 from vendorguard.ingest.loader import MEDIA_TYPES, sanitize_filename
+from vendorguard.utils.timeutil import utcnow
 
 PDF_MAGIC = b"%PDF-"
 BYTES_PER_MB = 1024 * 1024
@@ -81,7 +83,22 @@ def private_upload_dir(base: Path) -> Path:
     """A new folder under ``base`` that only this user can read (mode 0700), with a name the
     server chooses (never a client value)."""
     base.mkdir(parents=True, exist_ok=True)
+    base.chmod(0o700)  # names of pending uploads are not for other local users either
     return Path(tempfile.mkdtemp(prefix="upload_", dir=base))
+
+
+def sweep_stale_uploads(base: Path, max_age_s: float) -> int:
+    """Delete upload folders under ``base`` older than ``max_age_s`` (left behind when the process
+    was killed mid-run). Returns how many were removed; a missing ``base`` is fine."""
+    if not base.is_dir():
+        return 0
+    cutoff = utcnow().timestamp() - max_age_s
+    removed = 0
+    for folder in sorted(base.glob("upload_*")):
+        if folder.is_dir() and not folder.is_symlink() and folder.stat().st_mtime < cutoff:
+            shutil.rmtree(folder, ignore_errors=True)
+            removed += 1
+    return removed
 
 
 def save_upload(folder: Path, index: int, ext: str, data: bytes) -> Path:
@@ -102,4 +119,5 @@ __all__ = [
     "read_form",
     "read_upload",
     "save_upload",
+    "sweep_stale_uploads",
 ]

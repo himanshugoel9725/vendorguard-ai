@@ -101,6 +101,7 @@ LLM for the worker agents. provider: ollama ($0, local) | openai | groq (free pl
 | `ingest.strip_repeated_lines` | `true` | true/false | remove headers/footers |
 | `ingest.repeated_line_scan_lines` | `3` | integer (> 0) | only the first and last N lines of a page can be headers or footers |
 | `ingest.repeated_line_min_ratio` | `0.6` | number (>= 0.0, <= 1.0) | a line on >= 60 % of pages counts as header/footer |
+| `ingest.reserved_prompt_tags` | `[document, draft, draft_quote, data, question]` | list of text | tags our prompts use: a '<' that would open or close one in a vendor document is replaced by U+2039 (keep in step with prompts/) |
 
 ## `chunking`
 
@@ -276,6 +277,7 @@ Memory. provider: sqlite ($0) | letta
 | `api.multipart_overhead` | `1.1` | number (>= 1.0, <= 2.0) | factor on the file bytes for form fields and boundaries (body cap) |
 | `api.max_override_reason_chars` | `1000` | integer (> 0) | analyst override: longest reason |
 | `api.max_override_analyst_chars` | `100` | integer (> 0) | analyst override: longest analyst name |
+| `api.stale_upload_max_age_s` | `3600` | integer (> 0) | at start-up, uploads older than this (left by a crash) are deleted |
 | `api.shutdown_wait_s` | `30` | number (>= 0) | on shutdown, wait this long for the running assessment before closing the store |
 
 ## `samples`

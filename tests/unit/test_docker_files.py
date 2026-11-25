@@ -66,3 +66,16 @@ def test_the_container_reaches_ollama_on_the_host() -> None:
     env = API["environment"]
     assert "host.docker.internal" in env["VG_LLM__BASE_URL"]
     assert "host.docker.internal:host-gateway" in API["extra_hosts"]
+
+
+def test_image_does_not_expose_the_api_docs_by_default() -> None:
+    """Audit 11.1 (L4): /docs and /openapi.json need no key, so the container turns them off."""
+    text = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "VG_API__DOCS_ENABLED=false" in text
+
+
+def test_base_images_are_pinned_by_digest() -> None:
+    """Audit 11.1 (L7): a moved tag must not change the release image silently."""
+    for name in ("PYTHON_IMAGE", "UV_IMAGE"):
+        line = next(line for line in DOCKERFILE.splitlines() if line.startswith(f"ARG {name}="))
+        assert re.search(r"@sha256:[0-9a-f]{64}$", line), f"{name} is not pinned by digest"

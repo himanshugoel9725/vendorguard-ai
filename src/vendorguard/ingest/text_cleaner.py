@@ -1,7 +1,8 @@
 """Clean extracted page text: Unicode, header/footer lines, hyphenation and whitespace.
 
 Order matters. Line-based rules run before whitespace is collapsed:
-``normalize_unicode`` -> ``strip_repeated_lines`` -> ``dehyphenate`` -> ``collapse_whitespace``.
+``normalize_unicode`` -> ``neutralize_prompt_tags`` -> ``strip_repeated_lines`` -> ``dehyphenate``
+-> ``collapse_whitespace``.
 The cleaned text is what chunks, citations and quotes refer to; the document's hash and ID still
 describe the original bytes.
 """
@@ -23,6 +24,19 @@ _LINE_BREAK_HYPHEN = re.compile(rf"({_WORD})-\n({_WORD})")
 _OTHER_LINE_BREAK_HYPHEN = re.compile(r"(?<=[^\W_])-\n(?=\S)")  # ISO-\n27001, not --- table rules
 _HORIZONTAL_SPACE = re.compile(r"[^\S\n]+")
 _PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
+
+
+LOOKALIKE_OPEN = "\u2039"  # single left-pointing angle quotation mark
+
+
+def neutralize_prompt_tags(text: str, tags: list[str]) -> str:
+    """Make ``<document>``, ``</draft>`` and the other reserved prompt tags harmless: their ``<``
+    becomes U+2039, so text from an untrusted document cannot close or open a tag of our prompts.
+    Text without such a tag is returned unchanged."""
+    if not tags:
+        return text
+    pattern = re.compile(rf"<(?=\s*/?\s*(?:{'|'.join(re.escape(t) for t in tags)})\b)", re.I)
+    return pattern.sub(LOOKALIKE_OPEN, text)
 
 
 def normalize_unicode(text: str) -> str:
@@ -99,7 +113,10 @@ def collapse_whitespace(text: str) -> str:
 
 def clean_document(document: Document, settings: IngestSettings) -> Document:
     """Return the document with every page cleaned (identity, hash and page numbers are kept)."""
-    texts = [normalize_unicode(page.text) for page in document.pages]
+    texts = [
+        neutralize_prompt_tags(normalize_unicode(page.text), settings.reserved_prompt_tags)
+        for page in document.pages
+    ]
     if settings.strip_repeated_lines:
         texts = strip_repeated_lines(
             texts, settings.repeated_line_min_ratio, settings.repeated_line_scan_lines
@@ -116,6 +133,7 @@ __all__ = [
     "clean_document",
     "collapse_whitespace",
     "dehyphenate",
+    "neutralize_prompt_tags",
     "normalize_unicode",
     "strip_repeated_lines",
     "vocabulary",

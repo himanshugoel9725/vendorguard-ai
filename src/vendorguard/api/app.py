@@ -15,6 +15,7 @@ from vendorguard import __version__
 from vendorguard.api.jobs import Job, JobRegistry
 from vendorguard.api.routes import assessments, system, vendors
 from vendorguard.api.security import AccessGate, RateLimiter, check_startup
+from vendorguard.api.uploads import sweep_stale_uploads
 from vendorguard.config import Settings, get_settings
 from vendorguard.controls.loader import load_controls
 from vendorguard.errors import (
@@ -65,6 +66,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             finally:
                 shutil.rmtree(job.folder, ignore_errors=True)
 
+        sweep_stale_uploads(
+            settings.paths.state_dir / "uploads", settings.api.stale_upload_max_age_s
+        )
         app.state.jobs = JobRegistry(
             work, settings.api.max_queued_jobs, settings.api.max_finished_jobs_kept
         )

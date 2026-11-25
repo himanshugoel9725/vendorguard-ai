@@ -47,8 +47,9 @@ Keys are compared in constant time. Every key failure gets the same 401 message.
 | Override reason length | `api.max_override_reason_chars` | 1000 |
 | Override analyst length | `api.max_override_analyst_chars` | 100 |
 
-Repeated wrong keys from one client lock that client out with a 429 and a `Retry-After` header, even if the
-next key is right. Body sizes are counted as bytes arrive, whatever `Content-Length` claims. All of these are
+Repeated wrong keys from one client address are answered with 429 and a `Retry-After` header, which slows
+guessing. A correct key is never refused for that reason, so someone guessing from a shared address (a proxy,
+Docker's network) cannot lock the real users out. Body sizes are counted as bytes arrive, whatever `Content-Length` claims. All of these are
 in [Configuration](CONFIG.md).
 
 ## Endpoints
@@ -153,7 +154,8 @@ is never sent.
   `*` is refused.
 - `X-Forwarded-For` is ignored unless `api.trust_proxy_headers` is true. Turn that on only behind a proxy you
   control.
-- Set `api.docs_enabled: false` if the port is reachable by others.
+- `/docs`, `/redoc` and `/openapi.json` need no key while `api.docs_enabled` is true. The Docker image sets it to
+  false; set it to false yourself if the port is reachable by others.
 - The API has no TLS. Put a reverse proxy with TLS in front before exposing it.
 - The rate limiter and the job registry live in the process. Run one worker process; with more, the limits
   multiply.
@@ -197,3 +199,20 @@ What the compose file sets:
 
 The container uses the host's Ollama, with no GPU. On Linux the host Ollama must listen on an address the
 container can reach. There is no Letta service (ADR-019).
+
+## Data handling and privacy
+
+- **By default nothing leaves the machine.** The default setup uses a local Ollama server or the mock LLM, and
+  the rule decider. The API makes no outbound call of its own.
+- **If you enable a hosted model or Jev, document text leaves your control.** With `llm.provider` set to
+  `openai`, `groq` or `openai_compat`, the retrieved excerpts of the vendor documents, the intake text and Ask
+  questions are sent to that provider, under its terms. With `decision.provider: jev`, the excerpts and the
+  questions of the triage and verify gates are sent to the Jev service. Use hosted services only with documents
+  you are allowed to share with them. The evaluation and the demo in this repository use synthetic documents only.
+- **Results stay on disk, unencrypted.** Each run keeps quotes from the documents, an audit log and reports in
+  the runs folder, and the memory database keeps the results. There is no retention policy: delete
+  `data/runs` and `.vendorguard/` (or the Docker volume) when you no longer need them.
+- **One key, one tenant.** Every holder of the API key can read and write every vendor. There is no per-user
+  authorisation. Keep `.env` private (`chmod 600 .env`; `vg doctor` warns if it is readable by others).
+- **Leftover uploads.** Uploaded files are deleted after each run. If the process is killed mid-run, uploads
+  older than `api.stale_upload_max_age_s` are removed at the next start.

@@ -1,5 +1,7 @@
 """``vg doctor``: configuration summary, secrets set/unset, and reachability of local services."""
 
+from pathlib import Path
+
 import httpx
 from pydantic import BaseModel, SecretStr
 from rich.table import Table
@@ -38,6 +40,17 @@ def _checks(s: Settings) -> list[tuple[str, str]]:
     return out
 
 
+def env_file_warnings(path: Path) -> list[str]:
+    """Problems with the ``.env`` file's permissions (it holds keys); the content is never read."""
+    try:
+        mode = path.stat().st_mode & 0o777
+    except OSError:
+        return []
+    if mode & 0o077:
+        return [f"{path} is readable by other users (mode {mode:o}): run `chmod 600 {path}`"]
+    return []
+
+
 @guarded
 def doctor() -> None:
     """Show the active configuration, which keys are set, and whether local services answer."""
@@ -59,10 +72,12 @@ def doctor() -> None:
     for path, is_set in sorted(secret_status(s).items()):
         keys.add_row(path, "set" if is_set else "unset")
     console.print(keys)
+    for warning in env_file_warnings(Path(".env")):
+        console.print(f"warning: {warning}", markup=False)
     services = Table("service", "state", title="Services")
     for name, state in _checks(s):
         services.add_row(name, state)
     console.print(services)
 
 
-__all__ = ["doctor", "secret_status"]
+__all__ = ["doctor", "env_file_warnings", "secret_status"]

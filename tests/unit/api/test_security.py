@@ -389,7 +389,7 @@ def test_key_is_never_echoed_or_logged(
 # --- fail lockout ----------------------------------------------------------------------------
 
 
-def test_lockout_blocks_even_the_correct_key_until_the_window_passes(
+def test_lockout_throttles_wrong_keys_but_never_refuses_the_correct_key(
     settings_override: Make, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     now = [1000.0]
@@ -400,13 +400,18 @@ def test_lockout_blocks_even_the_correct_key_until_the_window_passes(
     wrong = keyhdr("wrong-key")
     codes = [call(gate, app, headers=wrong).status for _ in range(limit + 2)]
     assert codes == [401] * limit + [429, 429]
-    locked = call(gate, app, headers=keyhdr(key_of(s)))
-    assert locked.status == 429 and int(locked.headers["retry-after"]) >= 1
-    assert app.reached == 0
-    other = call(gate, app, headers=keyhdr(key_of(s)), client=("198.51.100.9", 1))
-    assert other.status == 200  # a different client address is unaffected
+    # the address is locked out for guessing, but the real key still works: a guesser behind a
+    # shared address (proxy, Docker NAT) cannot keep the legitimate users out
+    assert call(gate, app, headers=keyhdr(key_of(s))).status == 200 and app.reached == 1
+    again = call(gate, app, headers=wrong)
+    assert again.status == 429 and int(again.headers["retry-after"]) >= 1
+    assert app.reached == 1  # the wrong key never reached the app
+    other = call(gate, app, headers=wrong, client=("198.51.100.9", 1))
+    assert other.status == 401  # a different client address has its own failure count
     now[0] += security.WINDOW_S
-    assert call(gate, app, headers=keyhdr(key_of(s))).status == 200
+    assert (
+        call(gate, app, headers=wrong).status == 401
+    )  # the window passed: guessing is allowed again
 
 
 def test_failed_attempts_do_not_use_up_the_key_bucket(settings_override: Make) -> None:
@@ -428,8 +433,11 @@ def test_ipv6_clients_in_one_slash_64_share_the_lockout(settings_override: Make)
     b = ("2001:db8:1:2:dead:beef:0:7", 1)
     c = ("2001:db8:1:3::1", 1)
     assert [call(gate, app, headers=keyhdr("x"), client=a).status for _ in range(2)] == [401, 401]
-    assert call(gate, app, headers=keyhdr(key_of(s)), client=b).status == 429
-    assert call(gate, app, headers=keyhdr(key_of(s)), client=c).status == 200
+    assert call(gate, app, headers=keyhdr("x"), client=b).status == 429  # same /64: throttled
+    assert (
+        call(gate, app, headers=keyhdr("x"), client=c).status == 401
+    )  # another /64: its own count
+    assert call(gate, app, headers=keyhdr(key_of(s)), client=b).status == 200  # the real key works
 
 
 def test_request_without_a_client_address_still_works(settings_override: Make) -> None:
@@ -502,8 +510,13 @@ def test_forged_xff_cannot_dodge_the_failure_lockout(settings_override: Make) ->
     gate, app = gate_for(s)
     for i in range(2):
         call(gate, app, headers=keyhdr("bad") + [(b"x-forwarded-for", f"1.1.1.{i}".encode())])
-    r = call(gate, app, headers=keyhdr(key_of(s)) + [(b"x-forwarded-for", b"9.9.9.9")])
-    assert r.status == 429
+    forged = [(b"x-forwarded-for", b"9.9.9.9")]
+    assert (
+        call(gate, app, headers=keyhdr("bad") + forged).status == 429
+    )  # the forged address changes nothing
+    assert (
+        call(gate, app, headers=keyhdr(key_of(s)) + forged).status == 200
+    )  # the real key is never refused
 
 
 # --- limiter unit tests ----------------------------------------------------------------------

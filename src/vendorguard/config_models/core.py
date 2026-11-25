@@ -64,6 +64,7 @@ class IngestSettings(StrictModel):
     strip_repeated_lines: bool
     repeated_line_scan_lines: PositiveInt
     repeated_line_min_ratio: Probability
+    reserved_prompt_tags: list[str]
 
 
 class ChunkingSettings(StrictModel):
@@ -157,6 +158,7 @@ class ApiSettings(StrictModel):
     max_override_reason_chars: PositiveInt
     max_override_analyst_chars: PositiveInt
     shutdown_wait_s: float = Field(ge=0)
+    stale_upload_max_age_s: PositiveInt
 
     @model_validator(mode="after")
     def _cors_has_no_wildcards(self) -> "ApiSettings":

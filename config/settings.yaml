@@ -93,6 +93,7 @@ ingest:
   strip_repeated_lines: true        # remove headers/footers
   repeated_line_scan_lines: 3   # only the first and last N lines of a page can be headers or footers
   repeated_line_min_ratio: 0.6      # a line on >= 60 % of pages counts as header/footer
+  reserved_prompt_tags: [document, draft, draft_quote, data, question]   # tags our prompts use: a '<' that would open or close one in a vendor document is replaced by U+2039 (keep in step with prompts/)
 
 chunking:
   chunk_chars: 1200
@@ -280,6 +281,7 @@ api:
   multipart_overhead: 1.1           # factor on the file bytes for form fields and boundaries (body cap)
   max_override_reason_chars: 1000   # analyst override: longest reason
   max_override_analyst_chars: 100   # analyst override: longest analyst name
+  stale_upload_max_age_s: 3600      # at start-up, uploads older than this (left by a crash) are deleted
   shutdown_wait_s: 30               # on shutdown, wait this long for the running assessment before closing the store
 
 samples:
