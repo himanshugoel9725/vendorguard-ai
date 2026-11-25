@@ -7,9 +7,9 @@
 
 | Field | Value |
 |---|---|
-| Current phase | 12: UI (then release) |
-| Next task | 12.7 checkpoint (tag phase-12-done), then ask the user before v1.0.0 |
-| Last completed task | 12.5 (12.7 fixes done) |
+| Current phase | 11/12: release |
+| Next task | 11.3 tag v1.0.0 (ask the user first), 11.2 demo video and 11.4 form are the user's |
+| Last completed task | 12.7 |
 | Last updated | 2026-11-25 |
 | Blockers | none |
 
@@ -157,7 +157,7 @@
 - [x] 12.4 Findings and override page
 - [x] 12.5 History, diff and ask page
 - [~] 12.6 Deploy (skipped: a public UI in front of a private API key defeats the key; ADR-021)
-- [ ] 12.7 Checkpoint
+- [x] 12.7 Checkpoint
 
 ## In-progress notes
 
@@ -250,4 +250,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3, 7.7-7.9 (7.4-7.6 skipped), 8.1-8.7, 9.1-9.6, 10.1-10.5, 10.7-10.8 (10.6 skipped), 11.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3, 7.7-7.9 (7.4-7.6 skipped), 8.1-8.7, 9.1-9.6, 10.1-10.5, 10.7-10.8 (10.6 skipped), 11.1, 12.1-12.5, 12.7 (12.6 skipped) | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
