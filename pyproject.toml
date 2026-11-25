@@ -47,6 +47,9 @@ dev = [
     "pip-audit>=2.7",
 ]
 docs = ["mkdocs-material>=9.5"]
+ui = [
+    "streamlit>=1.40",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vendorguard"]

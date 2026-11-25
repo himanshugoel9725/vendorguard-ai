@@ -319,3 +319,27 @@
 - **Consequences.** The model is pinned to `jev-1.14.0` so evaluations are reproducible; `jev-latest` is an
   alias whose model can change under us (change the setting deliberately and re-measure).
   Price is $0.042 per million input tokens, output free. Whether TypeSafe needs prepaid credit is not documented.
+
+## ADR-021: The optional UI is a Streamlit app that only talks to the REST API (tasks 12.1-12.7)
+
+- **Context.** The user asked for the optional UI of Phase 12 and chose to build it before the v1.0.0 release.
+  The plan offers Streamlit (Python, fast) or React + Vite (a second toolchain; Node is not installed here).
+- **Decision.** Streamlit, in `src/vendorguard/ui/`, installed through the dependency group `ui`
+  (`uv sync --group ui`; `--all-groups` in CI and `make setup` include it, the API image does not). The UI is a
+  CLIENT of the REST API: it never imports pipeline code, never opens the runs folder or the memory database,
+  and has no logic of its own beyond display. Everything it shows is validated with the same Pydantic models
+  the API uses. `ui/app.py` is an entry point like `cli/` and `api/`: it is the only UI module that loads the
+  settings; every other module receives what it needs through its constructor (section `ui` in
+  `config/settings.yaml`: API address, timeouts, poll interval; the API key is `VG_UI__API_KEY` as `SecretStr`).
+- **Security rules.** (1) The app binds to 127.0.0.1 (`make ui`); it has no login of its own and uses the API key
+  of whoever started it, so it must never be exposed to a network. (2) The key goes only to `ui.api_base_url`
+  and only over https unless that address is this machine (validated in the settings). (3) Text that comes from
+  vendor documents or from a model (quotes, rationales, vendor names, answers) is shown with `st.text`/`st.code`
+  and table cells, never as Markdown or HTML, so a document cannot inject links, images or markup into the page.
+  (4) Errors shown to the user carry the API's own fixed messages, never exception text or the key. (5) Polling
+  respects `api.rate_limit_per_minute` through `ui.poll_interval_s`.
+- **Not done.** Task 12.6 (deploy to Streamlit Community Cloud) is skipped: there is no hosted API to point it at,
+  and a public UI in front of a private API key would defeat the key. The UI is for local use.
+- **Consequences.** One more dependency group (Streamlit and its dependencies; `pip-audit` found nothing for
+  them at the time). UI tests use Streamlit's `AppTest` and `respx`, never a network. The React alternative stays
+  open: a new client of the same API would not change the server.

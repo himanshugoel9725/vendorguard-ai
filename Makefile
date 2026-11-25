@@ -7,7 +7,7 @@
 export UV_PROJECT_ENVIRONMENT ?= .venv.nosync
 
 .PHONY: help setup fmt lint type test check hf test-live test-hosted sample record eval api \
-        docker-build docker-up docker-down demo-memory letta-up letta-down docs docs-config doctor clean
+        docker-build docker-up docker-down demo-memory letta-up letta-down docs docs-config ui doctor clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -77,6 +77,9 @@ letta-down: ## (not built: Letta is deferred, ADR-019)
 
 docs: ## Build the MkDocs site (warnings are errors)
 	uv run mkdocs build --strict
+
+ui: ## Start the Streamlit UI on 127.0.0.1:8501 (needs `make api` and VG_UI__API_KEY)
+	uv run --group ui streamlit run src/vendorguard/ui/app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true --browser.gatherUsageStats false
 
 docs-config: ## Regenerate docs/CONFIG.md from the Settings models and YAML comments
 	uv run python scripts/gen_config_docs.py

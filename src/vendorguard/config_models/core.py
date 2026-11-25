@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 from pydantic import AwareDatetime, Field, SecretStr, model_validator
 
@@ -18,6 +19,7 @@ from vendorguard.config_models.base import (
 )
 
 PromptVersion = Annotated[str, Field(pattern=r"^v\d+$")]
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 class AppSettings(StrictModel):
@@ -192,6 +194,26 @@ class EvalConfig(StrictModel):
     embeddings: EmbeddingsProvider
 
 
+class UiSettings(StrictModel):
+    """The Streamlit UI: it talks to the REST API like any other client. api_key is a secret."""
+
+    api_base_url: str
+    api_key: SecretStr
+    request_timeout_s: PositiveFloat
+    poll_interval_s: PositiveFloat
+    poll_timeout_s: PositiveFloat
+    page_title: str
+
+    @model_validator(mode="after")
+    def _key_travels_only_over_https_or_loopback(self) -> "UiSettings":
+        url = urlsplit(self.api_base_url)
+        if url.scheme not in {"http", "https"} or not url.hostname:
+            raise ValueError("ui.api_base_url must be an http(s) URL")
+        if url.scheme != "https" and url.hostname not in LOOPBACK_HOSTS:
+            raise ValueError("ui.api_base_url must use https unless it points at this machine")
+        return self
+
+
 class ChartSettings(StrictModel):
     """Look of the evaluation charts (PNG). Colours follow the data-viz reference palette."""
 
@@ -242,4 +264,5 @@ __all__ = [
     "ReportingSettings",
     "RetrievalSettings",
     "SamplesSettings",
+    "UiSettings",
 ]

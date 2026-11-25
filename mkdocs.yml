@@ -46,6 +46,7 @@ nav:
   - Architecture: architecture.md
   - CLI: cli.md
   - REST API: api.md
+  - Web UI: ui.md
   - Configuration: CONFIG.md
   - Evaluation: EVALUATION.md
   - Decisions: DECISIONS.md

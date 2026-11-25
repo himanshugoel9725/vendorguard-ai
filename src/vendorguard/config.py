@@ -31,6 +31,7 @@ from vendorguard.config_models.core import (
     ReportingSettings,
     RetrievalSettings,
     SamplesSettings,
+    UiSettings,
 )
 from vendorguard.config_models.providers import (
     CacheSettings,
@@ -82,6 +83,7 @@ class Settings(BaseSettings):
     api: ApiSettings
     samples: SamplesSettings
     eval: EvalSettings
+    ui: UiSettings
 
     def fingerprint(self) -> str:
         """SHA-256 of the canonical non-secret configuration (stored in every run manifest).

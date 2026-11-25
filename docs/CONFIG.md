@@ -321,3 +321,16 @@ Memory. provider: sqlite ($0) | letta
 | `eval.charts.ramp` | `['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#…` | list of text | blue 100..700 |
 | `eval.determinism_repeats` | `2` | integer (> 0) |  |
 | `eval.configs` | `[{decider: rule, embeddings: none, llm: mock, name: keyword-baseline}…` | list of section | evaluation matrix (Phase 9) |
+
+## `ui`
+
+the optional Streamlit UI (`make ui`); it calls the REST API
+
+| Key | Default | Type | Description |
+|---|---|---|---|
+| `ui.api_base_url` | `http://127.0.0.1:8000` | text | https unless it points at this machine (the key travels with every request) |
+| `ui.api_key` | (secret: set in `.env`) | secret | keep empty - set VG_UI__API_KEY in .env (the same value as VG_API__AUTH_KEY) |
+| `ui.request_timeout_s` | `30` | number (> 0.0) | time limit of one API request |
+| `ui.poll_interval_s` | `3` | number (> 0.0) | seconds between status checks of a running assessment (the API allows api.rate_limit_per_minute requests) |
+| `ui.poll_timeout_s` | `3600` | number (> 0.0) | stop waiting for an assessment after this long (it keeps running on the server) |
+| `ui.page_title` | `VendorGuard AI` | text |  |

@@ -22,7 +22,7 @@
 re-assessment diff, the evaluation harness, the documentation site, CI and a release workflow. Not there yet:
 
 - Letta memory is not implemented (optional, deferred in ADR-019); only SQLite memory exists.
-- The optional UI (Phase 12) is not built.
+- The optional Streamlit UI exists (local use only; see [docs](docs/ui.md)); it has not been clicked through in a real browser session by the author.
 - The Docker image was built and smoke-tested only on a CI runner; `docker compose up` and Docker Desktop on
   macOS were not tried.
 - No version tag or GitHub Release has been published, and no image has been pushed to a registry.
@@ -388,6 +388,13 @@ Start it with `make api`; interactive docs are at `http://127.0.0.1:8000/docs`. 
 Defaults: 30 requests per minute per key, 20 MB per file, 5 files per request, 64 KB JSON bodies, 5 queued
 assessments (one runs at a time). Limits are in the `api` section of `config/settings.yaml`.
 
+### Web UI (optional)
+
+`make ui` starts a small Streamlit page on `http://127.0.0.1:8501` that uses this API: upload documents, follow
+a run, review findings and quotes, record overrides, browse vendor history and ask questions. It needs the API
+running and the same key in `VG_UI__API_KEY`. It is for local use only: it has no login of its own. Details:
+[Web UI](https://himanshugoel9725.github.io/vendorguard-ai/ui/).
+
 ## Project structure
 
 ```text
@@ -405,7 +412,7 @@ src/vendorguard/
   observability/              audit log, run manifest, cost guard, metrics
   pipeline/                   orchestrator.py wires everything together
   eval/                       sample generator, metrics, eval runner, charts
-  cli/  api/                  entry points
+  cli/  api/  ui/             entry points (CLI, REST API, optional Streamlit UI)
 data/samples/                 synthetic vendors (fictional) + specs; golden labels in data/golden/
 tests/                        unit, integration, replay cassettes (tests/cassettes/), live tests (skipped by default)
 scripts/                      sample generator, config docs generator, demo builder, checks
@@ -478,7 +485,7 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 - [ ] Tag v1.0.0, publish the first release and image
 - [ ] Measure a hosted LLM on the evaluation set
 - [ ] Letta memory (optional, deferred in ADR-019)
-- [ ] Optional UI (Streamlit, then React)
+- [x] Optional UI (Streamlit, local use; a React client is not planned)
 - [ ] OCR for scanned PDFs
 - [ ] More control sets (for example a cloud-specific or privacy-specific set)
 - [ ] Questionnaire auto-fill (SIG-style or CAIQ-style answers from vendor evidence)
@@ -495,7 +502,7 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 - `needs_human_review` findings exist by design: some controls are left to a person.
 - Control mappings to ISO/IEC 27001:2022 and NIST CSF 2.0 are indicative.
 - Scanned (image-only) PDFs are not supported.
-- Letta memory is not implemented; the optional UI is not built.
+- Letta memory is not implemented. The UI is for local use only (no login of its own).
 - The Docker image was only smoke-tested on a CI runner (mock LLM).
 - **API:** single process (in-memory rate limiter and job queue); one shared rate-limit bucket per key, so a
   polling client can hit 429; wrong keys from one address are throttled (a correct key is never refused); uploads
