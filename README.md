@@ -6,13 +6,28 @@
 
 <p align="center">
   <a href="https://github.com/himanshugoel9725/vendorguard-ai/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/himanshugoel9725/vendorguard-ai/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue">
+  <a href="https://github.com/himanshugoel9725/vendorguard-ai/actions/workflows/pages.yml"><img alt="Docs" src="https://github.com/himanshugoel9725/vendorguard-ai/actions/workflows/pages.yml/badge.svg"></a>
+  <img alt="Python 3.12 | 3.13" src="https://img.shields.io/badge/python-3.12%20%7C%203.13-blue">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="Default cost: $0" src="https://img.shields.io/badge/default%20cost-%240-brightgreen">
 </p>
 
-> 🚧 **Status: in active development.** Progress is tracked in [docs/PROGRESS.md](docs/PROGRESS.md) and the
-> build plan is in [docs/PLAN.md](docs/PLAN.md). Commands below describe the target v1.0 behaviour.
+<p align="center">
+  <a href="https://himanshugoel9725.github.io/vendorguard-ai/">Documentation</a> |
+  <a href="https://himanshugoel9725.github.io/vendorguard-ai/demo/">Demo reports</a> |
+  <a href="https://himanshugoel9725.github.io/vendorguard-ai/EVALUATION/">Evaluation</a>
+</p>
+
+**Status.** Working today: the CLI, the REST API, HTML/Markdown/JSON reports, vendor memory with SQLite and the
+re-assessment diff, the evaluation harness, the documentation site, CI and a release workflow. Not there yet:
+
+- Letta memory is not implemented (optional, deferred in ADR-019); only SQLite memory exists.
+- The optional UI (Phase 12) is not built.
+- The Docker image was built and smoke-tested only on a CI runner; `docker compose up` and Docker Desktop on
+  macOS were not tried.
+- No version tag or GitHub Release has been published, and no image has been pushed to a registry.
+
+Build notes: [docs/PROGRESS.md](docs/PROGRESS.md) and [docs/PLAN.md](docs/PLAN.md).
 
 ---
 
@@ -20,6 +35,7 @@
 
 - [Why VendorGuard?](#why-vendorguard)
 - [What it does](#what-it-does)
+- [Demo](#demo)
 - [How it works](#how-it-works)
 - [The agents](#the-agents)
 - [Decision layer: rule, LLM-judge or Jev](#decision-layer-rule-llm-judge-or-jev)
@@ -60,10 +76,22 @@ final word.
 - 🔎 **Verifies every citation** against the source text, so evidence cannot be hallucinated
 - ⚖️ **Decision gates** decide when a finding can be trusted, when it needs a second look, and when a human must decide
 - 📊 **Scores residual risk** with a rules engine whose weights and thresholds live in one config file
-- 🧠 **Remembers each vendor** (SQLite, or Letta stateful agents) and shows what changed since the last assessment
+- 🧠 **Remembers each vendor** (SQLite) and shows what changed since the last assessment
 - 🙋 **Human in the loop:** analysts accept or override any finding, and the reason is recorded
 - 🧾 **Audit trail** and reproducible run manifests for every assessment
 - 💸 **$0 by default:** local models through Ollama; paid services are optional and protected by budget guards
+
+## Demo
+
+<p align="center">
+  <img src="docs/assets/report-quillfield.png" alt="HTML report for the synthetic vendor Quillfield Analytics (dark theme)" width="600">
+</p>
+
+*The HTML report for Quillfield Analytics, a **synthetic** (fictional) vendor. It is a replay of a recorded run
+of a small local model (`qwen2.5:3b`), so its findings are not facts about any real company.*
+
+- [Live demo reports](https://himanshugoel9725.github.io/vendorguard-ai/demo/): four synthetic vendors, replayed offline from recorded model outputs.
+- [Documentation site](https://himanshugoel9725.github.io/vendorguard-ai/): architecture, CLI, API, configuration, evaluation.
 
 ## How it works
 
@@ -92,7 +120,7 @@ flowchart TB
         LLM["LLM<br/>Ollama, OpenAI-compatible, Mock"]
         DEC["Decider<br/>Rule, LLM-judge, Jev"]
         EMB["Embeddings<br/>Ollama, none"]
-        MEM["Memory<br/>SQLite, Letta"]
+        MEM["Memory<br/>SQLite"]
     end
     AGT --> LLM
     ORCH --> DEC
@@ -139,9 +167,9 @@ sequenceDiagram
     participant I as Intake Agent
     participant G as Gates, Mapper, Reviewer
     participant E as Rules engine
-    participant M as Memory (SQLite or Letta)
+    participant M as Memory (SQLite)
     participant R as Reporter Agent
-    Analyst->>CLI: vg assess quillfield
+    Analyst->>CLI: vg assess --sample quillfield
     CLI->>O: run(settings, documents)
     O->>O: ingest, chunk, index (deterministic)
     O->>I: extract vendor profile
@@ -184,10 +212,13 @@ The two gates use a pluggable **decider**, chosen with one line in `config/setti
 |---|---|---|---|
 | `rule` (default) | $0 | fully deterministic | development, CI, a transparent baseline |
 | `llm_judge` | $0 with Ollama | temperature 0, fixed seed, cached | offline alternative ("LLM-as-a-judge") |
-| `jev` | about $0.004 per vendor (estimate) | cached, configurable thresholds | a fast, bounded decision model for the gates |
+| `jev` | paid: $0.0061 for the whole 4-vendor evaluation (198 calls) | cached, configurable thresholds | a hosted decision model for the gates (alpha-stage service) |
 | `mock` | $0 | deterministic | tests |
 
-Jev is a "System 1" decision model that returns a label with a probability instead of generating text.
+Jev is a "System 1" decision model that returns a label with a probability instead of generating text. By
+default VendorGuard AI reaches it through the TypeSafe System One API (`decision.jev.base_url`, model pinned to
+`jev-1.14.0`; ADR-016, ADR-020); it needs `VG_DECISION__JEV__API_KEY` in `.env`. OpenRouter works through three
+setting overrides (see the comment in `config/settings.yaml`).
 VendorGuard follows the *generate, then decide* pattern described in the
 [Jev-LiteMAS paper](https://arxiv.org/pdf/2610.21411): LLMs generate, the decider screens the outputs, and
 only flagged items go back to an LLM. Jev is used only for
@@ -196,26 +227,34 @@ the system falls back to the `rule` decider automatically and records that in th
 
 ## Deterministic by design
 
-| Level | Mechanism | Guarantee |
+Determinism comes from five things: temperature 0 and a fixed seed, JSON-schema output validated by Pydantic,
+a record/replay cache, canonical hashes (the run manifest), and Python (not the model) making the decisions:
+flow, scoring, sorting and citation checks.
+
+| Level | Mechanism | What it gives |
 |---|---|---|
 | L0 | Rules engine, citation checks, diff, rendering, stable sorting and IDs | identical every time |
-| L1 | Record/replay cache keyed by provider, model, prompt version, inputs and parameters | identical re-runs; offline CI |
-| L2 | Temperature 0, fixed seed, JSON-schema output, Pydantic validation | near-identical on the same model and machine |
-| L3 | Run manifest: config fingerprint, prompt hashes, model IDs, input hashes, result hash | every result reproducible and auditable |
+| L1 | Record/replay cache keyed by provider, model, rendered prompt, inputs and parameters | identical re-runs; offline CI |
+| L2 | Temperature 0, fixed seed, JSON-schema output, Pydantic validation | reduces variation; no guarantee |
+| L3 | Run manifest: config fingerprint, prompt hashes, model IDs, input hashes, result hash | results can be compared and audited |
+
+**Replay is exactly repeatable. Live model runs were not.** In our measurement (two repeats, cache off,
+`qwen2.5:3b`, synthetic samples) 0 % of result hashes and 52 % of findings were identical, even at temperature 0
+with a seed. Replaying the committed cassettes gives identical results (tested). Details and caveats:
+[Evaluation](https://himanshugoel9725.github.io/vendorguard-ai/EVALUATION/).
 
 ## Cost model
 
-| Mode | LLM | Decider | Memory | Estimated cost per vendor |
+| Mode | LLM | Decider | Memory | Cost |
 |---|---|---|---|---|
 | Default | Ollama (local) | rule | SQLite | **$0** |
 | Offline alternative | Ollama | llm_judge | SQLite | $0 |
-| Decision model | Ollama | jev | SQLite | under $0.01 |
-| Memory agent | Ollama | any | Letta self-hosted | $0 |
-| Showcase | Ollama | jev | Letta Cloud | Letta credits for questions only, capped per day |
-| CI and demo site | mock / replay | rule / replay | SQLite | $0 |
+| Decision model | Ollama | jev | SQLite | Jev only: $0.042 per million input tokens, output free; $0.0061 for the 4-vendor evaluation |
+| Hosted LLM | OpenAI, Groq or OpenAI-compatible | any | SQLite | provider price, set in `cost.prices_per_million_tokens`; not measured here |
+| CI and demo site | mock / replay | rule | SQLite | $0 |
 
-Hard limits (`cost.max_usd_per_run`, `cost.max_llm_calls_per_run`,
-`memory.letta.cloud_max_messages_per_day`) stop a run before it overspends.
+Hard limits (`cost.max_usd_per_run`, `cost.max_llm_calls_per_run`) stop a run before it overspends. Tests and
+CI never call a paid service.
 
 ## Tech stack
 
@@ -224,19 +263,19 @@ Hard limits (`cost.max_usd_per_run`, `cost.max_llm_calls_per_run`,
 | Language and tooling | Python 3.12, uv, ruff, mypy, pytest, pre-commit |
 | Local LLM and embeddings | Ollama (`qwen2.5`, `nomic-embed-text`); no Hugging Face |
 | Retrieval | BM25 (`rank-bm25`) + cosine similarity (numpy), hybrid ranking |
-| Agents and memory | Custom deterministic orchestrator; Letta stateful agents (optional) |
-| Decision model | Rule engine, LLM-judge, or Jev (optional) |
+| Agents and memory | Custom deterministic orchestrator; SQLite memory (Letta is not implemented) |
+| Decision model | Rule engine, LLM-judge, or Jev (optional, paid) |
 | Data contracts | Pydantic v2 |
 | PDF | pypdf (read), fpdf2 (synthetic sample generation) |
-| API | FastAPI, Uvicorn, Prometheus metrics |
+| CLI and API | Typer, FastAPI, Uvicorn, Prometheus metrics |
 | Reports | Jinja2 (self-contained HTML, Markdown, JSON) |
-| CI/CD | GitHub Actions, GitHub Pages (docs and demo reports), GHCR Docker images |
+| CI/CD | GitHub Actions, GitHub Pages (docs and demo reports), release workflow for a GHCR image (not yet run on a tag) |
 | Docs | MkDocs Material |
 
 ## Quickstart
 
 **Prerequisites:** macOS or Linux, [uv](https://docs.astral.sh/uv/), [Ollama](https://ollama.com) and git.
-Docker is only needed for self-hosted Letta.
+Docker is optional (only for the API container).
 
 ```bash
 git clone https://github.com/himanshugoel9725/vendorguard-ai.git && cd vendorguard-ai
@@ -247,7 +286,7 @@ make setup
 ```
 
 ```bash
-ollama pull qwen2.5:7b && ollama pull nomic-embed-text
+ollama pull qwen2.5:3b && ollama pull nomic-embed-text
 ```
 
 ```bash
@@ -266,7 +305,8 @@ make sample
 uv run vg assess --vendor quillfield --docs data/samples/quillfield.pdf
 ```
 
-The command prints a `run_id` and the report paths under `data/runs/<run_id>/`. Open the HTML report:
+The command prints a `run_id` and the report paths under `data/runs/<run_id>/`. On a CPU-only machine a small
+local model needs minutes per vendor (one recorded `qwen2.5:3b` run took about 7 minutes). Open the HTML report:
 
 ```bash
 uv run vg report <run_id> --format html --open
@@ -280,7 +320,7 @@ VG_LLM__PROVIDER=mock VG_EMBEDDINGS__PROVIDER=none uv run vg assess --vendor qui
 
 ## Configuration
 
-- **One file for every parameter:** [`config/settings.yaml`](config/settings.yaml), with comments on each value.
+- **One file for every parameter:** [`config/settings.yaml`](config/settings.yaml), with comments on each value. Every setting is also listed in the [generated configuration reference](https://himanshugoel9725.github.io/vendorguard-ai/CONFIG/) (`make docs-config` regenerates it).
 - **Secrets only in `.env`:** copy [`.env.example`](.env.example). The default setup needs no keys.
 - **Override anything** with environment variables named `VG_<SECTION>__<KEY>`:
 
@@ -291,48 +331,62 @@ VG_LLM__MODEL=qwen2.5:3b VG_DECISION__PROVIDER=llm_judge uv run vg assess --vend
 Swapping an implementation is one line:
 
 ```yaml
-llm:      {provider: openai_compat}   # Gemini / Groq / OpenAI / OpenRouter instead of Ollama
+llm:      {provider: openai_compat}   # or openai / groq: a hosted model instead of Ollama
 decision: {provider: jev}             # Jev decision model for the gates
-memory:   {provider: letta}           # Letta memory agent per vendor
 ```
 
 **Swappable providers**
 
 | Kind | Implementations | Config key |
 |---|---|---|
-| LLM | `ollama`, `openai_compat`, `mock` | `llm.provider` |
+| LLM | `ollama`, `openai`, `groq`, `openai_compat`, `mock` | `llm.provider` |
 | Embeddings | `ollama`, `none` | `embeddings.provider` |
 | Decider | `rule`, `llm_judge`, `jev`, `mock` | `decision.provider` |
-| Memory | `sqlite`, `letta` (self-hosted or cloud) | `memory.provider` |
+| Memory | `sqlite` (`letta` is accepted by the config but not implemented) | `memory.provider` |
 | Cache | `sqlite`, `jsonl` | `cache.backend` |
 
 ## CLI
 
+Run as `uv run vg ...`; `uv run vg --help` lists everything. Full reference:
+[CLI page](https://himanshugoel9725.github.io/vendorguard-ai/cli/).
+
 | Command | What it does |
 |---|---|
 | `vg doctor` | Checks config, provider reachability and keys (shown only as set/unset) |
-| `vg samples` | Generates the synthetic sample vendors |
-| `vg assess --vendor ID --docs FILE...` | Runs an assessment |
-| `vg runs list` / `vg runs show RUN_ID` | Past runs and their audit timelines |
-| `vg report RUN_ID --format html --open` | Renders or opens a report |
-| `vg review RUN_ID CONTROL_ID --status met --reason "..."` | Analyst override |
-| `vg vendors list` / `vg vendors history ID` | Vendor memory and assessment diffs |
+| `vg samples` | Lists the synthetic sample vendors (`make sample` creates them) |
+| `vg assess --vendor ID --docs FILE...` or `vg assess --sample STEM` | Runs an assessment (options: `--llm`, `--decider`, `--embeddings`, `--controls`, `--cache`) |
+| `vg runs list` / `vg runs show RUN_ID` | Past runs and the findings of one run |
+| `vg report RUN_ID --format html --open` | Rewrites or opens a report (`json`, `md`, `html`) |
+| `vg review RUN_ID CONTROL_ID --status met --reason "..." --analyst NAME` | Analyst override |
+| `vg vendors list` / `vg vendors history ID` | Vendor memory and run history |
 | `vg ask ID "What changed since last year?"` | Questions about a vendor's history |
-| `vg eval` | Runs the evaluation matrix |
+| `vg eval [--configs a,b]` | Runs the evaluation matrix |
+| `vg determinism [--config NAME]` | Repeats one config with the cache off and counts identical results |
+| `vg charts` | Draws the evaluation charts from `docs/evaluation/results.json` |
+
+Useful `make` targets: `make check` (lint, types, tests), `make sample`, `make eval`, `make record`
+(re-record replay cassettes with local Ollama), `make api`, `make docs` (strict MkDocs build),
+`make docs-config`, `make demo-memory` (offline year 1 / year 2 / diff / ask demo).
 
 ## REST API
 
-Interactive docs at `http://127.0.0.1:8000/docs` after `make api`. All `/v1` routes need the `X-API-Key` header.
+Start it with `make api`; interactive docs are at `http://127.0.0.1:8000/docs`. Set `VG_API__AUTH_KEY` (at least
+16 characters) in `.env` first: the API refuses to start without it, unless auth is off and the host is loopback.
+`/health` is open; every other route needs the `X-API-Key` header. Full reference:
+[REST API page](https://himanshugoel9725.github.io/vendorguard-ai/api/).
 
 | Method | Route | Purpose |
 |---|---|---|
-| `GET` | `/health`, `/version`, `/metrics` | liveness, version, Prometheus metrics |
+| `GET` | `/health` (open), `/version`, `/metrics` | liveness, version, Prometheus metrics |
 | `POST` | `/v1/assessments` | upload documents and start an assessment (returns `run_id`) |
 | `GET` | `/v1/assessments/{run_id}` | status and result |
 | `GET` | `/v1/assessments/{run_id}/report?format=html\|md\|json` | report |
 | `PATCH` | `/v1/assessments/{run_id}/findings/{control_id}` | analyst override |
 | `GET` | `/v1/vendors`, `/v1/vendors/{id}/history` | vendor memory |
 | `POST` | `/v1/vendors/{id}/ask` | question about a vendor |
+
+Defaults: 30 requests per minute per key, 20 MB per file, 5 files per request, 64 KB JSON bodies, 5 queued
+assessments (one runs at a time). Limits are in the `api` section of `config/settings.yaml`.
 
 ## Project structure
 
@@ -344,15 +398,20 @@ src/vendorguard/
   interfaces/                 Protocols: the swappable parts
   models/                     Pydantic data contracts
   ingest/  retrieval/         deterministic document processing and search
-  providers/                  llm/ embed/ decide/ memory/ cache/ implementations
+  providers/                  llm/ embed/ decide/ memory/ cache/ implementations (memory: SQLite only)
   agents/                     small LLM workers
   verification/  scoring/     citation checks, summary guard, rules engine
   diff/  reporting/           re-assessment diff, HTML/MD/JSON reports
   observability/              audit log, run manifest, cost guard, metrics
-  pipeline/orchestrator.py    the one module that wires everything together
+  pipeline/                   orchestrator.py wires everything together
+  eval/                       sample generator, metrics, eval runner, charts
   cli/  api/                  entry points
-data/samples/                 synthetic vendors (fictional) + golden labels in data/golden/
-docs/                         plan, progress, decisions, configuration, evaluation
+data/samples/                 synthetic vendors (fictional) + specs; golden labels in data/golden/
+tests/                        unit, integration, replay cassettes (tests/cassettes/), live tests (skipped by default)
+scripts/                      sample generator, config docs generator, demo builder, checks
+docs/                         MkDocs site sources, plan, progress, decisions, evaluation results
+Dockerfile  docker-compose.yml  API image (compose profile `api`)
+.github/workflows/            ci.yml, pages.yml, release.yml
 ```
 
 ## Evaluation
@@ -378,7 +437,7 @@ construction. The results do not transfer to real vendor documents. All real-mod
   possibly a cold start) gave 0 % identical result hashes and 52 % identical findings. Replaying the committed cassettes is 100 % identical.
 
 Method, per-vendor tables, charts, determinism and how to reproduce:
-[docs/EVALUATION.md](docs/EVALUATION.md).
+[Evaluation page](https://himanshugoel9725.github.io/vendorguard-ai/EVALUATION/).
 
 ## Testing and CI/CD
 
@@ -387,9 +446,12 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
   model server and costs nothing.
 - **GitHub Actions:** lint, type-check, tests, determinism test, secret scan (gitleaks) and a guard that fails
   the build if any Hugging Face package or model appears.
-- **GitHub Pages:** documentation plus demo reports generated in replay mode on every push to `main`.
-- **Releases:** tagging `v*` builds the API image, smoke-tests it (upload, assessment and report through the
-  running container, with the mock LLM), publishes it to GitHub Container Registry and creates a GitHub Release.
+- **GitHub Pages:** documentation plus demo reports generated in replay mode on every push to `main` (strict docs build).
+- **CI matrix:** Python 3.12 and 3.13.
+- **Releases:** the workflow in `.github/workflows/release.yml` runs on a `v*` tag: it builds the API image,
+  smoke-tests it (upload, assessment and report through the running container, with the mock LLM), pushes it to
+  GitHub Container Registry and creates a GitHub Release. Only the build and smoke test (manual dry run) have
+  run; no tag has been pushed, so no image or release exists yet.
 
 ## Security
 
@@ -403,7 +465,10 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 
 ## Roadmap
 
-- [ ] v1.0: CLI, API, reports, memory, decision gates, evaluation, CI/CD, docs site
+- [x] CLI, API, reports, SQLite memory and diff, decision gates, evaluation, CI, docs site
+- [ ] Tag v1.0.0, publish the first release and image
+- [ ] Measure a hosted LLM on the evaluation set
+- [ ] Letta memory (optional, deferred in ADR-019)
 - [ ] Optional UI (Streamlit, then React)
 - [ ] OCR for scanned PDFs
 - [ ] More control sets (for example a cloud-specific or privacy-specific set)
@@ -412,12 +477,20 @@ Method, per-vendor tables, charts, determinism and how to reproduce:
 
 ## Limitations
 
-- VendorGuard produces a **first-pass assessment to support analysts**. It does not replace professional
+- VendorGuard AI produces a **first-pass assessment to support analysts**. It does not replace professional
   judgement, audits or the official standards.
+- **Evaluation data is synthetic.** The four sample vendors (Nimbara HR, Quillfield Analytics, Brightdock
+  Freight) are fictional; results may not transfer to real documents.
+- **One small local model was measured** (`qwen2.5:3b`, CPU only). No hosted LLM was measured.
+- **Evaluation numbers are single, noisy samples.** Two identical live runs agreed on only 52 % of findings.
+- `needs_human_review` findings exist by design: some controls are left to a person.
 - Control mappings to ISO/IEC 27001:2022 and NIST CSF 2.0 are indicative.
-- Bundled sample vendors (Nimbara HR, Quillfield Analytics, Brightdock Freight) are **fictional**, and
-  accuracy figures measured on them may not transfer to real documents.
-- Scanned (image-only) PDFs are not supported yet.
+- Scanned (image-only) PDFs are not supported.
+- Letta memory is not implemented; the optional UI is not built.
+- The Docker image was only smoke-tested on a CI runner (mock LLM).
+- **API:** single process (in-memory rate limiter and job queue); one shared rate-limit bucket per key, so a
+  polling client can hit 429; failed keys lock out a client address (clients behind one proxy share it); uploads
+  are read into memory; no runs-folder quota; no ingestion timeout; no TLS (put a reverse proxy in front).
 
 ## License
 

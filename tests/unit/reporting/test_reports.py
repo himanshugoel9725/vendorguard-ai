@@ -166,3 +166,20 @@ def test_citations_show_the_document_name_and_page(run) -> None:  # type: ignore
     cited = [c for f in view["findings"] for c in f["citations"]]
     assert cited and all(c["document"] == "quillfield.txt" for c in cited)
     assert "quillfield.txt" in (run_dir / "report.md").read_text(encoding="utf-8")
+
+
+def test_html_link_colour_is_readable_in_both_colour_schemes() -> None:
+    """Found in a dark-mode screenshot: the default link blue is invisible on the dark card."""
+    from pathlib import Path
+
+    css = (
+        Path(__file__).resolve().parents[3]
+        / "src"
+        / "vendorguard"
+        / "reporting"
+        / "templates"
+        / "report.html.j2"
+    ).read_text(encoding="utf-8")
+    light, dark = css.split("@media (prefers-color-scheme: dark)", 1)
+    assert "--link:" in light and "--link:" in dark
+    assert "a { color: var(--link); }" in css
