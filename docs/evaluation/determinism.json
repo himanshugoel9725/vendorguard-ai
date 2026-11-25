@@ -1,51 +1,51 @@
 {
   "cache": "off",
-  "config": "keyword-baseline",
-  "findings_identical_pct": 100.0,
-  "hash_identical_pct": 100.0,
+  "config": "ollama-rule-bm25",
+  "findings_identical_pct": 52.0,
+  "hash_identical_pct": 0.0,
   "repeats": 2,
   "stems": [
     {
       "findings": 25,
-      "findings_identical": 25,
-      "hash_identical": true,
+      "findings_identical": 17,
+      "hash_identical": false,
       "repeats": 2,
       "result_hashes": [
-        "386665d7273d509f43cebe9304e30488f67c07970bc23126bc45c1839fe982bd",
-        "386665d7273d509f43cebe9304e30488f67c07970bc23126bc45c1839fe982bd"
+        "55f4ccc28d0b18e628dca73f9d63ebf331b01d6b77a42b2ae9831dbcdfe27d55",
+        "e37e98116810982ed6cbdc5fee90726d434af9923d2f380e5a79990559a3b9bc"
       ],
       "stem": "brightdock"
     },
     {
       "findings": 25,
-      "findings_identical": 25,
-      "hash_identical": true,
+      "findings_identical": 11,
+      "hash_identical": false,
       "repeats": 2,
       "result_hashes": [
-        "6f035fc9abae264bef9bb9bf7f65ff74a8b65c4672a247ccac2783506025e12c",
-        "6f035fc9abae264bef9bb9bf7f65ff74a8b65c4672a247ccac2783506025e12c"
+        "1f12b65c881f78aed1bbc9ba406e8635aad1815c9b1b661ceb72ade9acdcd664",
+        "6fde3444e6d2d26b6e559c1f6b139d68f435da304df19b1c7eaff26178b4792a"
       ],
       "stem": "nimbara-hr"
     },
     {
       "findings": 25,
-      "findings_identical": 25,
-      "hash_identical": true,
+      "findings_identical": 11,
+      "hash_identical": false,
       "repeats": 2,
       "result_hashes": [
-        "b66a68b2eb2ffac3d4b103051d327ec39f4268de2485908311de9cc568664473",
-        "b66a68b2eb2ffac3d4b103051d327ec39f4268de2485908311de9cc568664473"
+        "65e70e10ed16f6698fdc57bac020a25a7a92de0d0d74500594db8ceff0bb9ba1",
+        "8bee590dd379cdc3be955bd8d8b1f7d607b919d3cd89b87415f8e8c660b2cd3c"
       ],
       "stem": "nimbara-hr-y2"
     },
     {
       "findings": 25,
-      "findings_identical": 25,
-      "hash_identical": true,
+      "findings_identical": 13,
+      "hash_identical": false,
       "repeats": 2,
       "result_hashes": [
-        "8bbddb2e63e931cc151e7017dc789a68878e643760805e6341a7ce5606173aa5",
-        "8bbddb2e63e931cc151e7017dc789a68878e643760805e6341a7ce5606173aa5"
+        "624302737523d626cf615991b5c664b82f9b8fa97a7285690777ccf50b260851",
+        "b4c177c159b2737f527cd7a38ae45100e3151645e08373a9784c8b3b0802c0e3"
       ],
       "stem": "quillfield"
     }
