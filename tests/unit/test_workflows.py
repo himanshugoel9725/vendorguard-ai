@@ -43,3 +43,23 @@ def test_workflow_is_valid_and_pins_every_action(path: Path) -> None:
     assert uses, f"{path.name} uses no action?"
     for ref in uses:
         assert PINNED.match(ref), f"{path.name}: '{ref}' is not pinned to a full commit SHA"
+
+
+@pytest.mark.parametrize("path", WORKFLOWS, ids=lambda p: p.name)
+def test_workflow_default_permissions_are_read_only(path: Path) -> None:
+    data = yaml.load(path.read_text(encoding="utf-8"), Loader=_NoDuplicates)  # noqa: S506
+    assert data["permissions"] == {"contents": "read"}, "elevate per job, not for the workflow"
+    elevated = {
+        name
+        for name, job in data["jobs"].items()
+        if job.get("permissions", {}) != {} and set(job["permissions"]) - {"contents"}
+    }
+    allowed = {"ci.yml": set(), "pages.yml": {"deploy"}, "release.yml": {"image", "release"}}
+    assert elevated <= allowed[path.name], f"unexpected elevated jobs: {elevated}"
+
+
+def test_release_pushes_only_from_a_tag_or_main() -> None:
+    text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert 'refs/tags/v*) echo "push=true"' in text
+    assert "is not on main" in text  # a tag outside main is refused
+    assert "docker push" in text and "build-push-action" in text  # the tested image is pushed

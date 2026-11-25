@@ -76,3 +76,13 @@ def test_committed_config_md_is_up_to_date(gen: ModuleType) -> None:
     assert (ROOT / "docs" / "CONFIG.md").read_text(encoding="utf-8") == text, (
         "run `make docs-config`"
     )
+
+
+def test_every_description_belongs_to_a_real_key(gen: ModuleType) -> None:
+    """A line-based scanner could mistake a continuation line for a key: catch that here."""
+    text = (ROOT / "config" / "settings.yaml").read_text(encoding="utf-8")
+    notes, _ = gen.scan_yaml(text)
+    known = set(gen.field_types(Settings))
+    sections = {path[:n] for path in known for n in range(1, len(path))}
+    for path in notes:
+        assert path in known or path in sections, f"description for unknown key {'.'.join(path)}"

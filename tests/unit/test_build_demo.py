@@ -59,3 +59,10 @@ def test_main_usage_and_success(demo: ModuleType, tmp_path: Path) -> None:
     runs = _run(tmp_path / "r", "q", "Quill")
     assert demo.main([str(tmp_path / "s"), f"q={runs}"]) == 0
     assert (tmp_path / "s" / "demo" / "index.html").is_file()
+
+
+def test_demo_names_cannot_escape_the_demo_folder(demo: ModuleType, tmp_path: Path) -> None:
+    runs = _run(tmp_path / "r", "q", "Quill")
+    for bad in ("../evil", "a/b", "", "x" * 65):
+        with pytest.raises(SystemExit, match="invalid demo name"):
+            demo.build(tmp_path / "site", {bad: runs})

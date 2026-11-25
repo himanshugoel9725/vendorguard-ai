@@ -8,10 +8,12 @@ published.
 
 import html
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
 
+STEM_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 INTRO = (
     "These are reports of four SYNTHETIC vendors, produced by VendorGuard AI replaying a recorded "
     "run of a small local model (qwen2.5:3b). No real vendor data is involved and no model is "
@@ -36,6 +38,9 @@ def find_run(runs_dir: Path) -> Path:
 
 def build(site: Path, runs: dict[str, Path]) -> Path:
     """Copy the reports into ``site/demo`` and write the index; returns the index path."""
+    bad = [stem for stem in runs if not STEM_PATTERN.match(stem)]
+    if bad:
+        raise SystemExit(f"invalid demo name(s) {bad}: use letters, digits, - and _ only")
     demo = site / "demo"
     demo.mkdir(parents=True, exist_ok=True)
     rows = []
