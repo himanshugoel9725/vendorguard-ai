@@ -74,9 +74,6 @@ ui/dist/
 *.log
 logs/
 
-# ============================== Claude Code (personal) ======================
-.claude/settings.local.json
-CLAUDE.local.md
 
 # ============================== Editors / OS ================================
 .vscode/*

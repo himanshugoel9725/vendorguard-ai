@@ -52,9 +52,9 @@ def test_the_most_specific_pattern_wins(make: Make) -> None:
 
 def test_an_unpriced_model_is_a_config_error_naming_it(make: Make) -> None:
     with pytest.raises(
-        ConfigError, match=r"no price for 'anthropic/claude'.*cost\.prices_per_million_tokens"
+        ConfigError, match=r"no price for 'otherco/other-model'.*cost\.prices_per_million_tokens"
     ):
-        make(PRICES).price_for("anthropic", "claude")
+        make(PRICES).price_for("otherco", "other-model")
 
 
 def test_the_committed_prices_cover_every_default_provider(

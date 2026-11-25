@@ -1,7 +1,7 @@
 # VendorGuard AI — Master Build Plan
 
-> **Claude Code:** this file says **what** to build and **in which order**.
-> `CLAUDE.md` says **how** (rules). `docs/PROGRESS.md` says **where we are**.
+> **Assistant:** this file says **what** to build and **in which order**.
+> The project rules file says **how** (rules). `docs/PROGRESS.md` says **where we are**.
 > Work on one task ID at a time, meet its **Done when**, then run `/checkpoint`.
 > Never skip ahead and never batch several tasks into one commit.
 
@@ -17,7 +17,7 @@
 7. Data contracts
 8. Prompts
 9. Testing strategy
-10. Claude Code operating manual (memory, skills, sub-agents)
+10. Assistant operating manual (memory, skills, sub-agents)
 11. Phases and tasks (minute-level)
 12. Schedule
 13. Definition of done
@@ -31,7 +31,7 @@
 | Marker | Who | Does |
 |---|---|---|
 | 👤 | You | installs, API keys, GitHub settings, approving commands, recording the demo |
-| 🤖 | Claude Code (main session) | code, tests, docs |
+| 🤖 | Coding assistant (main session) | code, tests, docs |
 | 🧪 🔍 📝 🛡️ | Sub-agents `test-writer`, `code-reviewer`, `docs-writer`, `security-auditor` | delegated work (see §10) |
 
 - **Slot** = minutes from the start of that phase (for example `00:35–00:55`). **Min** = duration.
@@ -40,10 +40,10 @@
 - **Every session starts with `/resume`; every task ends with `/checkpoint`.** Use `/clear` between phases:
   all state lives in files, never only in the chat.
 
-**Your first message to Claude Code (session 1):**
+**Your first message to the assistant (session 1):**
 
 ```text
-Read CLAUDE.md, docs/PLAN.md and docs/PROGRESS.md. I have finished Phase 0: mark it done and fill in
+Read the project rules file, docs/PLAN.md and docs/PROGRESS.md. I have finished Phase 0: mark it done and fill in
 "Environment facts" (Mac RAM: __ GB, Ollama model: __, Docker installed: yes/no, Jev access: none/yes).
 Then run /resume and start task 1.1. Work strictly one task at a time and run /checkpoint after each task.
 ```
@@ -88,7 +88,7 @@ OCR for scanned PDFs · multi-tenant user management · real customer data · an
 
 ## 2. Non-negotiable rules
 
-The full list is in `CLAUDE.md`. Summary:
+The full list is in the project rules file (kept outside the repository). Summary:
 
 1. **$0 by default.** Local Ollama (or mock) LLM, `rule` decider, SQLite memory. Paid services are opt-in
    through config and protected by budget guards.
@@ -244,7 +244,6 @@ Phase 9 measures this: same inputs twice → same `result_hash`.
 
 ```text
 vendorguard-ai/
-├── CLAUDE.md                         # rules for Claude Code (imports docs/PROGRESS.md)
 ├── README.md                         # overview, diagrams, quickstart
 ├── LICENSE                           # MIT
 ├── .gitignore  .env.example  .python-version  .pre-commit-config.yaml
@@ -294,7 +293,6 @@ vendorguard-ai/
 │   └── inbox/.gitkeep                # your own documents (git-ignored)
 ├── tests/                            # conftest.py unit/ integration/ api/ live/ cassettes/ fixtures/
 ├── docs/                             # PLAN.md PROGRESS.md DECISIONS.md CONFIG.md EVALUATION.md index.md
-├── .claude/                          # settings.json agents/ skills/
 ├── .vscode/extensions.json
 └── .github/                          # workflows/{ci,pages,release}.yml dependabot.yml pull_request_template.md
 ```
@@ -476,18 +474,18 @@ Coverage gate: **≥ 80 % of `src/`**, enforced from task 3.7 onward.
 
 ---
 
-## 10. Claude Code operating manual
+## 10. Assistant operating manual
 
 ### 10.1 Memory: how work survives across sessions
 
 | File | Purpose | Updated by |
 |---|---|---|
-| `CLAUDE.md` | rules, commands, workflow; **imports `docs/PROGRESS.md`** so state loads every session | rarely (needs an ADR) |
+| the project rules file | rules, commands, workflow; **imports `docs/PROGRESS.md`** so state loads every session | rarely (needs an ADR) |
 | `docs/PROGRESS.md` | status, checklist, environment facts, in-progress notes, session log | `/checkpoint` after every task |
 | `docs/DECISIONS.md` | ADRs: why things are the way they are | whenever a decision is made or changed |
 | git history | one commit per task `[T<id>]`, tags `phase-<n>-done` | `/checkpoint` |
 
-### 10.2 Skills (`.claude/skills/*/SKILL.md`, used as slash commands)
+### 10.2 Skills (assistant-side slash commands)
 
 | Skill | Use when |
 |---|---|
@@ -497,7 +495,7 @@ Coverage gate: **≥ 80 % of `src/`**, enforced from task 3.7 onward.
 | `/add-agent` | adding or changing an LLM agent or a prompt version |
 | `/run-eval` | Phase 9, and after any prompt or decider change |
 
-### 10.3 Sub-agents (`.claude/agents/*.md`)
+### 10.3 Sub-agents (role definitions)
 
 | Agent | Trigger | Parallel? |
 |---|---|---|
@@ -526,16 +524,16 @@ Columns: **ID** · **Who** · **Slot** (from phase start) · **Min** · **Build*
 
 | ID | Who | Slot | Min | Build | Done when |
 |---|---|---|---|---|---|
-| 0.1 | 👤 | 00:00–00:10 | 10 | `brew install git gh uv ollama`; install VS Code + Claude Code extension if missing | `uv --version`, `ollama --version`, `gh --version` work |
+| 0.1 | 👤 | 00:00–00:10 | 10 | `brew install git gh uv ollama`; install VS Code and the assistant's extension if missing | `uv --version`, `ollama --version`, `gh --version` work |
 | 0.2 | 👤 | 00:10–00:30 | 20 | Open the Ollama app; `ollama pull qwen2.5:7b` (about 4.7 GB; with 8 GB RAM use `qwen2.5:3b`); `ollama pull nomic-embed-text` | `ollama list` shows both |
 | 0.3 | 👤 | 00:30–00:35 | 5 | `ollama run qwen2.5:7b "Reply with the word OK"` | it replies |
 | 0.4 | 👤 | 00:35–00:40 | 5 | Connect the folder to GitHub (commands below) | `git remote -v` shows origin |
-| 0.5 | 👤 | 00:40–00:45 | 5 | Unzip the starter kit into the folder; `cp .env.example .env` | `ls -la` shows `CLAUDE.md`, `.claude/`, `.env`; `git status` does **not** list `.env` |
+| 0.5 | 👤 | 00:40–00:45 | 5 | Unzip the starter kit into the folder; `cp .env.example .env` | `ls -la` shows the rules file, the assistant folder and `.env`; `git status` does **not** list `.env` |
 | 0.6 | 👤 | 00:45–00:48 | 3 | GitHub repo → About ⚙️ → description with no employer or programme name; add topics | done |
 | 0.7 | 👤 | 00:48–00:52 | 4 | First commit and push (commands below) | files visible on GitHub |
 | 0.8 | 👤 | 00:52–01:02 | 10 | Install Docker Desktop (only needed in Phase 7; can install while models download) | `docker run --rm hello-world` works |
 | 0.9 | 👤 | 01:02–01:12 | 10 | Optional, can be later: request Jev access; create a Letta Cloud API key; put keys **only** in `.env` | nothing secret in git |
-| 0.10 | 👤 | 01:12–01:17 | 5 | `code .` → open Claude Code → send the first message from §0 | Claude reports next task 1.1 |
+| 0.10 | 👤 | 01:12–01:17 | 5 | `code .` → open the assistant → send the first message from §0 | The assistant reports next task 1.1 |
 
 ```bash
 cd ~/Documents/vendorguard-ai && git init -b main && git remote add origin https://github.com/himanshugoel9725/vendorguard-ai.git
@@ -552,7 +550,7 @@ unzip -o ~/Downloads/vendorguard-starter-kit.zip -d ~/Documents/vendorguard-ai &
 ```
 
 ```bash
-git add -A && git commit -m "[T0] Add project plan, docs and Claude Code setup" && git push -u origin main
+git add -A && git commit -m "[T0] Add project plan, docs and assistant setup" && git push -u origin main
 ```
 
 ### Phase 1: Foundation (🤖, 125 min)

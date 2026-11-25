@@ -26,5 +26,5 @@ if [ "${#paths[@]}" -gt 0 ]; then
   fi
 fi
 
-if [ "$bad" -ne 0 ]; then echo "FAIL: Hugging Face usage is forbidden (see CLAUDE.md)."; exit 1; fi
+if [ "$bad" -ne 0 ]; then echo "FAIL: Hugging Face usage is forbidden (see the project rules)."; exit 1; fi
 echo "OK: no Hugging Face usage found."

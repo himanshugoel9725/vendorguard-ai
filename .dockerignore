@@ -1,7 +1,6 @@
 # Keep secrets, state and bulk out of the build context.
 .git
 .github
-.claude
 .venv*
 .env
 .env.*

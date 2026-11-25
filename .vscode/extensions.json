@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "anthropic.claude-code",
     "ms-python.python",
     "charliermarsh.ruff",
     "redhat.vscode-yaml",

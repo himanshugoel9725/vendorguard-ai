@@ -79,7 +79,7 @@
 
 - **Status:** accepted
 - **Context:** One `config.py` holding all 19 section models would pass the 250-line hard limit in
-  `CLAUDE.md`. PLAN section 5 also asks for provider names to be validated against the factory registries,
+  the project rules file. PLAN section 5 also asks for provider names to be validated against the factory registries,
   which do not exist until task 4.8.
 - **Decision:** `config.py` holds the root `Settings`, loading and fingerprint. Section models live in
   `config_models/{base,core,providers,scoring}.py`. Provider names are `Literal` types in
@@ -93,7 +93,7 @@
 ## ADR-010: Data-contract details for the models package
 
 - **Status:** accepted
-- **Context:** `docs/PLAN.md` section 7 lists the contracts but leaves some details open, and `CLAUDE.md`
+- **Context:** `docs/PLAN.md` section 7 lists the contracts but leaves some details open, and the project rules file
   forbids hard-coded tunables.
 - **Decision:** (1) Bounds that appear in a schema sent to the LLM (at most 3 citations, 60-word rationale,
   20 items and 200 characters per profile field) are constants next to the model, not settings, because
