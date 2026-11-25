@@ -90,8 +90,8 @@ jobs:
             sleep 3
           done
           [ "$STATUS" = "done" ] || fail "assessment did not finish"
-          curl -fs -H "X-API-Key: $KEY" "http://127.0.0.1:8000/v1/assessments/$RUN_ID/report?format=html" \
-            | grep -q "VendorGuard" || fail "report not served"
+          REPORT="$(curl -fs -H "X-API-Key: $KEY" "http://127.0.0.1:8000/v1/assessments/$RUN_ID/report?format=html")"
+          case "$REPORT" in *"Vendor risk assessment: Quillfield Analytics"*) ;; *) fail "report not served";; esac
           echo "smoke test passed: run $RUN_ID done"
           docker rm -f vg-smoke >/dev/null
       - name: Log in to GHCR
