@@ -39,6 +39,9 @@ def test_build_copies_reports_and_escapes_the_index(demo: ModuleType, tmp_path: 
     assert "<script>" not in page and "&lt;script&gt;" in page and "Alpha &amp; Co" in page
     assert page.index('href="a.html"') < page.index('href="b.html"')  # sorted by stem
     assert "SYNTHETIC" in page and "12.5" in page
+    assert (
+        "<td>a</td>" in page and "<td>b</td>" in page
+    )  # the sample name tells equal vendor names apart
 
 
 def test_a_runs_folder_must_hold_exactly_one_run(demo: ModuleType, tmp_path: Path) -> None:

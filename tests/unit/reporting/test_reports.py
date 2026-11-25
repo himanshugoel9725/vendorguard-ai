@@ -168,8 +168,8 @@ def test_citations_show_the_document_name_and_page(run) -> None:  # type: ignore
     assert "quillfield.txt" in (run_dir / "report.md").read_text(encoding="utf-8")
 
 
-def test_html_link_colour_is_readable_in_both_colour_schemes() -> None:
-    """Found in a dark-mode screenshot: the default link blue is invisible on the dark card."""
+def test_html_report_is_always_dark_on_screen_and_light_in_print() -> None:
+    """On screen the report is near-black with white text, whatever the system setting is."""
     from pathlib import Path
 
     css = (
@@ -180,6 +180,8 @@ def test_html_link_colour_is_readable_in_both_colour_schemes() -> None:
         / "templates"
         / "report.html.j2"
     ).read_text(encoding="utf-8")
-    light, dark = css.split("@media (prefers-color-scheme: dark)", 1)
-    assert "--link:" in light and "--link:" in dark
+    screen, print_part = css.split("@media print { :root", 1)
+    assert "prefers-color-scheme" not in css  # no light variant that follows the system
+    assert "--bg:#0b0b0b" in screen and "--fg:#ffffff" in screen and "--link:" in screen
+    assert "--bg:#fff" in print_part and "--link:" in print_part
     assert "a { color: var(--link); }" in css

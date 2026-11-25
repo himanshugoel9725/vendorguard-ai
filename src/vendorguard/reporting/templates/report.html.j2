@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Vendor risk assessment: {{ v.vendor_name }}</title>
 <style>
-:root { --fg:#1c2330; --muted:#5b6577; --line:#d9dee7; --bg:#fff; --card:#f6f8fb;
-  --met:#1b7f4b; --partial:#a15c00; --notmet:#b3261e; --none:#5b6577; --review:#5b3fb5;
-  --link:#0b5cad; }
-@media (prefers-color-scheme: dark) { :root { --fg:#e6e9ef; --muted:#9aa4b5; --line:#2e3646;
-  --bg:#12161d; --card:#1a2030; --met:#58c68a; --partial:#e0a24a; --notmet:#f2857d;
-  --none:#9aa4b5; --review:#a99af0; --link:#7db4ff; } }
+:root { color-scheme: dark; --fg:#ffffff; --muted:#b8b8b8; --line:#2e2e2e; --bg:#0b0b0b; --card:#1a1a1a;
+  --met:#58c68a; --partial:#e0a24a; --notmet:#f2857d; --none:#b8b8b8; --review:#a99af0; --link:#7db4ff; }
+/* always dark on screen; paper and PDF get a light page so a printed report stays readable */
+@media print { :root { color-scheme: light; --fg:#1c2330; --muted:#5b6577; --line:#d9dee7; --bg:#fff; --card:#f6f8fb;
+  --met:#1b7f4b; --partial:#a15c00; --notmet:#b3261e; --none:#5b6577; --review:#5b3fb5; --link:#0b5cad; } }
 * { box-sizing: border-box; }
 body { font: 15px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg);
   max-width: 980px; margin: 0 auto; padding: 24px; }

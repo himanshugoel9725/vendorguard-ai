@@ -21,10 +21,13 @@ INTRO = (
     "scores here are NOT facts about the vendors: see the evaluation page for the measured "
     "accuracy."
 )
-STYLE = (
-    "body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}"
-    "table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:.4rem .6rem;"
-    "text-align:left}"
+STYLE = (  # always dark, like the documentation site and the reports
+    ":root{color-scheme:dark}"
+    "body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;"
+    "background:#0b0b0b;color:#fff}"
+    "a{color:#7db4ff}"
+    "table{border-collapse:collapse;width:100%;background:#121212}"
+    "td,th{border:1px solid #2e2e2e;padding:.4rem .6rem;text-align:left}th{background:#1a1a1a}"
 )
 
 
@@ -50,19 +53,22 @@ def build(site: Path, runs: dict[str, Path]) -> Path:
         shutil.copyfile(run / "report.html", demo / f"{stem}.html")
         score = result["score"]
         rows.append(
-            '<tr><td><a href="{href}">{name}</a></td><td>{score:g}</td><td>{band}</td></tr>'.format(
+            '<tr><td><a href="{href}">{name}</a></td><td>{sample}</td><td>{score:g}</td>'
+            "<td>{band}</td></tr>".format(
                 href=html.escape(f"{stem}.html", quote=True),
                 name=html.escape(str(result["profile"]["vendor_name"])),
+                sample=html.escape(stem),  # two samples can share a vendor name (year 1 and year 2)
                 score=score["overall"],
                 band=html.escape(str(score["band"])),
             )
         )
     page = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="color-scheme" content="dark">'
         "<title>VendorGuard AI demo reports</title>"
         f"<style>{STYLE}</style></head><body><h1>VendorGuard AI demo reports</h1>"
         f"<p>{html.escape(INTRO)}</p>"
-        "<table><tr><th>Vendor</th><th>Risk score</th><th>Band</th></tr>"
+        "<table><tr><th>Vendor</th><th>Sample</th><th>Risk score</th><th>Band</th></tr>"
         + "".join(rows)
         + '</table><p><a href="../">Documentation</a></p></body></html>\n'
     )
