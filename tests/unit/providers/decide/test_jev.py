@@ -25,7 +25,7 @@ from vendorguard.utils.timeutil import utcnow
 
 ROOT = Path(__file__).resolve().parents[4]
 FIX = ROOT / "tests" / "fixtures" / "jev"
-URL = "https://openrouter.ai/api/alpha/decisions"
+URL = "https://api.typesafe.ai/v1/systemone"
 KEY = "fake-fake-fake-fake"
 CONTROL = Control(
     id="IAM-02", title="MFA", domain="IAM", criticality="critical", iso27001=["8.5"],
@@ -81,7 +81,7 @@ def test_client_contract_on_the_fixture(settings: Settings) -> None:
     req = route.calls[0].request
     assert req.headers["authorization"] == f"Bearer {KEY}"
     body = json.loads(req.content)
-    assert body["model"] == "typesafe/jev-1.13" and set(body) == {"model", "state", "questions"}
+    assert body["model"] == "jev-latest" and set(body) == {"model", "state", "questions"}
 
 
 @respx.mock

@@ -82,6 +82,7 @@ class JevSettings(StrictModel):
     """Optional Jev decision model. api_key is a secret."""
 
     base_url: str
+    path: str  # appended to base_url; differs per gateway
     model: str
     timeout_s: PositiveFloat
     max_calls_per_run: PositiveInt

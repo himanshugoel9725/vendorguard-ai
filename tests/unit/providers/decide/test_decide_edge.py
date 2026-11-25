@@ -36,7 +36,7 @@ from vendorguard.utils.prompt_loader import PromptLoader
 from vendorguard.utils.timeutil import utcnow
 
 ROOT = Path(__file__).resolve().parents[4]
-URL = "https://openrouter.ai/api/alpha/decisions"
+URL = "https://api.typesafe.ai/v1/systemone"
 KEY = "fake-fake-fake-fake"
 CONTROL = Control(
     id="IAM-02", title="MFA", domain="IAM", criticality="critical", iso27001=["8.5"],

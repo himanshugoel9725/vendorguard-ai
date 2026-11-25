@@ -1,11 +1,13 @@
-"""HTTP client of the Jev decision model through OpenRouter's alpha Decisions API.
+"""HTTP client of the Jev decision model (TypeSafe System One by default, or OpenRouter alpha).
 
-Only transport lives here: auth, timeout, retries, payload and response mapping. Endpoint and shape
-(read from OpenRouter's docs, 2026-11-23, marked "alpha: the shape may change"): ``POST
-{base_url}/decisions`` with ``{model, state, questions}`` and a Bearer key; a ``noul`` question
-(yes/no) is answered ``{"type": "noul", "noul": <probability of yes>}`` and the reply carries
-``usage.input_tokens`` / ``output_tokens``. Every failure is a ``DeciderError``; no message ever
-contains server text for an authentication failure or the key.
+Only transport lives here: auth, timeout, retries, payload and response mapping. ``POST
+{base_url}{path}`` with ``{model, state, questions}`` and a Bearer key. TypeSafe (read from
+docs.typesafe.ai, 2026-11-25): ``https://api.typesafe.ai`` + ``/v1/systemone``, model
+``jev-latest``.
+OpenRouter (alpha): ``https://openrouter.ai/api/alpha`` + ``/decisions``. A ``noul`` (yes/no)
+question is answered ``{"type": "noul", "noul": <probability of yes>}`` and the reply carries
+``usage.input_tokens`` / ``output_tokens`` in both. Every failure is a ``DeciderError``; no message
+ever contains server text for an authentication failure or the key.
 """
 
 from collections.abc import Mapping
@@ -40,7 +42,7 @@ class JevClient:
             )
         self.model = jev.model
         self._llm = llm
-        self._url = f"{jev.base_url.rstrip('/')}/decisions"
+        self._url = f"{jev.base_url.rstrip('/')}/{jev.path.lstrip('/')}"
         self._client = client or httpx.Client(timeout=jev.timeout_s)
         self._redact = RedactingFilter([self._key]).redact
 

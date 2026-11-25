@@ -306,3 +306,16 @@
   and docs that mention Letta must say it is optional and not implemented (task 10.7). To add it later: follow
   PLAN 7.5/7.6, implement `MemoryStore` by composing `SqliteMemoryStore`, reuse `verification/answer_guard`,
   register it in `MEMORY_STORES`, then turn the registry test into an equality test.
+
+## ADR-020: Jev reached through TypeSafe's own System One API by default (task 9.4, amends ADR-016)
+
+- **Context.** The user's key was created at console.typesafe.ai, not at OpenRouter; OpenRouter answered
+  401 'Missing Authentication header' for it. TypeSafe's docs (docs.typesafe.ai, read 2026-11-25) give
+  `POST https://api.typesafe.ai/v1/systemone`, Bearer key, model `jev-latest`, and the SAME body
+  (`model`, `state`, `questions`) and reply (`answers.<name>.noul`, `usage.input_tokens`) as OpenRouter's alpha.
+- **Decision.** New setting `decision.jev.path`; defaults are now `base_url: https://api.typesafe.ai`,
+  `path: /v1/systemone`, `model: jev-latest`. OpenRouter keeps working with three overrides
+  (`VG_DECISION__JEV__BASE_URL`, `__PATH`, `__MODEL`), listed in the settings comment. No client logic changed.
+- **Consequences.** `jev-latest` is an alias, so the model behind a run can change; the reply's `model`
+  field (the versioned id) is not stored yet. Pin `jev-1.14.0` in the config for a reproducible evaluation.
+  Price is $0.042 per million input tokens, output free. Whether TypeSafe needs prepaid credit is not documented.
