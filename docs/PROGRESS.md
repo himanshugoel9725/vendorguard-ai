@@ -8,8 +8,8 @@
 | Field | Value |
 |---|---|
 | Current phase | 9: Evaluation |
-| Next task | 9.2 |
-| Last completed task | 9.1 |
+| Next task | 9.3 |
+| Last completed task | 9.2 |
 | Last updated | 2026-11-25 |
 | Blockers | none |
 
@@ -127,7 +127,7 @@
 
 ### Phase 9: Evaluation (150 min)
 - [x] 9.1 Metrics
-- [ ] 9.2 Eval runner + `vg eval`
+- [x] 9.2 Eval runner + `vg eval`
 - [ ] 9.3 Determinism check + test
 - [ ] 9.4 Full matrix run with Ollama
 - [ ] 9.5 Charts + EVALUATION.md (docs-writer)
@@ -163,6 +163,7 @@
 
 Half-finished work, uncommitted changes, or things the next session must know:
 
+- 9.2: `eval/results.py` (`RunRecord`, `Aggregate` (controls pooled over the vendors, macro-F1 from the pooled confusion matrix), `ConfigRecord`, `EvalResults`, `Outcome` ok|skipped|failed), `eval/runner.py` (`run_eval(settings, names=None, progress=None)`, `run_config`, `config_settings` = the config's llm/decider/embeddings + isolated `runs_dir`/`state_dir`/cache under `eval.work_dir/<config>/`, `skip_reason`, `write_results(results, path, digits)`), `cli/eval.py` (`vg eval [--configs a,b]`, unknown name = exit 2). New settings `eval.work_dir` (.vendorguard/eval), `eval.cache_enabled` (false: every call is real, so tokens and times are honest; true reuses the cache), `eval.round_digits` (4). A config is SKIPPED with a note when the Jev key or a hosted LLM profile key (openai/groq/openai_compat) is missing; a VendorGuardError during a run is recorded as a failed run (class name only) and the matrix goes on (all four failed = config failed); other exceptions propagate. Samples = `data/samples/specs/*.yaml` stems, document = `<stem>.pdf`, golden = `data/golden/<stem>.json`; no memory store is passed (no re-assessment diff in evals). MEASURED: `vg eval --configs keyword-baseline` (mock) takes about 2 s, accuracy 1.00 (generator-consistent, see 4.4 caveat); mock LLM calls are not counted (0). `results.json` is NOT committed yet (9.4 writes it; I deleted my test output). Wall times make results.json non-deterministic across runs (expected). Tests: `tests/unit/eval/test_runner.py` (9). 2551 tests, 99.02 %.
 - 9.1: `eval/metrics.py` (pure, no rounding): `evaluate(findings, golden: Mapping[id, status]) -> EvalMetrics(controls, accuracy, macro_f1, per_status{precision, recall, f1, support}, confusion[golden][predicted], citation_validity_rate (None if nothing cited), human_review_rate, triage_skip_rate)`. Predictions = the system `status` (overrides ignored). `needs_human_review` is a prediction column that is always wrong (hurts accuracy/recall) but not an F1 class; macro-F1 averages the statuses that appear in golden OR predictions. Controls without a finding (subset runs) are not counted; a finding with no golden label, duplicates or no findings = ConfigError. A control counts as triage-skipped when its trace has a triage `not_addressed` and no citation gate. 9.2 should round only when writing `results.json` (a setting for the digits). Tests: `tests/unit/eval/test_metrics.py` (8, hand-computed), `tests/integration/test_eval_metrics.py` (1). 2542 tests, 98.95 %.
 - 8.7 PHASE 8 REVIEW (code-reviewer: no blockers; fixed, tag `phase-8-done`). PUSHED first: main + tags phase-5/6/7-done (39 commits); CI green on all four runs (phase-1-done on the remote is still the old commit). FIXED: (1) `JobRegistry.submit` removes the job if the pool is shut down (no stuck QUEUED job); (2) `JobRegistry.close(wait_s) -> bool` waits for the running job (`api.shutdown_wait_s: 30`) and the lifespan closes the memory store ONLY if the worker finished; (3) a DONE manifest on disk wins over a FAILED job in `GET /v1/assessments/{id}` (re-upload of a run with overrides, failed memory save); (4) `GET .../report` is 409 while a job for the run is queued/running; (5) compose: `tmpfs /tmp:size=256m`, `mem_limit: 2g`; (6) new settings `api.retry_after_s`, `multipart_overhead`, `max_override_reason_chars`, `max_override_analyst_chars`, `shutdown_wait_s`; the ask question limit is now ONLY `memory.ask_max_question_chars` (too long = 400). 2536 tests. STILL OPEN (from the review, not blockers): `api/security.py` is 247 lines (split `rate_limit.py`/`startup.py`) and `routes/assessments.py` ~250 (move models + UPLOAD_SCHEMA to `schemas.py`) before any further growth; one global rate-limit bucket per key (a polling UI can hit 429) and the per-address lockout behind a shared proxy address: document in README/ADR (10.7); uploads held in memory, no runs-folder quota, no ingestion timeout; consider `VG_API__DOCS_ENABLED=false` as the Docker default; malformed Content-Length gives 413 (400 is more exact); damaged manifest shows as 404; `COPY README.md LICENSE` in the Dockerfile needs a static test that both exist; Docker image never built (user: task 0.8, then `make docker-up`).
 - 6.7 THIRD REAL RUN (same model, with the no-quote reviewer retry, commit 8911580, same run id `run_24092c5adac5`, overwritten): ACCURACY 15/25, IDENTICAL to the second run (same 10 false no_evidence). The reviewer was called 15 times (14 retries + 1) and quoted nothing in any of the 14 retry cases, so the retry changed no finding and cost 14 extra calls (+4 min). Conclusion: the 3B model's failure to quote is not fixed by a second look; the retry is unproven on larger models. It can be reverted with `git revert 8911580` (no other code depends on it). `.venv`: the stray `.venv` that reappears is an iCloud artifact (`.venv/lib 2`, an empty duplicate folder iCloud restores after a delete), NOT uv: delete it again if it shows up; the real fix is moving the repo out of ~/Documents. Environment guard added: `.claude/settings.json` sets `UV_PROJECT_ENVIRONMENT=.venv.nosync` (new sessions).
@@ -236,4 +237,4 @@ Half-finished work, uncommitted changes, or things the next session must know:
 
 | Date | Tasks completed | Notes / deviations |
 |---|---|---|
-| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3, 7.7-7.9 (7.4-7.6 skipped), 8.1-8.7, 9.1 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |
+| 2026-11-23 | Phase 0, 1.1-1.9, 2.1-2.7, 3.1-3.8, 4.1-4.10, 5.1-5.12, 6.1-6.8, 7.1-7.3, 7.7-7.9 (7.4-7.6 skipped), 8.1-8.7, 9.1-9.2 | Docker deferred to Phase 7. Intel Mac: prefer Groq/OpenAI via openai_compat for real runs. OpenAI+Groq need two key profiles (ADR pending, Phase 4). |

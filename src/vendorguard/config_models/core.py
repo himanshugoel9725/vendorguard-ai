@@ -194,6 +194,9 @@ class EvalSettings(StrictModel):
     """Evaluation runner settings."""
 
     results_dir: Path
+    work_dir: Path
+    cache_enabled: bool
+    round_digits: NonNegInt
     determinism_repeats: PositiveInt
     configs: list[EvalConfig]
 

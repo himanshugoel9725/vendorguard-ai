@@ -295,6 +295,9 @@ samples:
 
 eval:
   results_dir: docs/evaluation
+  work_dir: .vendorguard/eval       # run folders and state of eval runs (git-ignored)
+  cache_enabled: false              # false = every call is real (honest tokens and timing); true = reuse the cache
+  round_digits: 4                   # decimals of the rates and times written to results.json
   determinism_repeats: 2
   configs:                          # evaluation matrix (Phase 9)
     - {name: keyword-baseline, llm: mock,   decider: rule,      embeddings: none}
