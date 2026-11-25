@@ -4,6 +4,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-yaml
+        exclude: ^mkdocs\.yml$  # uses a !!python/name tag that the safe loader cannot read
       - id: end-of-file-fixer
       - id: detect-private-key
       - id: check-added-large-files

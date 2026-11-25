@@ -1,0 +1,51 @@
+site_name: VendorGuard AI
+site_description: Multi-agent assistant for third-party security risk assessment
+site_url: https://himanshugoel9725.github.io/vendorguard-ai/
+repo_url: https://github.com/himanshugoel9725/vendorguard-ai
+repo_name: vendorguard-ai
+edit_uri: edit/main/docs/
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+# Build notes for contributors, not part of the product documentation.
+exclude_docs: |
+  PLAN.md
+  PROGRESS.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - CLI: cli.md
+  - REST API: api.md
+  - Configuration: CONFIG.md
+  - Evaluation: EVALUATION.md
+  - Decisions: DECISIONS.md

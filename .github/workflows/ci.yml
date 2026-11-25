@@ -49,6 +49,10 @@ jobs:
         run: >
           uv run pytest --no-cov -o addopts=""
           tests/integration/test_replay.py tests/integration/test_determinism.py
+      - name: Docs build (strict, broken links fail) and CONFIG.md up to date
+        run: |
+          uv run python scripts/gen_config_docs.py --check
+          uv run mkdocs build --strict
       - name: Mock evaluation smoke run
         env:
           VG_EVAL__RESULTS_DIR: ${{ runner.temp }}/eval
