@@ -1,0 +1,53 @@
+{
+  "cache": "off",
+  "config": "keyword-baseline",
+  "findings_identical_pct": 100.0,
+  "hash_identical_pct": 100.0,
+  "repeats": 2,
+  "stems": [
+    {
+      "findings": 25,
+      "findings_identical": 25,
+      "hash_identical": true,
+      "repeats": 2,
+      "result_hashes": [
+        "386665d7273d509f43cebe9304e30488f67c07970bc23126bc45c1839fe982bd",
+        "386665d7273d509f43cebe9304e30488f67c07970bc23126bc45c1839fe982bd"
+      ],
+      "stem": "brightdock"
+    },
+    {
+      "findings": 25,
+      "findings_identical": 25,
+      "hash_identical": true,
+      "repeats": 2,
+      "result_hashes": [
+        "6f035fc9abae264bef9bb9bf7f65ff74a8b65c4672a247ccac2783506025e12c",
+        "6f035fc9abae264bef9bb9bf7f65ff74a8b65c4672a247ccac2783506025e12c"
+      ],
+      "stem": "nimbara-hr"
+    },
+    {
+      "findings": 25,
+      "findings_identical": 25,
+      "hash_identical": true,
+      "repeats": 2,
+      "result_hashes": [
+        "b66a68b2eb2ffac3d4b103051d327ec39f4268de2485908311de9cc568664473",
+        "b66a68b2eb2ffac3d4b103051d327ec39f4268de2485908311de9cc568664473"
+      ],
+      "stem": "nimbara-hr-y2"
+    },
+    {
+      "findings": 25,
+      "findings_identical": 25,
+      "hash_identical": true,
+      "repeats": 2,
+      "result_hashes": [
+        "8bbddb2e63e931cc151e7017dc789a68878e643760805e6341a7ce5606173aa5",
+        "8bbddb2e63e931cc151e7017dc789a68878e643760805e6341a7ce5606173aa5"
+      ],
+      "stem": "quillfield"
+    }
+  ]
+}

@@ -127,3 +127,16 @@ def test_cli_eval_writes_results_and_rejects_unknown(
     assert (s.eval.results_dir / "results.json").is_file()
     bad = CliRunner().invoke(app, ["eval", "--configs", "nope"])
     assert bad.exit_code == 2 and "unknown eval config" in bad.output
+
+
+def test_cli_determinism_picks_best_config_from_results(
+    s: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("vendorguard.cli.common.load_settings", lambda **_: s)
+    s2 = s.model_copy(update={"eval": s.eval.model_copy(update={"determinism_repeats": 2})})
+    monkeypatch.setattr("vendorguard.cli.common.load_settings", lambda **_: s2)
+    assert CliRunner().invoke(app, ["eval", "--configs", "mock-judge"]).exit_code == 0
+    r = CliRunner().invoke(app, ["determinism"])
+    assert r.exit_code == 0, r.output
+    assert "mock-judge: 2 repeats" in r.output and "identical result hashes: 100 %" in r.output
+    assert (s.eval.results_dir / "determinism.json").is_file()

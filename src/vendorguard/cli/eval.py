@@ -7,6 +7,8 @@ from rich.table import Table
 
 from vendorguard.cli.common import console, guarded, load
 from vendorguard.errors import ConfigError
+from vendorguard.eval.determinism import best_config_name, run_determinism, write_determinism
+from vendorguard.eval.results import EvalResults
 from vendorguard.eval.runner import run_eval, write_results
 
 RESULTS_FILE = "results.json"
@@ -47,4 +49,33 @@ def eval_matrix(
     console.print(f"written: {path}", markup=False, soft_wrap=True)
 
 
-__all__ = ["eval_matrix"]
+DETERMINISM_FILE = "determinism.json"
+
+
+@guarded
+def determinism(
+    config: Annotated[
+        str | None, typer.Option(help="Config name (default: best in results.json).")
+    ] = None,
+) -> None:
+    """Repeat one config with the cache off and report how many results are identical."""
+    settings = load()
+    results_file = settings.eval.results_dir / RESULTS_FILE
+    name = config
+    if name is None and results_file.is_file():
+        name = best_config_name(EvalResults.model_validate_json(results_file.read_text("utf-8")))
+    name = name or settings.eval.configs[0].name
+    console.print(f"{name}: {settings.eval.determinism_repeats} repeats, cache off", markup=False)
+    report = run_determinism(settings, name)
+    path = write_determinism(
+        report, settings.eval.results_dir / DETERMINISM_FILE, settings.eval.round_digits
+    )
+    console.print(
+        f"identical result hashes: {report.hash_identical_pct:g} %, "
+        f"identical findings: {report.findings_identical_pct:g} %",
+        markup=False,
+    )
+    console.print(f"written: {path}", markup=False, soft_wrap=True)
+
+
+__all__ = ["determinism", "eval_matrix"]
