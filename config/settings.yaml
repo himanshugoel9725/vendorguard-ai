@@ -177,7 +177,7 @@ decision:
   jev:
     base_url: https://api.typesafe.ai   # TypeSafe System One API (key from console.typesafe.ai/keys)
     path: /v1/systemone             # POST {base_url}{path}; for OpenRouter use base_url https://openrouter.ai/api/alpha, path /decisions, model typesafe/jev-1.13
-    model: jev-latest               # alias of the newest Jev (jev-1.14.0 on 2026-11-25); read from docs.typesafe.ai
+    model: jev-1.14.0               # pinned for reproducible evaluations; "jev-latest" is the moving alias (docs.typesafe.ai, 2026-11-25)
     timeout_s: 15
     max_calls_per_run: 200
     fallback_provider: rule         # used automatically if Jev fails or no key is set

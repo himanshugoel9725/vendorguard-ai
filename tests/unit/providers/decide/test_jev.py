@@ -81,7 +81,7 @@ def test_client_contract_on_the_fixture(settings: Settings) -> None:
     req = route.calls[0].request
     assert req.headers["authorization"] == f"Bearer {KEY}"
     body = json.loads(req.content)
-    assert body["model"] == "jev-latest" and set(body) == {"model", "state", "questions"}
+    assert body["model"] == "jev-1.14.0" and set(body) == {"model", "state", "questions"}
 
 
 @respx.mock

@@ -314,8 +314,8 @@
   `POST https://api.typesafe.ai/v1/systemone`, Bearer key, model `jev-latest`, and the SAME body
   (`model`, `state`, `questions`) and reply (`answers.<name>.noul`, `usage.input_tokens`) as OpenRouter's alpha.
 - **Decision.** New setting `decision.jev.path`; defaults are now `base_url: https://api.typesafe.ai`,
-  `path: /v1/systemone`, `model: jev-latest`. OpenRouter keeps working with three overrides
+  `path: /v1/systemone`, `model: jev-1.14.0` (pinned; `jev-latest` is the moving alias). OpenRouter keeps working with three overrides
   (`VG_DECISION__JEV__BASE_URL`, `__PATH`, `__MODEL`), listed in the settings comment. No client logic changed.
-- **Consequences.** `jev-latest` is an alias, so the model behind a run can change; the reply's `model`
-  field (the versioned id) is not stored yet. Pin `jev-1.14.0` in the config for a reproducible evaluation.
+- **Consequences.** The model is pinned to `jev-1.14.0` so evaluations are reproducible; `jev-latest` is an
+  alias whose model can change under us (change the setting deliberately and re-measure).
   Price is $0.042 per million input tokens, output free. Whether TypeSafe needs prepaid credit is not documented.
