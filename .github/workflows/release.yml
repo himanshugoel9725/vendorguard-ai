@@ -1,0 +1,135 @@
+name: Release
+
+# On a tag v*: build the API image, smoke-test it, push it to GHCR and create a GitHub Release.
+# Manual run (Actions -> Release -> Run workflow): builds and smoke-tests only, pushes nothing
+# unless "push" is ticked. The image has no model: Ollama runs on the host (see docs/api.md).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Also push the image to GHCR (tags are never created by a manual run)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      pushed: ${{ steps.flags.outputs.push }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: flags
+        name: Decide whether to push
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ] || [ "${{ inputs.push }}" = "true" ]; then
+            echo "push=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "push=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+            type=sha,format=short
+      - name: Build the image (not pushed yet)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: vendorguard-ai:smoke
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test the image (hardened like docker-compose.yml)
+        run: |
+          KEY="$(openssl rand -hex 16)"
+          echo "::add-mask::$KEY"
+          docker run -d --name vg-smoke -p 127.0.0.1:8000:8000 \
+            -e VG_API__AUTH_KEY="$KEY" -e VG_LLM__PROVIDER=mock -e VG_EMBEDDINGS__PROVIDER=none \
+            --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \
+            -v vg-smoke-data:/data vendorguard-ai:smoke
+          fail() { echo "SMOKE TEST FAILED: $1"; docker logs vg-smoke; exit 1; }
+          for i in $(seq 1 40); do
+            curl -fs http://127.0.0.1:8000/health >/dev/null && break
+            sleep 2
+            [ "$i" = 40 ] && fail "API did not become healthy"
+          done
+          [ "$(docker exec vg-smoke id -u)" = "10001" ] || fail "container does not run as uid 10001"
+          [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/version)" = "401" ] \
+            || fail "/version answered without an API key"
+          curl -fs -H "X-API-Key: $KEY" http://127.0.0.1:8000/version >/dev/null || fail "/version with key"
+          RUN_ID="$(curl -fs -H "X-API-Key: $KEY" -F vendor_id=quillfield \
+            -F files=@data/samples/quillfield.txt http://127.0.0.1:8000/v1/assessments | jq -r .run_id)"
+          [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ] || fail "upload was not accepted"
+          for i in $(seq 1 30); do
+            STATUS="$(curl -fs -H "X-API-Key: $KEY" "http://127.0.0.1:8000/v1/assessments/$RUN_ID" | jq -r .status)"
+            [ "$STATUS" = "done" ] && break
+            [ "$STATUS" = "failed" ] && fail "assessment failed"
+            sleep 3
+          done
+          [ "$STATUS" = "done" ] || fail "assessment did not finish"
+          curl -fs -H "X-API-Key: $KEY" "http://127.0.0.1:8000/v1/assessments/$RUN_ID/report?format=html" \
+            | grep -q "VendorGuard" || fail "report not served"
+          echo "smoke test passed: run $RUN_ID done"
+          docker rm -f vg-smoke >/dev/null
+      - name: Log in to GHCR
+        if: steps.flags.outputs.push == 'true'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the image
+        if: steps.flags.outputs.push == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+  release:
+    name: GitHub Release
+    needs: image
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Create the release with generated notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          IMAGE_REF="$(echo "ghcr.io/$GH_REPO" | tr '[:upper:]' '[:lower:]')" # GHCR needs lower case
+          PRE=""
+          case "$TAG" in *-*) PRE="--prerelease";; esac
+          gh release create "$TAG" --verify-tag --generate-notes $PRE \
+            --title "VendorGuard AI $TAG" \
+            --notes "Docker image: \`docker pull $IMAGE_REF:$VERSION\` (API only, no model inside; see the API page of the documentation)."
