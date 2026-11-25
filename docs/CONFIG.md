@@ -310,15 +310,15 @@ Memory. provider: sqlite ($0) | letta
 | `eval.charts.bar_height` | `0.62` | number (> 0.0) | bar thickness (fraction of the row) |
 | `eval.charts.font_size` | `10` | number (> 0.0) | value labels and cell numbers |
 | `eval.charts.title_size` | `13` | number (> 0.0) |  |
-| `eval.charts.contrast_threshold` | `0.45` | number (>= 0.0, <= 1.0) | heatmap cells darker than this share of the maximum get light text |
-| `eval.charts.surface` | `'#fcfcfb'` | text |  |
-| `eval.charts.ink` | `'#0b0b0b'` | text |  |
-| `eval.charts.ink_secondary` | `'#52514e'` | text |  |
-| `eval.charts.grid` | `'#e6e5e1'` | text |  |
-| `eval.charts.muted` | `'#b9b8b2'` | text | bars that are not the point |
-| `eval.charts.primary` | `'#2a78d6'` | text | categorical slot 1, also the highlighted bar |
-| `eval.charts.secondary` | `'#eb6834'` | text | categorical slot 2 |
-| `eval.charts.ramp` | `['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#…` | list of text | blue 100..700 |
+| `eval.charts.contrast_threshold` | `0.45` | number (>= 0.0, <= 1.0) | heatmap cells brighter than this share of the maximum get dark text |
+| `eval.charts.surface` | `'#0b0b0b'` | text |  |
+| `eval.charts.ink` | `'#ffffff'` | text |  |
+| `eval.charts.ink_secondary` | `'#c3c2b7'` | text |  |
+| `eval.charts.grid` | `'#2a2a2a'` | text |  |
+| `eval.charts.muted` | `'#5b5b57'` | text | bars that are not the point |
+| `eval.charts.primary` | `'#3987e5'` | text | categorical slot 1 (dark-surface step), also the highlighted bar |
+| `eval.charts.secondary` | `'#d95926'` | text | categorical slot 2 (dark-surface step) |
+| `eval.charts.ramp` | `['#0d366b', '#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#…` | list of text | blue 700..100: low = dark, high = light |
 | `eval.determinism_repeats` | `2` | integer (> 0) |  |
 | `eval.configs` | `[{decider: rule, embeddings: none, llm: mock, name: keyword-baseline}…` | list of section | evaluation matrix (Phase 9) |
 
