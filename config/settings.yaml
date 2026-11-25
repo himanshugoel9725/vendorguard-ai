@@ -275,6 +275,11 @@ api:
   max_finished_jobs_kept: 200       # finished jobs remembered in memory (their results stay on disk)
   rate_limit_per_minute: 30
   rate_limit_max_principals: 10000  # clients tracked at once; the least recently seen are dropped
+  retry_after_s: 60                 # Retry-After header when the job queue is full (503)
+  multipart_overhead: 1.1           # factor on the file bytes for form fields and boundaries (body cap)
+  max_override_reason_chars: 1000   # analyst override: longest reason
+  max_override_analyst_chars: 100   # analyst override: longest analyst name
+  shutdown_wait_s: 30               # on shutdown, wait this long for the running assessment before closing the store
 
 samples:
   specs_dir: data/samples/specs

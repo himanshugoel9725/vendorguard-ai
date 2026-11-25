@@ -65,8 +65,8 @@ class OverrideRequest(BaseModel):
     """An analyst's decision for one control."""
 
     status: DraftStatus
-    reason: str = Field(min_length=1, max_length=1000)
-    analyst: str = Field(min_length=1, max_length=100)
+    reason: str = Field(min_length=1)  # upper bounds come from settings.api (checked in the route)
+    analyst: str = Field(min_length=1)
 
 
 class OverrideResponse(BaseModel):
@@ -139,7 +139,7 @@ async def start_assessment(
         raise HTTPException(
             status_code=503,
             detail="too many assessments are waiting",
-            headers={"Retry-After": "60"},
+            headers={"Retry-After": str(settings.api.retry_after_s)},
         ) from exc
     except Exception:
         shutil.rmtree(folder, ignore_errors=True)
@@ -174,8 +174,8 @@ def get_assessment(
         if job is not None:  # failed before the run folder existed
             return AssessmentStatus(run_id=run_id, status=job.state, error=job.error)
         raise HTTPException(status_code=404, detail="no such assessment") from exc
-    if job is not None and job.state is JobState.FAILED:
-        state, error = JobState.FAILED, job.error
+    if job is not None and job.state is JobState.FAILED and state is not JobState.DONE:
+        state, error = JobState.FAILED, job.error  # a done run on disk wins over a failed re-run
     result = read_result(run_dir) if state is JobState.DONE else None
     return AssessmentStatus(run_id=run_id, status=state, error=error, result=result)
 
@@ -185,9 +185,13 @@ def get_report(
     run_id: RunId,
     settings: Annotated[Settings, Depends(get_settings)],
     controls: Annotated[ControlSet, Depends(get_controls)],
+    jobs: Annotated[JobRegistry, Depends(get_jobs)],
     format: Annotated[str, Query(pattern="^(html|md|json)$")] = "html",
 ) -> Response:
     """The report as ``html`` (default), ``md`` or ``json``. 409 until the run is done."""
+    job = jobs.get(run_id)
+    if job is not None and job.state in (JobState.QUEUED, JobState.RUNNING):
+        raise HTTPException(status_code=409, detail="the assessment is not finished")
     try:
         state, _, run_dir = _status_from_disk(settings.paths.runs_dir, run_id)
     except ConfigError as exc:
@@ -221,6 +225,10 @@ def override_finding(
     jobs: Annotated[JobRegistry, Depends(get_jobs)],
 ) -> OverrideResponse:
     """Records the override, recomputes the score and the reports, and audits it."""
+    if len(body.reason) > settings.api.max_override_reason_chars:
+        raise HTTPException(status_code=422, detail="reason is too long")
+    if len(body.analyst) > settings.api.max_override_analyst_chars:
+        raise HTTPException(status_code=422, detail="analyst is too long")
     job = jobs.get(run_id)
     if job is not None and job.state in (JobState.QUEUED, JobState.RUNNING):
         raise HTTPException(status_code=409, detail="the assessment is not finished")

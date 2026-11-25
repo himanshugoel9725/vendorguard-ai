@@ -152,6 +152,11 @@ class ApiSettings(StrictModel):
     max_finished_jobs_kept: PositiveInt
     rate_limit_per_minute: PositiveInt
     rate_limit_max_principals: PositiveInt
+    retry_after_s: PositiveInt
+    multipart_overhead: float = Field(ge=1.0, le=2.0)
+    max_override_reason_chars: PositiveInt
+    max_override_analyst_chars: PositiveInt
+    shutdown_wait_s: float = Field(ge=0)
 
     @model_validator(mode="after")
     def _cors_has_no_wildcards(self) -> "ApiSettings":

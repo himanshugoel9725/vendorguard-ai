@@ -620,3 +620,21 @@ def test_validation_errors_do_not_echo_input(client: TestClient) -> None:
     run_id = _run(client)
     r = _override(client, run_id, reason="", analyst="SECRET-NAME")
     assert r.status_code == 422 and "SECRET-NAME" not in r.text
+
+
+def test_report_is_409_while_the_run_is_running(client: TestClient) -> None:
+    from vendorguard.api.jobs import JobState
+
+    run_id = _run(client)
+    client.app.state.jobs.get(run_id).state = JobState.RUNNING  # type: ignore[attr-defined]
+    assert client.get(f"/v1/assessments/{run_id}/report").status_code == 409
+
+
+def test_done_run_on_disk_wins_over_a_failed_reupload(client: TestClient) -> None:
+    from vendorguard.api.jobs import JobState
+
+    run_id = _run(client)
+    job = client.app.state.jobs.get(run_id)  # type: ignore[attr-defined]
+    job.state, job.error = JobState.FAILED, "ConfigError"
+    body = client.get(f"/v1/assessments/{run_id}").json()
+    assert body["status"] == "done" and body["result"] is not None

@@ -53,6 +53,8 @@ class JobRegistry:
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vg-job")
         self._jobs: OrderedDict[str, Job] = OrderedDict()
         self._lock = threading.Lock()
+        self._idle = threading.Event()  # set while no job is executing
+        self._idle.set()
 
     def submit(self, job: Job) -> tuple[Job, bool]:
         """Queue ``job``. Returns ``(job, created)``: if the same run is already queued or
@@ -68,7 +70,11 @@ class JobRegistry:
             self._jobs[job.run_id] = job
             self._jobs.move_to_end(job.run_id)
             self._trim()
-        self._pool.submit(self._run, job)
+            try:
+                self._pool.submit(self._run, job)
+            except RuntimeError:  # pool already shut down: do not leave a job that never runs
+                del self._jobs[job.run_id]
+                raise
         return job, True
 
     def get(self, run_id: str) -> Job | None:
@@ -76,17 +82,21 @@ class JobRegistry:
         with self._lock:
             return self._jobs.get(run_id)
 
-    def close(self) -> None:
-        """Stop accepting work; queued jobs are dropped and their uploads deleted."""
+    def close(self, wait_s: float = 0.0) -> bool:
+        """Stop accepting work; queued jobs are dropped and their uploads deleted. Waits up to
+        ``wait_s`` for the running job; returns False if it is still running (do not close
+        what it uses)."""
         self._pool.shutdown(wait=False, cancel_futures=True)
         with self._lock:
             for job in self._jobs.values():
                 if job.state is JobState.QUEUED:
                     shutil.rmtree(job.folder, ignore_errors=True)
+        return self._idle.wait(wait_s)
 
     def _run(self, job: Job) -> None:
         with self._lock:
             job.state = JobState.RUNNING
+            self._idle.clear()
         try:
             self._work(job)
         except Exception as exc:
@@ -96,6 +106,8 @@ class JobRegistry:
         else:
             with self._lock:
                 job.state = JobState.DONE
+        finally:
+            self._idle.set()
 
     def _trim(self) -> None:
         finished = [r for r, j in self._jobs.items() if j.state in (JobState.DONE, JobState.FAILED)]

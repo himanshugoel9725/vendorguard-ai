@@ -23,7 +23,6 @@ from vendorguard.errors import ConfigError
 from vendorguard.utils.timeutil import monotonic_s
 
 WINDOW_S = 60.0  # ``api.rate_limit_per_minute`` counts requests per this many seconds
-MULTIPART_OVERHEAD = 1.1  # form fields and boundaries on top of the files themselves
 BYTES_PER_KB = 1024
 BYTES_PER_MB = 1024 * 1024
 PUBLIC_PATHS = frozenset({"/health"})
@@ -124,7 +123,8 @@ class RateLimiter:
 def max_body_bytes(settings: Settings) -> int:
     """The largest upload request body: all allowed files plus form overhead."""
     api = settings.api
-    return int(api.max_upload_mb * BYTES_PER_MB * api.max_files_per_request * MULTIPART_OVERHEAD)
+    files_bytes = api.max_upload_mb * BYTES_PER_MB * api.max_files_per_request
+    return int(files_bytes * api.multipart_overhead)
 
 
 class BodyTooLarge(Exception):

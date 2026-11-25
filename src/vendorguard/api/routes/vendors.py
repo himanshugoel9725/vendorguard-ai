@@ -23,7 +23,7 @@ VendorId = Annotated[
 class AskRequest(BaseModel):
     """A question about one vendor's assessment history."""
 
-    question: str = Field(min_length=1, max_length=2000, examples=["What changed for nimbara-hr?"])
+    question: str = Field(min_length=1, examples=["What changed for nimbara-hr?"])
 
 
 @router.get("", summary="All vendors with their number of runs and latest band")

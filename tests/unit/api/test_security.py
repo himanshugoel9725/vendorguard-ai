@@ -610,7 +610,7 @@ def small(settings_override: Make) -> Settings:
 
 def test_max_body_bytes_follows_settings(settings_override: Make) -> None:
     s = settings_override(api={"max_upload_mb": 2, "max_files_per_request": 3})
-    assert max_body_bytes(s) == int(2 * 1024 * 1024 * 3 * security.MULTIPART_OVERHEAD)
+    assert max_body_bytes(s) == int(2 * 1024 * 1024 * 3 * s.api.multipart_overhead)
     assert max_body_bytes(s) > 2 * 3 * 1024 * 1024
 
 

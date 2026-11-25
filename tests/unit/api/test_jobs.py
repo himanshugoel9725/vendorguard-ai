@@ -284,3 +284,26 @@ def test_concurrent_submits_all_finish_in_serial_order(
         _wait_for(lambda n=n: _done(reg, n))  # type: ignore[misc]
     assert sorted(order) == names and len(order) == 20  # none lost, none doubled
     assert overlap is False
+
+
+def test_submit_after_close_does_not_leave_a_stuck_job(tmp_path: Path) -> None:
+    reg = JobRegistry(lambda job: None, 5, 10)
+    reg.close()
+    with pytest.raises(RuntimeError):
+        reg.submit(Job(run_id="run_a", vendor_id="v", folder=tmp_path))
+    assert reg.get("run_a") is None
+
+
+def test_close_waits_for_the_running_job(tmp_path: Path) -> None:
+    started, release = threading.Event(), threading.Event()
+
+    def work(job: Job) -> None:
+        started.set()
+        release.wait(5)
+
+    reg = JobRegistry(work, 5, 10)
+    reg.submit(Job(run_id="run_a", vendor_id="v", folder=tmp_path))
+    assert started.wait(5)
+    assert reg.close(0.05) is False  # still running: the caller must not close the store
+    release.set()
+    assert reg.close(5) is True

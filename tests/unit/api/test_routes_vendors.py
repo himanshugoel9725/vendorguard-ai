@@ -146,7 +146,7 @@ def test_ask_question_validation(client: TestClient, settings: Settings) -> None
     url = "/v1/vendors/nimbara-hr/ask"
     assert client.post(url, json={"question": ""}).status_code == 422
     assert client.post(url, json={}).status_code == 422
-    assert client.post(url, json={"question": "x" * 2001}).status_code == 422
+    assert client.post(url, json={"question": "x" * 2001}).status_code == 400
     assert client.post(url, json={"question": 5}).status_code == 422
     limit = settings.memory.ask_max_question_chars
     too_long = client.post(url, json={"question": "a" * (limit + 1)})
@@ -313,9 +313,9 @@ def test_shutdown_closes_the_job_registry_and_memory(
         memory = c.app.state.memory  # type: ignore[attr-defined]
         job_close, mem_close = jobs.close, memory.close
 
-        def close_jobs() -> None:
+        def close_jobs(wait_s: float = 0.0) -> bool:
             closed.append("jobs")
-            job_close()
+            return bool(job_close(wait_s))
 
         def close_memory() -> None:
             closed.append("memory")

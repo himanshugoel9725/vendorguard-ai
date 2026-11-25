@@ -24,8 +24,10 @@ services:
       - vendorguard-data:/data
     restart: unless-stopped
     read_only: true
+    # tmpfs counts against memory and multipart uploads spool to /tmp: cap both.
     tmpfs:
-      - /tmp
+      - /tmp:size=256m,mode=1777
+    mem_limit: 2g
     cap_drop:
       - ALL
     security_opt:

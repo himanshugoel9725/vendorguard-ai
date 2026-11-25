@@ -71,9 +71,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
-            app.state.jobs.close()
+            finished = app.state.jobs.close(settings.api.shutdown_wait_s)
             close = getattr(app.state.memory, "close", None)
-            if callable(close):
+            if finished and callable(close):  # never close the store under a running job
                 close()
 
     docs = settings.api.docs_enabled
