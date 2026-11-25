@@ -197,6 +197,12 @@ class ChartSettings(StrictModel):
     width_in: PositiveFloat
     row_height_in: PositiveFloat  # bar charts: height per config row
     cell_in: PositiveFloat  # confusion matrix: size of one cell
+    bar_height: PositiveFloat  # bar thickness (fraction of the row)
+    font_size: PositiveFloat  # value labels and cell numbers
+    title_size: PositiveFloat
+    contrast_threshold: (
+        Probability  # heatmap cells darker than this share of the maximum get light text
+    )
     surface: str
     ink: str
     ink_secondary: str

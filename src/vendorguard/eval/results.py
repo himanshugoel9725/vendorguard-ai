@@ -3,6 +3,8 @@
 from collections.abc import Sequence
 from enum import StrEnum
 
+from pydantic import Field
+
 from vendorguard.eval.metrics import (
     GOLD_LABELS,
     PRED_LABELS,
@@ -34,13 +36,17 @@ class RunRecord(ContractModel):
     tokens_out: int = 0
     decider_calls: int = 0
     cache_hits: int = 0
+    decider_fallbacks: int = (
+        0  # gate decisions made by the fallback decider, not the configured one
+    )
     usd: float = 0.0
     wall_s: float = 0.0
     result_hash: str | None = None
 
 
 class Aggregate(ContractModel):
-    """All successful runs of a config pooled (controls pooled, not averaged per vendor)."""
+    """Successful runs of a config pooled: controls are pooled; citation validity is the mean of the
+    per-vendor rates."""
 
     runs: int
     controls: int
@@ -54,6 +60,7 @@ class Aggregate(ContractModel):
     tokens_in: int
     tokens_out: int
     decider_calls: int
+    decider_fallbacks: int = 0
     usd: float
     wall_s: float
 
@@ -67,6 +74,7 @@ class ConfigRecord(ContractModel):
     embeddings: str
     outcome: Outcome
     note: str | None = None
+    provenance: dict[str, str] = Field(default_factory=dict)  # models and prompt versions used
     runs: list[RunRecord]
     aggregate: Aggregate | None = None
 
@@ -93,8 +101,8 @@ def aggregate(runs: Sequence[RunRecord]) -> Aggregate | None:
                 matrix[g][p] += n
     correct = sum(matrix[g][g] for g in GOLD_LABELS)
     cites = [m.citation_validity_rate for m in metrics if m.citation_validity_rate is not None]
-    reviews = sum(m.human_review_rate * m.controls for m in metrics)
-    skips = sum(m.triage_skip_rate * m.controls for m in metrics)
+    reviews = sum(round(m.human_review_rate * m.controls) for m in metrics)  # exact: k / n * n
+    skips = sum(round(m.triage_skip_rate * m.controls) for m in metrics)
     return Aggregate(
         runs=len(ok),
         controls=total,
@@ -108,6 +116,7 @@ def aggregate(runs: Sequence[RunRecord]) -> Aggregate | None:
         tokens_in=sum(r.tokens_in for r in ok),
         tokens_out=sum(r.tokens_out for r in ok),
         decider_calls=sum(r.decider_calls for r in ok),
+        decider_fallbacks=sum(r.decider_fallbacks for r in ok),
         usd=sum(r.usd for r in ok),
         wall_s=sum(r.wall_s for r in ok),
     )

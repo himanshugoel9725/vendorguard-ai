@@ -1,10 +1,7 @@
 """Evaluation runner: every config of ``eval.configs`` over every sample vendor."""
 
-import json
 import logging
 from collections.abc import Callable, Sequence
-from pathlib import Path
-from typing import Any
 
 from vendorguard.config import Settings
 from vendorguard.config_models.core import EvalConfig
@@ -18,6 +15,7 @@ from vendorguard.eval.results import (
     RunRecord,
     aggregate,
 )
+from vendorguard.observability.audit_log import read_audit_log
 from vendorguard.observability.run_manifest import result_hash
 from vendorguard.pipeline.orchestrator import run_assessment
 from vendorguard.utils.timeutil import monotonic_s
@@ -55,13 +53,41 @@ def config_settings(settings: Settings, cfg: EvalConfig) -> Settings:
                 update={"runs_dir": root / "runs", "state_dir": root / "state"}
             ),
             "cache": settings.cache.model_copy(
-                update={
+                update={  # never touch the shared cache or the committed cassettes
                     "enabled": settings.eval.cache_enabled,
+                    "mode": "read_write",
                     "sqlite_path": root / "state" / "cache.db",
+                    "jsonl_dir": root / "state" / "cache",
                 }
             ),
         }
     )
+
+
+def decider_fallbacks(settings: Settings, run_id: str) -> int:
+    """How many gate decisions of a finished run were made by the fallback decider."""
+    events = read_audit_log(settings.paths.runs_dir / run_id / "audit.jsonl")
+    return sum(e.stage == "decider_fallback" for e in events)
+
+
+def provenance(settings: Settings, cfg: EvalConfig) -> dict[str, str]:
+    """The models and prompt versions a config's results depend on (no secrets)."""
+    profile = getattr(settings.llm, cfg.llm, None)
+    model = "mock" if cfg.llm == "mock" else str(getattr(profile, "model", settings.llm.model))
+    out = {"llm_model": model}
+    if cfg.embeddings != "none":
+        out["embedding_model"] = settings.embeddings.model
+    if cfg.decider == "jev":
+        out["jev_model"] = settings.decision.jev.model
+    out.update({f"prompt_{k}": v for k, v in sorted(settings.prompts.model_dump().items())})
+    return out
+
+
+def stale_configs(settings: Settings, results: EvalResults) -> list[str]:
+    """Configs in ``results`` whose recorded models/prompts differ from the current settings
+    (or were recorded without them)."""
+    wanted = {c.name: provenance(settings, c) for c in settings.eval.configs}
+    return [c.name for c in results.configs if c.name in wanted and c.provenance != wanted[c.name]]
 
 
 def _run_one(settings: Settings, stem: str) -> RunRecord:
@@ -86,6 +112,7 @@ def _run_one(settings: Settings, stem: str) -> RunRecord:
         tokens_in=c.tokens_in,
         tokens_out=c.tokens_out,
         decider_calls=c.decider_calls,
+        decider_fallbacks=decider_fallbacks(settings, result.run_id),
         cache_hits=c.cache_hits,
         usd=c.usd,
         wall_s=wall,
@@ -98,9 +125,10 @@ def run_config(
 ) -> ConfigRecord:
     """Run one config over ``stems``; a missing key skips it, a failed run is recorded."""
     head = {"name": cfg.name, "llm": cfg.llm, "decider": cfg.decider, "embeddings": cfg.embeddings}
+    prov = provenance(settings, cfg)
     reason = skip_reason(settings, cfg)
     if reason:
-        return ConfigRecord(**head, outcome=Outcome.SKIPPED, note=reason, runs=[])
+        return ConfigRecord(**head, outcome=Outcome.SKIPPED, note=reason, provenance=prov, runs=[])
     local = config_settings(settings, cfg)
     runs = []
     for stem in stems:
@@ -108,57 +136,50 @@ def run_config(
             progress(f"{cfg.name}: {stem}")
         runs.append(_run_one(local, stem))
     failed = [r for r in runs if r.outcome is Outcome.FAILED]
-    outcome = Outcome.FAILED if len(failed) == len(runs) else Outcome.OK
-    note = f"{len(failed)} of {len(runs)} runs failed" if failed else None
-    return ConfigRecord(**head, outcome=outcome, note=note, runs=runs, aggregate=aggregate(runs))
-
-
-def run_eval(
-    settings: Settings, names: Sequence[str] | None = None, progress: Progress | None = None
-) -> EvalResults:
-    """Run the named configs (default: all of ``eval.configs``) over every sample vendor."""
-    configs = [c for c in settings.eval.configs if not names or c.name in names]
-    stems = sample_stems(settings)
-    return EvalResults(
-        samples=stems, configs=[run_config(settings, c, stems, progress) for c in configs]
+    fallbacks = sum(r.decider_fallbacks for r in runs)
+    notes = []
+    if failed:
+        notes.append(f"{len(failed)} of {len(runs)} runs failed")
+    if fallbacks:
+        notes.append(f"{fallbacks} gate decisions came from the fallback decider")
+    # a config that lost runs or fell back is not comparable with the others: not OK
+    outcome = Outcome.FAILED if notes else Outcome.OK
+    return ConfigRecord(
+        **head,
+        outcome=outcome,
+        note="; ".join(notes) or None,
+        provenance=prov,
+        runs=runs,
+        aggregate=aggregate(runs),
     )
 
 
-def merge_results(
-    existing: EvalResults | None, new: EvalResults, order: Sequence[str]
+def run_eval(
+    settings: Settings,
+    names: Sequence[str] | None = None,
+    progress: Progress | None = None,
+    on_config: Callable[[ConfigRecord], None] | None = None,
 ) -> EvalResults:
-    """``new`` configs replace same-named ones in ``existing``; the others are kept. Configs
-    come out in the order of ``eval.configs`` (names no longer configured go last, by name)."""
-    by_name = {c.name: c for c in (existing.configs if existing else [])}
-    by_name.update({c.name: c for c in new.configs})
-    rank = {n: i for i, n in enumerate(order)}
-    configs = sorted(by_name.values(), key=lambda c: (rank.get(c.name, len(rank)), c.name))
-    return EvalResults(samples=new.samples, configs=configs)
-
-
-def _round(value: Any, digits: int) -> Any:
-    if isinstance(value, float):
-        return round(value, digits)
-    if isinstance(value, dict):
-        return {k: _round(v, digits) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_round(v, digits) for v in value]
-    return value
-
-
-def write_results(results: EvalResults, path: Path, digits: int) -> Path:
-    """Write ``results.json`` (sorted keys, floats rounded to ``digits``)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = _round(results.model_dump(mode="json"), digits)
-    path.write_text(json.dumps(body, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    return path
+    """Run the named configs (default: all of ``eval.configs``) over every sample vendor.
+    ``on_config`` is called after each finished config, so a crash keeps the earlier ones."""
+    configs = [c for c in settings.eval.configs if not names or c.name in names]
+    stems = sample_stems(settings)
+    records = []
+    for cfg in configs:
+        record = run_config(settings, cfg, stems, progress)
+        records.append(record)
+        if on_config:
+            on_config(record)
+    return EvalResults(samples=stems, configs=records)
 
 
 __all__ = [
     "config_settings",
+    "decider_fallbacks",
+    "provenance",
     "run_config",
     "run_eval",
     "sample_stems",
     "skip_reason",
-    "write_results",
+    "stale_configs",
 ]

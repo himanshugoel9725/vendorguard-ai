@@ -12,7 +12,7 @@ from vendorguard.config import Settings
 from vendorguard.errors import ConfigError
 from vendorguard.eval.golden import load_golden
 from vendorguard.eval.results import EvalResults, Outcome
-from vendorguard.eval.runner import config_settings, sample_stems
+from vendorguard.eval.runner import config_settings, decider_fallbacks, sample_stems, skip_reason
 from vendorguard.models._base import ContractModel
 from vendorguard.models.finding import ControlFinding
 from vendorguard.observability.run_manifest import result_hash
@@ -29,6 +29,7 @@ class StemDeterminism(ContractModel):
     hash_identical: bool
     findings: int
     findings_identical: int  # controls whose finding (status, quotes, trace) is equal in every run
+    decider_fallbacks: int = 0  # gate decisions made by the fallback decider in these runs
 
 
 class DeterminismReport(ContractModel):
@@ -50,11 +51,12 @@ def measure_stem(settings: Settings, stem: str, repeats: int) -> StemDeterminism
     """Assess one sample ``repeats`` times with ``settings`` and compare the runs."""
     golden = load_golden(settings.paths.golden_dir / f"{stem}.json")
     doc = settings.paths.samples_dir / f"{stem}.pdf"
-    hashes, per_run = [], []
+    hashes, per_run, fallbacks = [], [], 0
     for _ in range(repeats):
         result = run_assessment(settings, golden.vendor_id, [doc])
         hashes.append(result_hash(result))
         per_run.append(_finding_hashes(result.findings))
+        fallbacks += decider_fallbacks(settings, result.run_id)
     first = per_run[0]
     same = sum(all(run.get(cid) == h for run in per_run) for cid, h in first.items())
     return StemDeterminism(
@@ -64,6 +66,7 @@ def measure_stem(settings: Settings, stem: str, repeats: int) -> StemDeterminism
         hash_identical=len(set(hashes)) == 1,
         findings=len(first),
         findings_identical=same,
+        decider_fallbacks=fallbacks,
     )
 
 
@@ -103,11 +106,21 @@ def run_determinism(settings: Settings, name: str) -> DeterminismReport:
     cfg = next((c for c in settings.eval.configs if c.name == name), None)
     if cfg is None:
         raise ConfigError(f"unknown eval config: {name}")
+    reason = skip_reason(settings, cfg)
+    if reason:  # without the key the factory would silently use the rule decider instead
+        raise ConfigError(f"cannot measure {name}: {reason}")
     local = config_settings(settings, cfg)
     local = local.model_copy(update={"cache": local.cache.model_copy(update={"enabled": False})})
-    return measure(
+    report = measure(
         local, sample_stems(local), settings.eval.determinism_repeats, config=name, cache="off"
     )
+    fallbacks = sum(r.decider_fallbacks for r in report.stems)
+    if fallbacks:
+        raise ConfigError(
+            f"{fallbacks} gate decisions came from the fallback decider: "
+            f"the numbers would not describe {name}"
+        )
+    return report
 
 
 def write_determinism(report: DeterminismReport, path: Path, digits: int) -> Path:

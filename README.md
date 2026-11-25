@@ -372,11 +372,10 @@ construction. The results do not transfer to real vendor documents. All real-mod
   pipeline and is not a model result.
 - Most errors are a false `no_evidence`: the 3B model often returns no quote. The weak LLM-judge result is a
   limit of this small model, not a verdict on LLM judges.
-- Jev scores best, apparently because its verify gate is stricter and sends doubtful findings to a person
-  (14 %); no ablation isolated the cause. It is a
+- Jev scores best; 14 % of its controls go to a person. The cause of its lead was not isolated. It is a
   hosted, paid, alpha-stage service, and this is one small sample.
-- Real-model runs are not repeatable: with the cache off, two identical runs gave 0 % identical result hashes
-  and 52 % identical findings. Replaying the committed cassettes is 100 % identical.
+- Real-model runs were not repeatable here: with the cache off, two identical runs (only two repeats, the first
+  possibly a cold start) gave 0 % identical result hashes and 52 % identical findings. Replaying the committed cassettes is 100 % identical.
 
 Method, per-vendor tables, charts, determinism and how to reproduce:
 [docs/EVALUATION.md](docs/EVALUATION.md).

@@ -304,6 +304,10 @@ eval:
     width_in: 8.0
     row_height_in: 0.62             # bar charts: height per config
     cell_in: 1.15                   # confusion matrix: size of one cell
+    bar_height: 0.62                # bar thickness (fraction of the row)
+    font_size: 10                   # value labels and cell numbers
+    title_size: 13
+    contrast_threshold: 0.45        # heatmap cells darker than this share of the maximum get light text
     surface: "#fcfcfb"
     ink: "#0b0b0b"
     ink_secondary: "#52514e"

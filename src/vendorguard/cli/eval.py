@@ -8,8 +8,9 @@ from rich.table import Table
 from vendorguard.cli.common import console, guarded, load
 from vendorguard.errors import ConfigError
 from vendorguard.eval.determinism import best_config_name, run_determinism, write_determinism
-from vendorguard.eval.results import EvalResults
-from vendorguard.eval.runner import merge_results, run_eval, write_results
+from vendorguard.eval.results import ConfigRecord, EvalResults, Outcome
+from vendorguard.eval.results_io import merge_results, write_results
+from vendorguard.eval.runner import run_eval, stale_configs
 
 RESULTS_FILE = "results.json"
 
@@ -27,13 +28,36 @@ def eval_matrix(
     unknown = sorted(set(names or []) - known)
     if unknown:
         raise ConfigError(f"unknown eval config(s): {', '.join(unknown)} (known: {sorted(known)})")
-    results = run_eval(settings, names, progress=lambda m: console.print(m, markup=False))
     target = settings.eval.results_dir / RESULTS_FILE
-    before = (
-        EvalResults.model_validate_json(target.read_text("utf-8")) if target.is_file() else None
+    order = [c.name for c in settings.eval.configs]
+    digits = settings.eval.round_digits
+
+    def read_before() -> EvalResults | None:
+        if not target.is_file():
+            return None
+        return EvalResults.model_validate_json(target.read_text("utf-8"))
+
+    def save(record: ConfigRecord) -> None:
+        """Merge one finished config into results.json right away: a crash keeps the rest."""
+        before = read_before()
+        samples = before.samples if before else []
+        merged = merge_results(before, EvalResults(samples=samples, configs=[record]), order)
+        write_results(merged, target, digits)
+        old = next((c for c in (before.configs if before else []) if c.name == record.name), None)
+        if record.outcome is not Outcome.OK and old and old.outcome is Outcome.OK:
+            console.print(
+                f"{record.name}: {record.outcome.value} ({record.note}); "
+                "kept the previous good result",
+                markup=False,
+            )
+
+    run = run_eval(
+        settings, names, progress=lambda m: console.print(m, markup=False), on_config=save
     )
-    results = merge_results(before, results, [c.name for c in settings.eval.configs])
-    path = write_results(results, target, settings.eval.round_digits)
+    results = merge_results(read_before(), run, order)
+    path = write_results(results, target, digits)
+    for name in stale_configs(settings, results):
+        console.print(f"warning: {name} was measured with other models or prompts", markup=False)
     table = Table(
         "config", "outcome", "accuracy", "macro-F1", "LLM calls", "tokens in/out", "time s"
     )
@@ -92,6 +116,8 @@ def charts() -> None:
     if not results_file.is_file():
         raise ConfigError(f"{results_file} does not exist: run `vg eval` first")
     results = EvalResults.model_validate_json(results_file.read_text("utf-8"))
+    for name in stale_configs(settings, results):
+        console.print(f"warning: {name} was measured with other models or prompts", markup=False)
     try:  # matplotlib is a dev dependency: do not import it when any other command starts
         from vendorguard.eval.charts import render_charts
     except ImportError as exc:

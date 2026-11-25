@@ -123,3 +123,29 @@ def test_best_config_prefers_accuracy_then_name() -> None:
     )
     assert best_config_name(res) == "a"
     assert best_config_name(EvalResults(samples=[], configs=[])) is None
+
+
+def test_determinism_refuses_a_config_that_cannot_run_for_real(
+    settings_override: Make, tmp_path: Path
+) -> None:
+    s = settings_override(
+        eval={
+            "work_dir": tmp_path / "eval",
+            "configs": [
+                {"name": "jev-nokey", "llm": "mock", "decider": "jev", "embeddings": "none"}
+            ],
+        }
+    )
+    with pytest.raises(ConfigError, match="no Jev API key"):
+        run_determinism(s, "jev-nokey")  # the factory would silently use the rule decider
+
+
+def test_determinism_refuses_numbers_from_a_fallback_decider(
+    settings_override: Make, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from vendorguard.eval import determinism as mod
+
+    s = settings_override(eval={"work_dir": tmp_path / "eval", "determinism_repeats": 2})
+    monkeypatch.setattr(mod, "decider_fallbacks", lambda *_: 1)
+    with pytest.raises(ConfigError, match="fallback decider"):
+        run_determinism(s, "keyword-baseline")

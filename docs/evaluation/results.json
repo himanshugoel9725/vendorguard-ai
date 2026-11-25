@@ -6,6 +6,7 @@
         "citation_validity_rate": 1.0,
         "controls": 100,
         "decider_calls": 0,
+        "decider_fallbacks": 0,
         "human_review_rate": 0.0,
         "inherent_tier_correct": 4,
         "llm_calls": 0,
@@ -23,10 +24,20 @@
       "name": "keyword-baseline",
       "note": null,
       "outcome": "ok",
+      "provenance": {
+        "llm_model": "mock",
+        "prompt_ask": "v1",
+        "prompt_intake": "v1",
+        "prompt_judge": "v1",
+        "prompt_mapper": "v2",
+        "prompt_reporter": "v1",
+        "prompt_reviewer": "v3"
+      },
       "runs": [
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 0,
           "metrics": {
@@ -106,6 +117,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 0,
           "metrics": {
@@ -185,6 +197,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 0,
           "metrics": {
@@ -264,6 +277,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 0,
           "metrics": {
@@ -348,6 +362,7 @@
         "citation_validity_rate": 1.0,
         "controls": 100,
         "decider_calls": 0,
+        "decider_fallbacks": 0,
         "human_review_rate": 0.01,
         "inherent_tier_correct": 4,
         "llm_calls": 110,
@@ -365,10 +380,21 @@
       "name": "ollama-rule",
       "note": null,
       "outcome": "ok",
+      "provenance": {
+        "embedding_model": "nomic-embed-text",
+        "llm_model": "qwen2.5:3b",
+        "prompt_ask": "v1",
+        "prompt_intake": "v1",
+        "prompt_judge": "v1",
+        "prompt_mapper": "v2",
+        "prompt_reporter": "v1",
+        "prompt_reviewer": "v3"
+      },
       "runs": [
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 27,
           "metrics": {
@@ -448,6 +474,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 28,
           "metrics": {
@@ -527,6 +554,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 28,
           "metrics": {
@@ -606,6 +634,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 27,
           "metrics": {
@@ -690,6 +719,7 @@
         "citation_validity_rate": 1.0,
         "controls": 100,
         "decider_calls": 0,
+        "decider_fallbacks": 0,
         "human_review_rate": 0.0,
         "inherent_tier_correct": 4,
         "llm_calls": 95,
@@ -707,10 +737,20 @@
       "name": "ollama-rule-bm25",
       "note": null,
       "outcome": "ok",
+      "provenance": {
+        "llm_model": "qwen2.5:3b",
+        "prompt_ask": "v1",
+        "prompt_intake": "v1",
+        "prompt_judge": "v1",
+        "prompt_mapper": "v2",
+        "prompt_reporter": "v1",
+        "prompt_reviewer": "v3"
+      },
       "runs": [
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 20,
           "metrics": {
@@ -790,6 +830,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 26,
           "metrics": {
@@ -869,6 +910,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 26,
           "metrics": {
@@ -948,6 +990,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 23,
           "metrics": {
@@ -1032,6 +1075,7 @@
         "citation_validity_rate": 1.0,
         "controls": 100,
         "decider_calls": 0,
+        "decider_fallbacks": 0,
         "human_review_rate": 0.01,
         "inherent_tier_correct": 4,
         "llm_calls": 116,
@@ -1049,10 +1093,21 @@
       "name": "ollama-judge",
       "note": null,
       "outcome": "ok",
+      "provenance": {
+        "embedding_model": "nomic-embed-text",
+        "llm_model": "qwen2.5:3b",
+        "prompt_ask": "v1",
+        "prompt_intake": "v1",
+        "prompt_judge": "v1",
+        "prompt_mapper": "v2",
+        "prompt_reporter": "v1",
+        "prompt_reviewer": "v3"
+      },
       "runs": [
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 27,
           "metrics": {
@@ -1132,6 +1187,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 33,
           "metrics": {
@@ -1211,6 +1267,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 29,
           "metrics": {
@@ -1290,6 +1347,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 0,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 27,
           "metrics": {
@@ -1374,6 +1432,7 @@
         "citation_validity_rate": 1.0,
         "controls": 100,
         "decider_calls": 198,
+        "decider_fallbacks": 0,
         "human_review_rate": 0.14,
         "inherent_tier_correct": 4,
         "llm_calls": 113,
@@ -1391,10 +1450,22 @@
       "name": "ollama-jev",
       "note": null,
       "outcome": "ok",
+      "provenance": {
+        "embedding_model": "nomic-embed-text",
+        "jev_model": "jev-1.14.0",
+        "llm_model": "qwen2.5:3b",
+        "prompt_ask": "v1",
+        "prompt_intake": "v1",
+        "prompt_judge": "v1",
+        "prompt_mapper": "v2",
+        "prompt_reporter": "v1",
+        "prompt_reviewer": "v3"
+      },
       "runs": [
         {
           "cache_hits": 0,
           "decider_calls": 44,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 24,
           "metrics": {
@@ -1474,6 +1545,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 52,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 30,
           "metrics": {
@@ -1553,6 +1625,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 52,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 29,
           "metrics": {
@@ -1632,6 +1705,7 @@
         {
           "cache_hits": 0,
           "decider_calls": 50,
+          "decider_fallbacks": 0,
           "inherent_tier_correct": true,
           "llm_calls": 30,
           "metrics": {

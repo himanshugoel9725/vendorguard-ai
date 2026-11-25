@@ -14,13 +14,13 @@ from vendorguard.config import Settings
 from vendorguard.config_models.core import EvalConfig
 from vendorguard.eval import runner
 from vendorguard.eval.results import Outcome, RunRecord, aggregate
+from vendorguard.eval.results_io import write_results
 from vendorguard.eval.runner import (
     config_settings,
     run_config,
     run_eval,
     sample_stems,
     skip_reason,
-    write_results,
 )
 
 Make = Callable[..., Settings]
@@ -150,3 +150,107 @@ def test_eval_keeps_configs_that_were_not_rerun(
         assert CliRunner().invoke(app, ["eval", "--configs", name]).exit_code == 0
     body = json.loads((s.eval.results_dir / "results.json").read_text(encoding="utf-8"))
     assert [c["name"] for c in body["configs"]] == ["mock-rule", "mock-judge"]
+
+
+# ----------------------------------------------------------------------------- review fixes
+
+
+def _record(name: str, outcome: Outcome, note: str | None = None) -> Any:
+    from vendorguard.eval.results import ConfigRecord
+
+    return ConfigRecord(
+        name=name,
+        llm="mock",
+        decider="rule",
+        embeddings="none",
+        outcome=outcome,
+        note=note,
+        runs=[],
+    )
+
+
+def test_merge_never_replaces_a_good_result_with_a_skipped_or_failed_one() -> None:
+    from vendorguard.eval.results import EvalResults
+    from vendorguard.eval.results_io import merge_results
+
+    good = EvalResults(samples=["a"], configs=[_record("jev", Outcome.OK)])
+    for bad in (Outcome.SKIPPED, Outcome.FAILED):
+        new = EvalResults(samples=["a"], configs=[_record("jev", bad, "no key")])
+        merged = merge_results(good, new, ["jev"])
+        assert merged.configs[0].outcome is Outcome.OK
+    # a good new result does replace; a bad one is kept when there is nothing before
+    fresh = EvalResults(samples=["a"], configs=[_record("x", Outcome.SKIPPED, "n")])
+    assert merge_results(None, fresh, ["x"]).configs[0].outcome is Outcome.SKIPPED
+    bad_then_good = merge_results(
+        fresh, EvalResults(samples=["a"], configs=[_record("x", Outcome.OK)]), ["x"]
+    )
+    assert bad_then_good.configs[0].outcome is Outcome.OK
+
+
+def test_config_settings_never_uses_the_shared_cache(s: Settings) -> None:
+    local = config_settings(s, MOCK)
+    assert local.cache.jsonl_dir == s.eval.work_dir / "mock-rule" / "state" / "cache"
+    assert local.cache.mode == "read_write"
+
+
+def test_provenance_names_models_and_prompts_and_marks_the_mock(s: Settings) -> None:
+    from vendorguard.eval.runner import provenance
+
+    mock = provenance(s, MOCK)
+    assert mock["llm_model"] == "mock" and "embedding_model" not in mock
+    assert mock["prompt_mapper"] == s.prompts.mapper
+    ollama = EvalConfig(name="o", llm="ollama", decider="jev", embeddings="ollama")
+    p = provenance(s, ollama)
+    assert p["llm_model"] == s.llm.model and p["jev_model"] == s.decision.jev.model
+    assert p["embedding_model"] == s.embeddings.model
+
+
+def test_stale_configs_flags_changed_or_missing_provenance(s: Settings) -> None:
+    from vendorguard.eval.results import EvalResults
+    from vendorguard.eval.runner import provenance, stale_configs
+
+    fresh = _record("mock-rule", Outcome.OK).model_copy(update={"provenance": provenance(s, MOCK)})
+    old = _record("mock-judge", Outcome.OK)  # recorded before provenance existed
+    changed = fresh.model_copy(update={"name": "mock-rule", "provenance": {"llm_model": "other"}})
+    assert stale_configs(s, EvalResults(samples=[], configs=[fresh, old])) == ["mock-judge"]
+    assert stale_configs(s, EvalResults(samples=[], configs=[changed])) == ["mock-rule"]
+
+
+def test_a_config_that_lost_runs_or_fell_back_is_not_ok(
+    s: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from vendorguard.errors import BudgetExceededError
+
+    real = runner.run_assessment
+    calls = {"n": 0}
+
+    def sometimes(*a: Any, **k: Any) -> Any:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise BudgetExceededError("over")
+        return real(*a, **k)
+
+    monkeypatch.setattr(runner, "run_assessment", sometimes)
+    partial = run_config(s, MOCK, ["quillfield", "brightdock"])
+    assert partial.outcome is Outcome.FAILED and "1 of 2 runs failed" in (partial.note or "")
+    assert partial.aggregate is not None  # kept for inspection
+
+    monkeypatch.setattr(runner, "run_assessment", real)
+    monkeypatch.setattr(runner, "decider_fallbacks", lambda *_: 3)
+    fell_back = run_config(s, MOCK, ["quillfield"])
+    assert fell_back.outcome is Outcome.FAILED and "fallback decider" in (fell_back.note or "")
+    assert fell_back.aggregate is not None and fell_back.aggregate.decider_fallbacks == 3
+
+
+def test_decider_fallbacks_counts_audit_events(s: Settings) -> None:
+    from vendorguard.pipeline.orchestrator import run_assessment
+
+    local = config_settings(s, MOCK)
+    result = run_assessment(local, "quillfield", [local.paths.samples_dir / "quillfield.pdf"])
+    assert runner.decider_fallbacks(local, result.run_id) == 0
+
+
+def test_run_eval_reports_each_config_as_it_finishes(s: Settings) -> None:
+    seen: list[str] = []
+    run_eval(s, on_config=lambda rec: seen.append(rec.name))
+    assert seen == ["mock-rule", "mock-judge"]

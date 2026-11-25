@@ -2,7 +2,8 @@
 
 Mock configs are left out of the bar charts on purpose: their score only shows that the pipeline
 agrees with the sample generator, and a 1.00 bar would hide the real models. Output is
-byte-stable for the same results (no timestamp or version in the PNG metadata).
+byte-stable for the same results (no timestamp or version in the PNG metadata). Figure margins
+and tick positions are layout constants, not tunables; everything visible is in ``eval.charts``.
 """
 
 from pathlib import Path
@@ -41,7 +42,7 @@ def _frame(cs: ChartSettings, rows: int, title: str) -> tuple[Figure, Axes]:
     fig, ax = plt.subplots(figsize=(cs.width_in, cs.row_height_in * rows + 0.9))
     fig.patch.set_facecolor(cs.surface)
     ax.set_facecolor(cs.surface)
-    fig.suptitle(title, x=0.02, ha="left", fontsize=13, color=cs.ink, fontweight="bold")
+    fig.suptitle(title, x=0.02, ha="left", fontsize=cs.title_size, color=cs.ink, fontweight="bold")
     for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
     ax.spines["bottom"].set_color(cs.grid)
@@ -61,16 +62,17 @@ def _save(fig: Figure, path: Path, cs: ChartSettings) -> Path:
 def accuracy_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
     """Horizontal bars: accuracy per config; the best one is highlighted, the rest muted."""
     configs = _model_configs(results)
-    fig, ax = _frame(cs, len(configs), "Accuracy against the golden labels (100 controls)")
+    total = configs[0].aggregate.controls if configs[0].aggregate else 0
+    fig, ax = _frame(cs, len(configs), f"Accuracy against the golden labels ({total} controls)")
     names = [c.name for c in configs]
     values = [c.aggregate.accuracy if c.aggregate else 0.0 for c in configs]
     colours = [cs.primary if i == 0 else cs.muted for i in range(len(configs))]
-    ax.barh(names, values, color=colours, height=0.62)
+    ax.barh(names, values, color=colours, height=cs.bar_height)
     ax.set_xlim(0, 1)
     ax.invert_yaxis()
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0", "25 %", "50 %", "75 %", "100 %"])
     for y, v in enumerate(values):
-        ax.text(v + 0.012, y, f"{v:.0%}", va="center", color=cs.ink, fontsize=10)
+        ax.text(v + 0.012, y, f"{v:.0%}", va="center", color=cs.ink, fontsize=cs.font_size)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     return _save(fig, path, cs)
 
@@ -78,7 +80,8 @@ def accuracy_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
 def tokens_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
     """Stacked horizontal bars: LLM tokens in and out per config (Jev tokens are not LLM tokens)."""
     configs = _model_configs(results)
-    fig, ax = _frame(cs, len(configs), "LLM tokens per config (4 vendors, 25 controls each)")
+    vendors = len(results.samples)
+    fig, ax = _frame(cs, len(configs), f"LLM tokens per config ({vendors} vendors)")
     names = [c.name for c in configs]
     tin = [c.aggregate.tokens_in / 1000 if c.aggregate else 0 for c in configs]
     tout = [c.aggregate.tokens_out / 1000 if c.aggregate else 0 for c in configs]
@@ -86,7 +89,7 @@ def tokens_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
         names,
         tin,
         color=cs.primary,
-        height=0.62,
+        height=cs.bar_height,
         label="tokens in",
         edgecolor=cs.surface,
         linewidth=2,
@@ -96,7 +99,7 @@ def tokens_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
         tout,
         left=tin,
         color=cs.secondary,
-        height=0.62,
+        height=cs.bar_height,
         label="tokens out",
         edgecolor=cs.surface,
         linewidth=2,
@@ -106,7 +109,14 @@ def tokens_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path:
     top = max(a + b for a, b in zip(tin, tout, strict=True))
     ax.set_xlim(0, top * 1.14)
     for y, (a, b) in enumerate(zip(tin, tout, strict=True)):
-        ax.text(a + b + top * 0.01, y, f"{a + b:,.0f}k", va="center", color=cs.ink, fontsize=10)
+        ax.text(
+            a + b + top * 0.01,
+            y,
+            f"{a + b:,.0f}k",
+            va="center",
+            color=cs.ink,
+            fontsize=cs.font_size,
+        )
     ax.legend(frameon=False, loc="lower right", labelcolor=cs.ink_secondary)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     return _save(fig, path, cs)
@@ -127,7 +137,7 @@ def confusion_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path
         f"Golden vs system status: {best.name}",
         x=0.02,
         ha="left",
-        fontsize=13,
+        fontsize=cs.title_size,
         color=cs.ink,
         fontweight="bold",
     )
@@ -147,14 +157,14 @@ def confusion_chart(results: EvalResults, cs: ChartSettings, path: Path) -> Path
     ax.tick_params(which="minor", length=0)
     for i, row in enumerate(counts):
         for j, n in enumerate(row):
-            dark = n / top > 0.45
+            dark = n / top > cs.contrast_threshold
             ax.text(
                 j,
                 i,
                 str(n),
                 ha="center",
                 va="center",
-                fontsize=11,
+                fontsize=cs.font_size + 1,
                 color=cs.surface if dark else cs.ink,
             )
     fig.tight_layout(rect=(0, 0, 1, 0.94))

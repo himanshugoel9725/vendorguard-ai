@@ -47,11 +47,11 @@ and verify gates. Jev is a hosted, paid, alpha-stage service (ADR-016, ADR-020).
 | Metric | Meaning |
 |---|---|
 | Accuracy | Share of controls where the system status equals the golden label. `needs_human_review` is never right, so it always counts as wrong. |
-| Macro-F1 | Mean F1 over the four golden classes, computed from the confusion matrix pooled over the vendors. `needs_human_review` is a prediction only. It is not an F1 class, but it lowers recall. |
+| Macro-F1 | Mean F1 over the golden classes that occur in the golden labels or in the system's answers (a class in neither is left out), computed from the confusion matrix pooled over the vendors. `needs_human_review` is a prediction only. It is not an F1 class, but it lowers recall. |
 | Human-review rate | Share of controls that ended as `needs_human_review`. |
 | Triage skip rate | Share of controls where triage said "not addressed" with enough confidence that the run never reached the citation gate. |
-| Citation validity | Share of checked citations that are valid (a relocated quote counts as valid). |
-| LLM calls, tokens | Calls to the language model and their tokens, summed over the four vendors. |
+| Citation validity | Per vendor: share of checked citations that are valid (a relocated quote counts as valid); the table shows the mean over the vendors. |
+| LLM calls, tokens | Calls to the language model and their tokens, summed over the four vendors. Calls of the `llm_judge` decider are LLM calls and are included. |
 | Jev decider calls | Calls to the Jev decider. They are not LLM calls. |
 | Cost USD | Paid usage. Only Jev has a price here. |
 | Wall time | Seconds for the config over four vendors. |
@@ -101,13 +101,14 @@ The confusion matrix shows `ollama-jev`, the best config by accuracy.
 - **The LLM judge skipped 97 % of controls.** The 3B judge answered "not addressed" almost every time, so most
   controls never reached the mapper. This is a limit of the small model. It says nothing about judges in
   general.
-- **Real embeddings did not help.** `ollama-rule` (nomic-embed-text) scored 0.35 against 0.40 for BM25 alone.
-  Triage never skipped a control with embeddings (0 %), because the cosine floor is always met. That means more
-  calls and no gain on these documents.
-- **Jev is best, and it costs human review.** `ollama-jev` reached 0.52 accuracy and 0.59 macro-F1. Its verify
-  gate appears to be stricter than the rule decider's and sends doubtful findings to a person instead of
-  accepting wrong ones: 14 % went to human review. No ablation isolated the cause; the stricter gate is the
-  likely explanation, seen in a small smoke test. This is a trade, not a free gain. Jev is hosted, paid (about $0.006 for the 198 calls) and alpha
+- **Real embeddings gave no measurable gain.** `ollama-rule` (nomic-embed-text) scored 0.35 against 0.40 for
+  BM25 alone, a gap inside the noise of a single run. Triage never skipped a control with embeddings (0 %); an
+  earlier single run (task 6.7) also showed the retrieval floor always being met with embeddings, so the likely
+  reason is that a cosine score is never low. That means more calls and no gain on these documents.
+- **Jev is best, and it costs human review.** `ollama-jev` reached 0.52 accuracy and 0.59 macro-F1. 14 % of its
+  controls went to human review. The cause of its lead was not isolated: a small smoke test (4 controls) showed
+  its verify gate rejecting drafts that the rule decider accepted, which may explain part of it, but the gain is
+  larger than the human-review share and Jev's own run-to-run variation was not measured. This is a trade, not a free gain. Jev is hosted, paid (about $0.006 for the 198 calls) and alpha
   stage. This is one small sample.
 
 ## Risk scores
@@ -129,7 +130,7 @@ Source: `docs/evaluation/determinism.json`. Config `ollama-rule-bm25`, cache off
 | quillfield | 13 | no |
 | **All** | **52 %** | **0 %** |
 
-A real Ollama run is not repeatable, even at temperature 0 with a fixed seed. A finding counts as identical only
+A real Ollama run was not repeatable here, even at temperature 0 with a fixed seed. Only two repeats were run, and an earlier test (task 4.2) found that the first call after a model load can differ from later calls, so the first repeat may have been a cold start and the 52 % mixes that effect with ordinary variation. More repeats, with a warm-up run first, would separate them. A finding counts as identical only
 when its whole JSON (status, quotes, trace, rationale) matches. Determinism was measured only for
 `ollama-rule-bm25`, not for `ollama-jev`.
 
@@ -140,7 +141,7 @@ results (`tests/integration/test_determinism.py`). The mock baseline is also 100
 
 - On synthetic documents, a 3B local model with the rule decider reaches 0.35 to 0.40 accuracy. That is not
   enough to rely on, which is why the product routes doubtful findings to a person.
-- The best result (Jev, 0.52 accuracy) most likely comes from a stricter verify gate, at the price of 14 % human review and
+- The best result (Jev, 0.52 accuracy) has an unisolated cause, and comes at the price of 14 % human review and
   a paid hosted service.
 - Whether a larger or hosted model closes the gap is not measured here.
 - The comparison between deciders and between BM25 and embeddings rests on one run each. Treat gaps of a few
@@ -159,5 +160,5 @@ uv run vg charts                     # regenerate the PNG charts
 ```
 
 `ollama-jev` needs `VG_DECISION__JEV__API_KEY` in `.env` (see `.env.example`). Without a key the config is
-skipped. The full matrix took about 1.5 hours on a CPU-only Intel Mac. Tokens and times differ slightly on every
+skipped. The full matrix took about 2 hours on a CPU-only Intel Mac (6,711 s of recorded wall time). Tokens and times differ slightly on every
 run.
